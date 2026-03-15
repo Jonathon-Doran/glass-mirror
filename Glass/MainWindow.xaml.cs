@@ -2,12 +2,13 @@
 using Glass.Data;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
+using Glass.Input;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using System.Runtime.InteropServices;
 using System.Windows.Interop;
+using System.Windows.Media;
 
 namespace Glass;
 
@@ -21,6 +22,7 @@ public partial class MainWindow : Window
     private readonly SessionRegistry _sessionRegistry = new();
     private readonly HashSet<int> _definedSlots = new();
     private CharacterSetRepository? _activeProfile;
+    private readonly GKeyInput _gKeyInput = new GKeyInput();
 
     // Constructor — initializes UI, database, pipe manager, and logging.
     public MainWindow()
@@ -50,6 +52,19 @@ public partial class MainWindow : Window
         Log("Glass started");
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Window_Loaded
+    //
+    // Called when the main window has finished loading.
+    // Starts G-key input handling.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        Log("Window_Loaded");
+        _gKeyInput.GKeyPressed += OnGKeyPressed;
+        _gKeyInput.Start();
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Window_Closing
     //
@@ -61,6 +76,7 @@ public partial class MainWindow : Window
         _isxGlassPipeManager.Dispose();
         await _glassVideoPipeManager.StopAsync();
         _glassVideoPipeManager.Dispose();
+        _gKeyInput.Stop();
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -431,6 +447,19 @@ public partial class MainWindow : Window
                 Log(msg);
                 break;
         }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // OnGKeyPressed
+    //
+    // Called when a G-key is pressed on any connected Logitech device.
+    //
+    // sender:  The GKeyInput instance
+    // e:       The event args containing device handle and key index
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void OnGKeyPressed(object? sender, GKeyEventArgs e)
+    {
+        DebugLog.Write(DebugLog.Log_Input, $"G-key pressed: device={e.DeviceHandle} key=G{e.KeyIndex}");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
