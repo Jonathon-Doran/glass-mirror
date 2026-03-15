@@ -16,7 +16,7 @@ public:
     HWND            GetHwnd() const;
     bool            IsValid() const;
     D3DRenderer& GetRenderer();
-    void            Render(ID3D11ShaderResourceView* srv);
+    void            Render();
 
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
