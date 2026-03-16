@@ -344,6 +344,13 @@ static void OnSessionRenamed(int argc, char* argv[], PLSOBJECT pThis)
         Logger::Instance().WriteIf(Logger::Instance().Log_Sessions, "OnSessionRenamed: could not get HWND for session '%s'.", sessionName.c_str());
     }
 
+    char hudCommand[192] = {};
+    snprintf(hudCommand, sizeof(hudCommand),
+        "relay %s \"HUDGroup -hide \\\"FPS Indicator\\\";HUDGroup -hide \\\"Memory Indicator\\\";HUDGroup -hide \\\"Version Indicators\\\"\"",
+        sessionName.c_str());
+    pISInterface->ExecuteCommand(hudCommand);
+    Logger::Instance().WriteIf(Logger::Instance().Log_Sessions, "OnSessionRenamed: HUD indicators hidden for session=%s", sessionName.c_str());
+  
     entry->hwnd = hwnd;
     // Notify Glass.exe of new session
     g_SessionManager.SendSessionConnected(sessionName, pid, hwnd);
