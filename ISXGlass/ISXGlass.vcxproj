@@ -71,11 +71,11 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>ISUI;LavishScript;ISXDK;$(IncludePath)</IncludePath>
+    <IncludePath>ISUI;LavishScript;$(SolutionDir);ISXDK;KeyManager;$(IncludePath)</IncludePath>
     <LibraryPath>lib64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>ISUI;LavishScript;ISXDK;$(IncludePath)</IncludePath>
+    <IncludePath>ISUI;LavishScript;$(SolutionDir);ISXDK;KeyManager;$(IncludePath)</IncludePath>
     <LibraryPath>lib64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -197,6 +197,7 @@
     <ClInclude Include="ISXDK\utf8string.h" />
     <ClInclude Include="ISXDK\WinThreading.h" />
     <ClInclude Include="ISXGlass.h" />
+    <ClInclude Include="KeyManager\KeyManager.h" />
     <ClInclude Include="LavishScript\LavishScript.h" />
     <ClInclude Include="LavishScript\LSSTLTypes.h" />
     <ClInclude Include="LavishScript\LSType.h" />
@@ -208,6 +209,7 @@
   <ItemGroup>
     <ClCompile Include="CommandHandler.cpp" />
     <ClCompile Include="ISXGlass.cpp" />
+    <ClCompile Include="KeyManager\KeyManager.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="LSVariables.cpp" />
     <ClCompile Include="PipeManager.cpp" />

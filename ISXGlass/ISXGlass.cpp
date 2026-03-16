@@ -1,4 +1,5 @@
 #include "ISXGlass.h"
+#include "KeyManager.h"
 
 #define EXTENSION_VERSION "20260309"
 
@@ -8,6 +9,7 @@ ISXPreSetup("ISXGlass", ISXGlass);
 
 void __cdecl PulseService(bool Broadcast, unsigned int MSG, void* lpData);
 void __cdecl SystemService(bool Broadcast, unsigned int MSG, void* lpData);
+
 
 std::queue<std::string> g_CommandQueue;
 std::mutex g_QueueMutex;
@@ -79,6 +81,8 @@ void ISXGlass::Shutdown()
     {
         pISInterface->DisconnectService(this, hSystemService);
     }
+
+    g_KeyManager.Shutdown();
     Logger::Instance().Write("ISXGlass::Shutdown");
 }
 

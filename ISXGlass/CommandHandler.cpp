@@ -1,5 +1,6 @@
 #include "ISXGlass.h"
 #include "LSVariables.h"
+#include "KeyManager.h"
 #include "Logger.h"
 
 // Parse a string into up to 4 tokens separated by spaces.
@@ -304,6 +305,115 @@ static void HandleVar(const std::string& args)
         g_PipeManager.Send("var error unknown subverb");
     }
 }
+static void HandleGroupDefine(const std::string& args)
+{
+    std::string tokens[1];
+    if (ParseTokens(args, tokens, 1) < 1)
+    {
+        Logger::Instance().Write("HandleGroupDefine: requires groupId.");
+        return;
+    }
+    GroupID groupId = (GroupID)atoi(tokens[0].c_str());
+    Logger::Instance().Write("HandleGroupDefine: groupId=%u", groupId);
+    g_KeyManager.DefineGroup(groupId);
+}
+
+static void HandleGroupAdd(const std::string& args)
+{
+    std::string tokens[2];
+    if (ParseTokens(args, tokens, 2) < 2)
+    {
+        Logger::Instance().Write("HandleGroupAdd: requires groupId and sessionName.");
+        return;
+    }
+    GroupID groupId = (GroupID)atoi(tokens[0].c_str());
+    Logger::Instance().Write("HandleGroupAdd: groupId=%u session=%s", groupId, tokens[1].c_str());
+    g_KeyManager.AddToGroup(groupId, tokens[1]);
+}
+
+static void HandleGroupRemove(const std::string& args)
+{
+    std::string tokens[2];
+    if (ParseTokens(args, tokens, 2) < 2)
+    {
+        Logger::Instance().Write("HandleGroupRemove: requires groupId and sessionName.");
+        return;
+    }
+    GroupID groupId = (GroupID)atoi(tokens[0].c_str());
+    Logger::Instance().Write("HandleGroupRemove: groupId=%u session=%s", groupId, tokens[1].c_str());
+    g_KeyManager.RemoveFromGroup(groupId, tokens[1]);
+}
+
+static void HandleCmdDefine(const std::string& args)
+{
+    std::string tokens[3];
+    if (ParseTokens(args, tokens, 3) < 3)
+    {
+        Logger::Instance().Write("HandleCmdDefine: requires commandId, type, and action.");
+        return;
+    }
+    CommandID commandId = (CommandID)atoi(tokens[0].c_str());
+    CommandActionType actionType;
+    if (tokens[1] == "key")
+    {
+        actionType = CommandActionType::Keystroke;
+    }
+    else if (tokens[1] == "text")
+    {
+        actionType = CommandActionType::Text;
+    }
+    else
+    {
+        Logger::Instance().Write("HandleCmdDefine: unknown type: %s", tokens[1].c_str());
+        return;
+    }
+    Logger::Instance().Write("HandleCmdDefine: commandId=%u type=%s action=%s",
+        commandId, tokens[1].c_str(), tokens[2].c_str());
+    g_KeyManager.DefineCommand(commandId, actionType, tokens[2]);
+}
+
+static void HandleKey(const std::string& args)
+{
+    std::string tokens[2];
+    if (ParseTokens(args, tokens, 2) < 2)
+    {
+        Logger::Instance().Write("HandleKey: requires commandId and groupId.");
+        return;
+    }
+    CommandID commandId = (CommandID)atoi(tokens[0].c_str());
+    GroupID groupId = (GroupID)atoi(tokens[1].c_str());
+    Logger::Instance().Write("HandleKey: commandId=%u groupId=%u", commandId, groupId);
+    g_KeyManager.ExecuteKey(commandId, groupId);
+}
+
+static void HandleStart(const std::string& args)
+{
+    std::string tokens[3];
+    if (ParseTokens(args, tokens, 3) < 3)
+    {
+        Logger::Instance().Write("HandleStart: requires commandId, groupId, and intervalMs.");
+        return;
+    }
+    CommandID commandId = (CommandID)atoi(tokens[0].c_str());
+    GroupID groupId = (GroupID)atoi(tokens[1].c_str());
+    unsigned int intervalMs = (unsigned int)atoi(tokens[2].c_str());
+    Logger::Instance().Write("HandleStart: commandId=%u groupId=%u intervalMs=%u", commandId, groupId, intervalMs);
+    g_KeyManager.StartRepeat(commandId, groupId, intervalMs);
+}
+
+static void HandleStop(const std::string& args)
+{
+    std::string tokens[2];
+    if (ParseTokens(args, tokens, 2) < 2)
+    {
+        Logger::Instance().Write("HandleStop: requires commandId and groupId.");
+        return;
+    }
+    CommandID commandId = (CommandID)atoi(tokens[0].c_str());
+    GroupID groupId = (GroupID)atoi(tokens[1].c_str());
+    Logger::Instance().Write("HandleStop: commandId=%u groupId=%u", commandId, groupId);
+    g_KeyManager.StopRepeat(commandId, groupId);
+}
 
 // ----------------------------------------------------------------------------
 // Dispatcher
@@ -335,6 +445,34 @@ void HandleCommand(const std::string& cmd)
     else if (verb == "var")
     {
         HandleVar(args);
+    }
+    else if (verb == "group_define")
+    {
+        HandleGroupDefine(args);
+    }
+    else if (verb == "group_add")
+    {
+        HandleGroupAdd(args);
+    }
+    else if (verb == "group_remove")
+    {
+        HandleGroupRemove(args);
+    }
+    else if (verb == "cmd_define")
+    {
+        HandleCmdDefine(args);
+    }
+    else if (verb == "key")
+    {
+        HandleKey(args);
+    }
+    else if (verb == "start")
+    {
+        HandleStart(args);
+    }
+    else if (verb == "stop")
+    {
+        HandleStop(args);
     }
     else
     {

@@ -22,6 +22,12 @@
     <Filter Include="Header Files\ISUI">
       <UniqueIdentifier>{1669017a-afa6-4cdc-9d82-752218bb2986}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\KeyManager">
+      <UniqueIdentifier>{521ae337-9c96-4975-9795-e1ca35221d53}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\KeyManager">
+      <UniqueIdentifier>{3665b1e0-a4b2-4365-b5fc-04c5dbf8ab12}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -183,6 +189,9 @@
     <ClInclude Include="SessionManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="KeyManager\KeyManager.h">
+      <Filter>Header Files\KeyManager</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Logger.cpp">
@@ -202,6 +211,9 @@
     </ClCompile>
     <ClCompile Include="SessionManager.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyManager\KeyManager.cpp">
+      <Filter>Source Files\KeyManager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
