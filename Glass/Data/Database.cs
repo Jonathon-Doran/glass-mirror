@@ -1,5 +1,8 @@
 using Microsoft.Data.Sqlite;
 using System.IO;
+using System.Windows.Shapes;
+using Glass.Core;
+using System.Data;
 
 namespace Glass.Data;
 
@@ -37,6 +40,10 @@ public class Database
             throw new FileNotFoundException("Database not found.", dbPath);
         _instance = new Database(dbPath);
         _instance.Initialize();
+
+        int version = _instance.GetSchemaVersion();
+
+        DebugLog.Write(DebugLog.Log_Database, $"Databae open, version {version}");
     }
     public void Initialize()
     {
@@ -52,7 +59,7 @@ public class Database
 
     private void ApplyMigrations(SqliteConnection conn)
     {
-        int version = GetSchemaVersion(conn);
+        int version = GetSchemaVersion();
 
         // Apply migrations in order
         if (version < 2)
@@ -67,10 +74,17 @@ public class Database
         {
             ApplyMigration(conn, 4, Migration_004);
         }
+        if (version < 5)
+        {
+            ApplyMigration(conn, 5, Migration_005);
+        }
     }
 
-    private int GetSchemaVersion(SqliteConnection conn)
+    private int GetSchemaVersion()
     {
+        using var conn = Connect();
+        conn.Open();
+
         using var cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT COALESCE(MAX(version), 0) FROM SchemaVersion";
         return Convert.ToInt32(cmd.ExecuteScalar());
@@ -126,6 +140,11 @@ public class Database
     DROP TABLE WindowLayouts;
     ALTER TABLE WindowLayouts_new RENAME TO WindowLayouts;
 ";
+
+    private const string Migration_005 = @"
+    ALTER TABLE KeyBindings RENAME COLUMN params TO action;
+";
+
     private const string Schema = @"
         CREATE TABLE IF NOT EXISTS SchemaVersion (
             version     INTEGER NOT NULL,

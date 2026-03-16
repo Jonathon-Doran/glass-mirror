@@ -745,4 +745,44 @@ public partial class ProfileDialog : Window
             UpdateMonitorConfigurationUI(selectedMonitor);
         }
     }
+
+    private void NewPage_Click(object sender, RoutedEventArgs e)
+    {
+    }
+
+    private void RenamePage_Click(object sender, RoutedEventArgs e)
+    {
+    }
+
+    private void DeletePage_Click(object sender, RoutedEventArgs e)
+    {
+    }
+
+    private void PageListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+    }
+
+    private void PageInProfile_Click(object sender, RoutedEventArgs e)
+    {
+    }
+
+    private void PageIsStart_Click(object sender, RoutedEventArgs e)
+    {
+    }
+
+    private void KeyButton_Click(object sender, RoutedEventArgs e)
+    {
+    }
+
+    private void SaveBinding_Click(object sender, RoutedEventArgs e)
+    {
+    }
+
+    private void ClearBinding_Click(object sender, RoutedEventArgs e)
+    {
+    }
+
+    private void BindingListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+    }
 }

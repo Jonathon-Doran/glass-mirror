@@ -151,7 +151,6 @@ public partial class MainWindow : Window
         {
             Database.Open(path);
             SetDatabaseMenuState(true);
-            Log($"Database opened: {path}");
             BuildRecentProfilesMenu();
         }
     }

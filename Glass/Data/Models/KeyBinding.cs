@@ -28,7 +28,7 @@ public class KeyBinding
     public bool RoundRobin { get; set; }
 
     /// <summary>
-    /// Optional command parameters, serialized as JSON or a simple string depending on CommandType.
+    /// The keystroke combo or text string to execute when this binding fires.
     /// </summary>
-    public string? Params { get; set; }
+    public string? Action { get; set; }
 }
