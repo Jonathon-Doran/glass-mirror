@@ -371,9 +371,25 @@ static void OnSessionDisconnected(int argc, char* argv[], PLSOBJECT pThis)
         Logger::Instance().Write("OnSessionDisconnected: no arguments.");
         return;
     }
-
     std::string sessionName = argv[0];
     Logger::Instance().Write("OnSessionDisconnected: session='%s'", sessionName.c_str());
+
+    SessionEntry* entry = g_SessionManager.FindSession(sessionName);
+    if (entry != nullptr)
+    {
+        if (entry->jobObject != nullptr)
+        {
+            Logger::Instance().WriteIf(Logger::Instance().Log_Sessions,
+                "OnSessionDisconnected: closing job handle=%p for session='%s'.",
+                entry->jobObject, sessionName.c_str());
+            CloseHandle(entry->jobObject);
+            entry->jobObject = nullptr;
+        }
+    }
+    else
+    {
+        Logger::Instance().Write("OnSessionDisconnected:  No session found for %s", sessionName.c_str());
+    }
 
     char notify[128];
     snprintf(notify, sizeof(notify), "session_disconnected %s", sessionName.c_str());
