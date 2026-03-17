@@ -132,9 +132,9 @@
                                         </Grid>
                                         <TextBlock Text="{Binding MonitorNumber}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                         <ComboBox x:Name="comboBoxResolution" Width="120" Margin="0,4,0,0"
-                                      SelectedValuePath="Content"
-                                      SelectedValue="{Binding SelectedResolution}"
-                                      SelectionChanged="MonitorSettingsChanged">
+                                              SelectedValuePath="Content"
+                                              SelectedValue="{Binding SelectedResolution}"
+                                              SelectionChanged="MonitorSettingsChanged">
                                             <ComboBoxItem Content="1920x1080"/>
                                             <ComboBoxItem Content="2560x1440"/>
                                             <ComboBoxItem Content="3840x2160"/>
@@ -190,265 +190,248 @@
 
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Keyboard Layout">
+            <TabItem x:Name="KeyboardLayoutTab" Header="Keyboard Layout">
                 <Grid Margin="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="8"/>
-                        <ColumnDefinition Width="250"/>
-                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <!-- Left side -->
-                    <Grid Grid.Column="0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="150"/>
-                            <RowDefinition Height="8"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="8"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+                    <!-- Top bar: page selection -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <TextBlock Text="Page:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox x:Name="PageComboBox" Width="200"
+                                SelectionChanged="PageComboBox_SelectionChanged"/>
+                        <Button Content="Manage Pages" Margin="12,0,0,0"
+                                Click="ManagePages_Click"/>
+                    </StackPanel>
 
-                        <!-- Page list -->
-                        <GroupBox Grid.Row="0" Header="Pages">
-                            <DockPanel>
-                                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,4,0,0">
-                                    <Button x:Name="NewPageButton" Content="New" Width="60" Margin="0,0,4,0" Click="NewPage_Click"/>
-                                    <Button x:Name="RenamePageButton" Content="Rename" Width="60" Margin="0,0,4,0" Click="RenamePage_Click"/>
-                                    <Button x:Name="DeletePageButton" Content="Delete" Width="60" Click="DeletePage_Click"/>
-                                </StackPanel>
-                                <ListView x:Name="PageListView" SelectionChanged="PageListView_SelectionChanged">
-                                    <ListView.ItemContainerStyle>
-                                        <Style TargetType="ListViewItem">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsStartPage}" Value="True">
-                                                    <Setter Property="Background" Value="LightGreen"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </ListView.ItemContainerStyle>
-                                    <ListView.View>
-                                        <GridView>
-                                            <GridViewColumn Header="In Use" Width="55">
-                                                <GridViewColumn.CellTemplate>
-                                                    <DataTemplate>
-                                                        <CheckBox IsChecked="{Binding InProfile, Mode=TwoWay}"
-                                                      Click="PageInProfile_Click"/>
-                                                    </DataTemplate>
-                                                </GridViewColumn.CellTemplate>
-                                            </GridViewColumn>
-                                            <GridViewColumn Header="Start" Width="50">
-                                                <GridViewColumn.CellTemplate>
-                                                    <DataTemplate>
-                                                        <CheckBox IsChecked="{Binding IsStartPage, Mode=TwoWay}"
-                                                      Click="PageIsStart_Click"/>
-                                                    </DataTemplate>
-                                                </GridViewColumn.CellTemplate>
-                                            </GridViewColumn>
-                                            <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="120"/>
-                                            <GridViewColumn Header="Device" DisplayMemberBinding="{Binding Device}" Width="100"/>
-                                        </GridView>
-                                    </ListView.View>
-                                </ListView>
-                            </DockPanel>
-                        </GroupBox>
+                    <!-- Hidden elements kept for code-behind compatibility -->
+                    <StackPanel Grid.Row="0" Visibility="Collapsed">
+                        <TextBlock x:Name="SelectedKeyTextBlock"/>
+                        <TextBox   x:Name="ActionTextBox"/>
+                        <Button    x:Name="NewPageButton"    Click="NewPage_Click"/>
+                        <Button    x:Name="RenamePageButton" Click="RenamePage_Click"/>
+                        <Button    x:Name="DeletePageButton" Click="DeletePage_Click"/>
+                        <CheckBox  x:Name="PageInProfileCheckBox" Click="PageInProfile_Click"/>
+                        <CheckBox  x:Name="PageIsStartCheckBox"   Click="PageIsStart_Click"/>
+                        <ListView  x:Name="PageListView" SelectionChanged="PageListView_SelectionChanged">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock/>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
 
-                        <!-- Key layout grid -->
-                        <GroupBox Grid.Row="2" Header="Key Layout">
-                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                                <StackPanel>
-                                    <!-- G13 -->
-                                    <Grid x:Name="G13Grid" HorizontalAlignment="Center" VerticalAlignment="Top" Visibility="Collapsed">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Button Grid.Row="0" Grid.Column="0" Content="G1"  Width="50" Margin="3" Tag="G1"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="1" Content="G2"  Width="50" Margin="3" Tag="G2"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="2" Content="G3"  Width="50" Margin="3" Tag="G3"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="3" Content="G4"  Width="50" Margin="3" Tag="G4"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="4" Content="G5"  Width="50" Margin="3" Tag="G5"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="5" Content="G6"  Width="50" Margin="3" Tag="G6"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="6" Content="G7"  Width="50" Margin="3" Tag="G7"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="0" Content="G8"  Width="50" Margin="3" Tag="G8"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="1" Content="G9"  Width="50" Margin="3" Tag="G9"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="2" Content="G10" Width="50" Margin="3" Tag="G10" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="3" Content="G11" Width="50" Margin="3" Tag="G11" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="4" Content="G12" Width="50" Margin="3" Tag="G12" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="5" Content="G13" Width="50" Margin="3" Tag="G13" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="6" Content="G14" Width="50" Margin="3" Tag="G14" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="2" Grid.Column="1" Content="G15" Width="50" Margin="3" Tag="G15" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="2" Grid.Column="2" Content="G16" Width="50" Margin="3" Tag="G16" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="2" Grid.Column="3" Content="G17" Width="50" Margin="3" Tag="G17" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="2" Grid.Column="4" Content="G18" Width="50" Margin="3" Tag="G18" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="2" Grid.Column="5" Content="G19" Width="50" Margin="3" Tag="G19" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="3" Grid.Column="2" Content="G20" Width="50" Margin="3" Tag="G20" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="3" Grid.Column="3" Content="G21" Width="50" Margin="3" Tag="G21" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="3" Grid.Column="4" Content="G22" Width="50" Margin="3" Tag="G22" Click="KeyButton_Click"/>
-                                    </Grid>
+                    <!-- Middle: key grid left, binding list right -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="500"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                                    <!-- G15 -->
-                                    <Grid x:Name="G15Grid" HorizontalAlignment="Center" VerticalAlignment="Top" Visibility="Collapsed">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="10"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="10"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Button Grid.Row="0" Grid.Column="0" Content="G1"  Margin="3" Tag="G1"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="1" Content="G2"  Margin="3" Tag="G2"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="2" Content="G3"  Margin="3" Tag="G3"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="0" Content="G4"  Margin="3" Tag="G4"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="1" Content="G5"  Margin="3" Tag="G5"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="2" Content="G6"  Margin="3" Tag="G6"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="3" Grid.Column="0" Content="G7"  Margin="3" Tag="G7"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="3" Grid.Column="1" Content="G8"  Margin="3" Tag="G8"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="3" Grid.Column="2" Content="G9"  Margin="3" Tag="G9"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="4" Grid.Column="0" Content="G10" Margin="3" Tag="G10" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="4" Grid.Column="1" Content="G11" Margin="3" Tag="G11" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="4" Grid.Column="2" Content="G12" Margin="3" Tag="G12" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="6" Grid.Column="0" Content="G13" Margin="3" Tag="G13" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="6" Grid.Column="1" Content="G14" Margin="3" Tag="G14" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="6" Grid.Column="2" Content="G15" Margin="3" Tag="G15" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="7" Grid.Column="0" Content="G16" Margin="3" Tag="G16" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="7" Grid.Column="1" Content="G17" Margin="3" Tag="G17" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="7" Grid.Column="2" Content="G18" Margin="3" Tag="G18" Click="KeyButton_Click"/>
-                                    </Grid>
+                        <!-- Key grid -->
+                        <ScrollViewer Grid.Column="0"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
 
-                                    <!-- Dominator X36 -->
-                                    <Grid x:Name="DominatorX36Grid" HorizontalAlignment="Center" VerticalAlignment="Top" Visibility="Collapsed">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="10"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="10"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="10"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Button Grid.Row="0" Grid.Column="0" Content="X-1"  Margin="3" Tag="X-1"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="1" Content="X-2"  Margin="3" Tag="X-2"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="2" Content="X-3"  Margin="3" Tag="X-3"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="0" Content="X-4"  Margin="3" Tag="X-4"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="1" Content="X-5"  Margin="3" Tag="X-5"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="2" Content="X-6"  Margin="3" Tag="X-6"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="3" Grid.Column="0" Content="X-7"  Margin="3" Tag="X-7"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="3" Grid.Column="1" Content="X-8"  Margin="3" Tag="X-8"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="3" Grid.Column="2" Content="X-9"  Margin="3" Tag="X-9"  Click="KeyButton_Click"/>
-                                        <Button Grid.Row="4" Grid.Column="0" Content="X-10" Margin="3" Tag="X-10" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="4" Grid.Column="1" Content="X-11" Margin="3" Tag="X-11" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="4" Grid.Column="2" Content="X-12" Margin="3" Tag="X-12" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="6" Grid.Column="0" Content="X-13" Margin="3" Tag="X-13" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="6" Grid.Column="1" Content="X-14" Margin="3" Tag="X-14" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="6" Grid.Column="2" Content="X-15" Margin="3" Tag="X-15" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="7" Grid.Column="0" Content="X-16" Margin="3" Tag="X-16" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="7" Grid.Column="1" Content="X-17" Margin="3" Tag="X-17" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="7" Grid.Column="2" Content="X-18" Margin="3" Tag="X-18" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="4" Content="X-19" Margin="3" Tag="X-19" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="5" Content="X-20" Margin="3" Tag="X-20" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="0" Grid.Column="6" Content="X-21" Margin="3" Tag="X-21" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="4" Content="X-22" Margin="3" Tag="X-22" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="5" Content="X-23" Margin="3" Tag="X-23" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="1" Grid.Column="6" Content="X-24" Margin="3" Tag="X-24" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="3" Grid.Column="4" Content="X-25" Margin="3" Tag="X-25" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="3" Grid.Column="5" Content="X-26" Margin="3" Tag="X-26" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="3" Grid.Column="6" Content="X-27" Margin="3" Tag="X-27" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="4" Grid.Column="4" Content="X-28" Margin="3" Tag="X-28" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="4" Grid.Column="5" Content="X-29" Margin="3" Tag="X-29" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="4" Grid.Column="6" Content="X-30" Margin="3" Tag="X-30" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="6" Grid.Column="4" Content="X-31" Margin="3" Tag="X-31" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="6" Grid.Column="5" Content="X-32" Margin="3" Tag="X-32" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="6" Grid.Column="6" Content="X-33" Margin="3" Tag="X-33" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="7" Grid.Column="4" Content="X-34" Margin="3" Tag="X-34" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="7" Grid.Column="5" Content="X-35" Margin="3" Tag="X-35" Click="KeyButton_Click"/>
-                                        <Button Grid.Row="7" Grid.Column="6" Content="X-36" Margin="3" Tag="X-36" Click="KeyButton_Click"/>
-                                    </Grid>
-                                </StackPanel>
-                            </ScrollViewer>
-                        </GroupBox>
+                                <!-- G13 -->
+                                <Grid x:Name="G13Grid" Visibility="Collapsed"
+                                           HorizontalAlignment="Left" VerticalAlignment="Top">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Row="0" Grid.Column="0" Content="G1"  Width="60" Margin="5" Tag="G1"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="1" Content="G2"  Width="60" Margin="5" Tag="G2"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="2" Content="G3"  Width="60" Margin="5" Tag="G3"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="3" Content="G4"  Width="60" Margin="5" Tag="G4"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="4" Content="G5"  Width="60" Margin="5" Tag="G5"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="5" Content="G6"  Width="60" Margin="5" Tag="G6"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="6" Content="G7"  Width="60" Margin="5" Tag="G7"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="0" Content="G8"  Width="60" Margin="5" Tag="G8"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="1" Content="G9"  Width="60" Margin="5" Tag="G9"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="2" Content="G10" Width="60" Margin="5" Tag="G10" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="3" Content="G11" Width="60" Margin="5" Tag="G11" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="4" Content="G12" Width="60" Margin="5" Tag="G12" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="5" Content="G13" Width="60" Margin="5" Tag="G13" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="6" Content="G14" Width="60" Margin="5" Tag="G14" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="2" Grid.Column="1" Content="G15" Width="60" Margin="5" Tag="G15" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="2" Grid.Column="2" Content="G16" Width="60" Margin="5" Tag="G16" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="2" Grid.Column="3" Content="G17" Width="60" Margin="5" Tag="G17" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="2" Grid.Column="4" Content="G18" Width="60" Margin="5" Tag="G18" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="2" Grid.Column="5" Content="G19" Width="60" Margin="5" Tag="G19" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="3" Grid.Column="2" Content="G20" Width="60" Margin="5" Tag="G20" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="3" Grid.Column="3" Content="G21" Width="60" Margin="5" Tag="G21" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="3" Grid.Column="4" Content="G22" Width="60" Margin="5" Tag="G22" Click="KeyButton_Click"/>
+                                </Grid>
 
-                        <!-- Binding editor -->
-                        <GroupBox Grid.Row="4" Header="Binding">
-                            <Grid Margin="4">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="100"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                                <!-- G15 -->
+                                <Grid x:Name="G15Grid" Visibility="Collapsed"
+                                       HorizontalAlignment="Left" VerticalAlignment="Top">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Row="0" Grid.Column="0" Content="G1"  Width="60" Margin="5" Tag="G1"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="1" Content="G2"  Width="60" Margin="5" Tag="G2"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="2" Content="G3"  Width="60" Margin="5" Tag="G3"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="0" Content="G4"  Width="60" Margin="5" Tag="G4"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="1" Content="G5"  Width="60" Margin="5" Tag="G5"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="2" Content="G6"  Width="60" Margin="5" Tag="G6"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="3" Grid.Column="0" Content="G7"  Width="60" Margin="5" Tag="G7"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="3" Grid.Column="1" Content="G8"  Width="60" Margin="5" Tag="G8"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="3" Grid.Column="2" Content="G9"  Width="60" Margin="5" Tag="G9"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="4" Grid.Column="0" Content="G10" Width="60" Margin="5" Tag="G10" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="4" Grid.Column="1" Content="G11" Width="60" Margin="5" Tag="G11" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="4" Grid.Column="2" Content="G12" Width="60" Margin="5" Tag="G12" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="6" Grid.Column="0" Content="G13" Width="60" Margin="5" Tag="G13" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="6" Grid.Column="1" Content="G14" Width="60" Margin="5" Tag="G14" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="6" Grid.Column="2" Content="G15" Width="60" Margin="5" Tag="G15" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="7" Grid.Column="0" Content="G16" Width="60" Margin="5" Tag="G16" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="7" Grid.Column="1" Content="G17" Width="60" Margin="5" Tag="G17" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="7" Grid.Column="2" Content="G18" Width="60" Margin="5" Tag="G18" Click="KeyButton_Click"/>
+                                </Grid>
 
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Key:" VerticalAlignment="Center" Margin="0,4,8,4"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="SelectedKeyTextBlock" VerticalAlignment="Center" Margin="0,4,0,4"/>
+                                <!-- Dominator X36 -->
+                                <Grid x:Name="DominatorX36Grid" Visibility="Visible"
+                                              HorizontalAlignment="Left" VerticalAlignment="Top">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Grid.Row="0" Grid.Column="0" Content="X-1"  Width="60" Margin="5" Tag="X-1"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="1" Content="X-2"  Width="60" Margin="5" Tag="X-2"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="2" Content="X-3"  Width="60" Margin="5" Tag="X-3"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="0" Content="X-4"  Width="60" Margin="5" Tag="X-4"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="1" Content="X-5"  Width="60" Margin="5" Tag="X-5"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="2" Content="X-6"  Width="60" Margin="5" Tag="X-6"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="3" Grid.Column="0" Content="X-7"  Width="60" Margin="5" Tag="X-7"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="3" Grid.Column="1" Content="X-8"  Width="60" Margin="5" Tag="X-8"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="3" Grid.Column="2" Content="X-9"  Width="60" Margin="5" Tag="X-9"  Click="KeyButton_Click"/>
+                                    <Button Grid.Row="4" Grid.Column="0" Content="X-10" Width="60" Margin="5" Tag="X-10" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="4" Grid.Column="1" Content="X-11" Width="60" Margin="5" Tag="X-11" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="4" Grid.Column="2" Content="X-12" Width="60" Margin="5" Tag="X-12" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="6" Grid.Column="0" Content="X-13" Width="60" Margin="5" Tag="X-13" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="6" Grid.Column="1" Content="X-14" Width="60" Margin="5" Tag="X-14" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="6" Grid.Column="2" Content="X-15" Width="60" Margin="5" Tag="X-15" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="7" Grid.Column="0" Content="X-16" Width="60" Margin="5" Tag="X-16" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="7" Grid.Column="1" Content="X-17" Width="60" Margin="5" Tag="X-17" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="7" Grid.Column="2" Content="X-18" Width="60" Margin="5" Tag="X-18" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="4" Content="X-19" Width="60" Margin="5" Tag="X-19" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="5" Content="X-20" Width="60" Margin="5" Tag="X-20" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="0" Grid.Column="6" Content="X-21" Width="60" Margin="5" Tag="X-21" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="4" Content="X-22" Width="60" Margin="5" Tag="X-22" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="5" Content="X-23" Width="60" Margin="5" Tag="X-23" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="1" Grid.Column="6" Content="X-24" Width="60" Margin="5" Tag="X-24" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="3" Grid.Column="4" Content="X-25" Width="60" Margin="5" Tag="X-25" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="3" Grid.Column="5" Content="X-26" Width="60" Margin="5" Tag="X-26" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="3" Grid.Column="6" Content="X-27" Width="60" Margin="5" Tag="X-27" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="4" Grid.Column="4" Content="X-28" Width="60" Margin="5" Tag="X-28" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="4" Grid.Column="5" Content="X-29" Width="60" Margin="5" Tag="X-29" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="4" Grid.Column="6" Content="X-30" Width="60" Margin="5" Tag="X-30" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="6" Grid.Column="4" Content="X-31" Width="60" Margin="5" Tag="X-31" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="6" Grid.Column="5" Content="X-32" Width="60" Margin="5" Tag="X-32" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="6" Grid.Column="6" Content="X-33" Width="60" Margin="5" Tag="X-33" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="7" Grid.Column="4" Content="X-34" Width="60" Margin="5" Tag="X-34" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="7" Grid.Column="5" Content="X-35" Width="60" Margin="5" Tag="X-35" Click="KeyButton_Click"/>
+                                    <Button Grid.Row="7" Grid.Column="6" Content="X-36" Width="60" Margin="5" Tag="X-36" Click="KeyButton_Click"/>
+                                </Grid>
 
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Command Type:" VerticalAlignment="Center" Margin="0,4,8,4"/>
-                                <ComboBox Grid.Row="1" Grid.Column="1" x:Name="CommandTypeComboBox" Margin="0,4,0,4">
-                                    <ComboBoxItem Content="key"/>
-                                    <ComboBoxItem Content="text"/>
-                                </ComboBox>
+                            </StackPanel>
+                        </ScrollViewer>
 
-                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Action:" VerticalAlignment="Center" Margin="0,4,8,4"/>
-                                <TextBox Grid.Row="2" Grid.Column="1" x:Name="ActionTextBox" Margin="0,4,0,4"/>
+                        <!-- Binding list -->
+                        <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1">
+                            <ListView Grid.Column="1" x:Name="BindingListView"
+                                      SelectionChanged="BindingListView_SelectionChanged"
+                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                      VirtualizingPanel.IsVirtualizing="True">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DisplayText}"/>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Border>
 
-                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Target Group:" VerticalAlignment="Center" Margin="0,4,8,4"/>
-                                <ComboBox Grid.Row="3" Grid.Column="1" x:Name="TargetGroupComboBox" Margin="0,4,0,4"/>
-
-                                <CheckBox Grid.Row="4" Grid.Column="1" x:Name="RoundRobinCheckBox" Content="Round Robin" Margin="0,4,0,4"/>
-
-                                <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0">
-                                    <Button x:Name="SaveBindingButton" Content="Save" Width="70" Margin="0,0,8,0" Click="SaveBinding_Click"/>
-                                    <Button x:Name="ClearBindingButton" Content="Clear" Width="70" Click="ClearBinding_Click"/>
-                                </StackPanel>
-                            </Grid>
-                        </GroupBox>
                     </Grid>
 
-                    <!-- Splitter -->
-                    <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    <!-- Bottom: binding editor -->
+                    <Grid Grid.Row="4" Margin="0,100,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="6"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="6"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="650"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                    <!-- Right side — binding list -->
-                    <GroupBox Grid.Column="2" Header="Bindings">
-                        <ListView x:Name="BindingListView" SelectionChanged="BindingListView_SelectionChanged">
-                            <ListView.View>
-                                <GridView>
-                                    <GridViewColumn Header="Binding" DisplayMemberBinding="{Binding DisplayText}" Width="220"/>
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
-                    </GroupBox>
+                        <DockPanel Grid.Row="0" Grid.ColumnSpan="3">
+                            <TextBlock DockPanel.Dock="Left" Text="Command:" VerticalAlignment="Center" Width="70"/>
+                            <ComboBox x:Name="CommandTypeComboBox" Width="500"/>
+                        </DockPanel>
+                        <DockPanel Grid.Row="2" Grid.ColumnSpan="3">
+                            <TextBlock DockPanel.Dock="Left" Text="Target:" VerticalAlignment="Center" Width="70"/>
+                            <CheckBox DockPanel.Dock="Right" x:Name="RoundRobinCheckBox"
+                                        Content="Round Robin" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                            <ComboBox x:Name="TargetGroupComboBox" Width="500"/>
+                        </DockPanel>
+                        <StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal">
+                            <Button x:Name="SaveBindingButton"  Content="Assign" Width="70" Margin="0,0,8,0"
+                                       Click="SaveBinding_Click"/>
+                            <Button x:Name="ClearBindingButton" Content="Clear"  Width="70"
+                                        Click="ClearBinding_Click"/>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
             </TabItem>
         </TabControl>

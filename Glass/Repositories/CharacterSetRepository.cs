@@ -31,20 +31,29 @@ public class CharacterSetRepository
         conn.Open();
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, name FROM CharacterSets WHERE name = @name";
+        cmd.CommandText = "SELECT id, name, start_page_id FROM CharacterSets WHERE name = @name";
         cmd.Parameters.AddWithValue("@name", profileName);
 
         using var reader = cmd.ExecuteReader();
         if (reader.Read())
         {
-            _characterSet = new CharacterSet { Id = reader.GetInt32(0), Name = reader.GetString(1) };
+            _characterSet = new CharacterSet
+            {
+                Id = reader.GetInt32(0),
+                Name = reader.GetString(1),
+                StartPageId = reader.IsDBNull(2) ? null : reader.GetInt32(2)
+            };
+
             reader.Close();
             _slots = LoadSlots(_characterSet.Id);
             DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository: loaded. id={_characterSet.Id} slots={_slots.Count}");
         }
         else
         {
-            _characterSet = new CharacterSet { Name = profileName };
+            _characterSet = new CharacterSet 
+            { 
+                Name = profileName 
+            };
             _slots = new List<SlotAssignment>();
             DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository: '{profileName}' not found, created empty.");
         }
@@ -81,11 +90,22 @@ public class CharacterSetRepository
     {
         return _slots.FirstOrDefault(s => s.CharacterId == characterId);
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // GetStartPageId
+    //
+    // Returns the start page ID for this profile, or null if not set.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public int? GetStartPageId()
+    {
+        return _characterSet.StartPageId;
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Save
     //
-    // Persists the character set name and slot assignments currently held by this repository
-    // to the database.  Returns the profile ID on success, or -1 if the profile already
+    // Persists the character set name, slot assignments, and start page currently held by this
+    // repository to the database. Returns the profile ID on success, or -1 if the profile already
     // exists and overwrite is false.
     //
     // overwrite:  If true, replaces an existing profile with the same name.
@@ -94,7 +114,6 @@ public class CharacterSetRepository
     public int Save(bool overwrite = false)
     {
         string profileName = _characterSet.Name;
-
         DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository.Save: name='{profileName}' slots={_slots.Count} overwrite={overwrite}");
 
         if (string.IsNullOrWhiteSpace(profileName))
@@ -155,6 +174,14 @@ public class CharacterSetRepository
                 insertSlot.Parameters.AddWithValue("@charId", slot.CharacterId);
                 insertSlot.ExecuteNonQuery();
             }
+
+            using var updatePageCmd = conn.CreateCommand();
+            updatePageCmd.Transaction = tx;
+            updatePageCmd.CommandText = "UPDATE CharacterSets SET start_page_id = @startPageId WHERE id = @id";
+            updatePageCmd.Parameters.AddWithValue("@startPageId", _characterSet.StartPageId.HasValue ? _characterSet.StartPageId.Value : DBNull.Value);
+            updatePageCmd.Parameters.AddWithValue("@id", profileId);
+            updatePageCmd.ExecuteNonQuery();
+            DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository.Save: start_page_id={_characterSet.StartPageId}.");
 
             tx.Commit();
             _characterSet.Id = profileId;

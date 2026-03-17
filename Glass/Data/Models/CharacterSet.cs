@@ -9,4 +9,6 @@ public class CharacterSet
     public string Name { get; set; } = string.Empty;
     public List<SlotAssignment> Slots { get; set; } = new();
     public List<WindowLayout> WindowLayouts { get; set; } = new();
+
+    public int? StartPageId { get; set; }
 }

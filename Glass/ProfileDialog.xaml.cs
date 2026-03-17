@@ -2,6 +2,7 @@
 using Glass.Data;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
+using Glass.UI.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -17,6 +18,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+
+using KeyBinding = Glass.Data.Models.KeyBinding;
 
 namespace Glass;
 
@@ -287,17 +290,88 @@ public partial class ProfileDialog : Window
             items.Any(c => c.IsSelected);
     }
 
-    // Rebuild slot assignments whenever the user switches to the Slot Assignment tab.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // TabControl_SelectionChanged
+    //
+    // Fires when the user switches tabs. Blocks navigation away from Character Selection
+    // if no profile name has been entered. Rebuilds slot assignments when the Slot Assignment
+    // tab is selected. Loads the keyboard layout tab when it is selected.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (e.Source is not TabControl)
         {
             return;
         }
+
+        if ((e.RemovedItems.Count > 0) &&
+            (e.RemovedItems[0] is TabItem removed) &&
+            (removed.Header.ToString() == "Character Selection"))
+        {
+            if (string.IsNullOrWhiteSpace(ProfileName.Text))
+            {
+                DebugLog.Write("ProfileDialog: profile name required before leaving character selection.");
+                MessageBox.Show("Please enter a profile name before continuing.", "Profile Name Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ((TabControl)sender).SelectedItem = e.RemovedItems[0];
+                return;
+            }
+        }
+
         if (SlotAssignmentTab.IsSelected)
         {
             RebuildSlotAssignments();
         }
+
+        if (KeyboardLayoutTab.IsSelected)
+        {
+            LoadTargetGroupComboBox();
+        }
+
+        if ((e.AddedItems.Count > 0) &&
+            (e.AddedItems[0] is TabItem added) &&
+            (added.Header.ToString() == "Keyboard Layout"))
+        {
+            LoadKeyboardLayoutTab();
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // LoadKeyboardLayoutTab
+    //
+    // Populates the page list on the Keyboard Layout tab. Loads all key pages from the
+    // database and marks the start page for the current profile.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void LoadKeyboardLayoutTab()
+    {
+        DebugLog.Write("ProfileDialog.LoadKeyboardLayoutTab: loading.");
+
+        var pageRepo = new KeyPageRepository();
+        var profileRepo = new CharacterSetRepository(ProfileName.Text);
+        int? startPageId = profileRepo.GetStartPageId();
+
+        var pageNames = pageRepo.GetPageNames();
+        var items = new List<KeyPageViewModel>();
+
+        foreach (var name in pageNames)
+        {
+            var page = pageRepo.GetPage(name);
+            if (page == null)
+            {
+                continue;
+            }
+
+            items.Add(new KeyPageViewModel
+            {
+                Id = page.Id,
+                Name = page.Name,
+                Device = page.Device,
+                IsStartPage = startPageId.HasValue && (page.Id == startPageId.Value)
+            });
+        }
+
+        PageListView.ItemsSource = items;
+        DebugLog.Write($"ProfileDialog.LoadKeyboardLayoutTab: loaded {items.Count} pages.");
     }
 
     // Records the start position for drag detection.
@@ -746,6 +820,102 @@ public partial class ProfileDialog : Window
         }
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // LoadBindingList
+    //
+    // Loads and displays all key bindings for the given page in the binding list.
+    //
+    // pageId:  The page whose bindings to load
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void LoadBindingList(int pageId)
+    {
+        DebugLog.Write($"ProfileDialog.LoadBindingList: pageId={pageId}.");
+
+        var repo = new KeyBindingRepository();
+        var bindings = repo.GetBindingsForPage(pageId);
+
+        var items = bindings.Select(b => new KeyBindingViewModel
+        {
+            Binding = b,
+            DisplayText = $"{b.Key}: {b.CommandType}: {b.Action}"
+        }).ToList();
+
+        BindingListView.ItemsSource = items;
+
+        DebugLog.Write($"ProfileDialog.LoadBindingList: loaded {items.Count} bindings.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // LoadTargetGroupComboBox
+    //
+    // Populates the TargetGroupComboBox from all relay groups in the database.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void LoadTargetGroupComboBox()
+    {
+        DebugLog.Write("ProfileDialog.LoadTargetGroupComboBox: loading.");
+
+        var repo = new RelayGroupRepository();
+        var groups = repo.GetAllGroupNames();
+
+        TargetGroupComboBox.Items.Clear();
+
+        foreach (var group in groups)
+        {
+            TargetGroupComboBox.Items.Add(new ComboBoxItem
+            {
+                Content = group.Name,
+                Tag = group.Id
+            });
+        }
+
+        if (TargetGroupComboBox.Items.Count > 0)
+        {
+            TargetGroupComboBox.SelectedIndex = 0;
+        }
+
+        DebugLog.Write($"ProfileDialog.LoadTargetGroupComboBox: loaded {groups.Count} groups.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // UpdateKeyButtonColors
+    //
+    // Updates the background color of all key buttons in the visible grid.
+    // Bound keys are green, unbound keys are grey.
+    // The selected key is set to blue by the caller after this method returns.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void UpdateKeyButtonColors()
+    {
+        Grid? activeGrid = null;
+
+        if (G13Grid.Visibility == Visibility.Visible)
+        {
+            activeGrid = G13Grid;
+        }
+        else if (G15Grid.Visibility == Visibility.Visible)
+        {
+            activeGrid = G15Grid;
+        }
+        else if (DominatorX36Grid.Visibility == Visibility.Visible)
+        {
+            activeGrid = DominatorX36Grid;
+        }
+
+        if (activeGrid == null)
+        {
+            return;
+        }
+
+        var boundKeys = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
+            ?.Select(b => b.Binding.Key)
+            .ToHashSet() ?? new HashSet<string>();
+
+        foreach (var child in activeGrid.Children.OfType<Button>())
+        {
+            string key = child.Tag?.ToString() ?? string.Empty;
+            child.Background = boundKeys.Contains(key) ? Brushes.Green : Brushes.LightGray;
+        }
+    }
+
     private void NewPage_Click(object sender, RoutedEventArgs e)
     {
     }
@@ -758,8 +928,29 @@ public partial class ProfileDialog : Window
     {
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // PageListView_SelectionChanged
+    //
+    // Fires when the user selects a page in the page list.
+    // Shows the key layout grid for the selected page's device and hides the others.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void PageListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (PageListView.SelectedItem is not KeyPageViewModel page)
+        {
+            G13Grid.Visibility = Visibility.Collapsed;
+            G15Grid.Visibility = Visibility.Collapsed;
+            DominatorX36Grid.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        DebugLog.Write($"ProfileDialog.PageListView_SelectionChanged: page='{page.Name}' device='{page.Device}'.");
+
+        G13Grid.Visibility = page.Device == "G13" ? Visibility.Visible : Visibility.Collapsed;
+        G15Grid.Visibility = page.Device == "G15" ? Visibility.Visible : Visibility.Collapsed;
+        DominatorX36Grid.Visibility = page.Device == "DominatorX36" ? Visibility.Visible : Visibility.Collapsed;
+
+        LoadBindingList(page.Id);
     }
 
     private void PageInProfile_Click(object sender, RoutedEventArgs e)
@@ -770,19 +961,220 @@ public partial class ProfileDialog : Window
     {
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // KeyButton_Click
+    //
+    // Fires when a key button is clicked in the key layout grid.
+    // Highlights the selected key and loads its binding into the binding editor.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void KeyButton_Click(object sender, RoutedEventArgs e)
     {
+        if (sender is not Button button)
+        {
+            return;
+        }
+
+        string key = button.Tag?.ToString() ?? string.Empty;
+        DebugLog.Write($"ProfileDialog.KeyButton_Click: key='{key}'.");
+
+        // Reset all key button backgrounds
+        UpdateKeyButtonColors();
+
+        // Highlight selected key
+        button.Background = Brushes.DodgerBlue;
+
+        // Update selected key label
+        SelectedKeyTextBlock.Text = key;
+
+        // Load existing binding if any
+        var binding = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
+            ?.FirstOrDefault(b => b.Binding.Key == key);
+
+        if (binding != null)
+        {
+            CommandTypeComboBox.SelectedItem = CommandTypeComboBox.Items
+                .OfType<ComboBoxItem>()
+                .FirstOrDefault(i => i.Content.ToString() == binding.Binding.CommandType);
+            ActionTextBox.Text = binding.Binding.Action;
+            RoundRobinCheckBox.IsChecked = binding.Binding.RoundRobin;
+        }
+        else
+        {
+            CommandTypeComboBox.SelectedIndex = 0;
+            ActionTextBox.Text = string.Empty;
+            RoundRobinCheckBox.IsChecked = false;
+        }
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // SaveBinding_Click
+    //
+    // Saves the current binding editor contents to the database for the selected key.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void SaveBinding_Click(object sender, RoutedEventArgs e)
     {
+        if (string.IsNullOrWhiteSpace(SelectedKeyTextBlock.Text))
+        {
+            DebugLog.Write("ProfileDialog.SaveBinding_Click: no key selected.");
+            MessageBox.Show("Please select a key first.", "No Key Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (PageListView.SelectedItem is not KeyPageViewModel page)
+        {
+            DebugLog.Write("ProfileDialog.SaveBinding_Click: no page selected.");
+            return;
+        }
+
+        string key = SelectedKeyTextBlock.Text;
+        string commandType = (CommandTypeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? string.Empty;
+        string action = ActionTextBox.Text;
+        bool roundRobin = RoundRobinCheckBox.IsChecked == true;
+
+        DebugLog.Write($"ProfileDialog.SaveBinding_Click: page={page.Id} key='{key}' commandType='{commandType}' action='{action}' roundRobin={roundRobin}.");
+
+        // Find existing binding for this key on this page
+        var existing = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
+            ?.FirstOrDefault(b => b.Binding.Key == key);
+
+        var binding = existing?.Binding ?? new KeyBinding { KeyPageId = page.Id, Key = key };
+        binding.CommandType = commandType;
+        binding.Action = action;
+        binding.RoundRobin = roundRobin;
+
+        var repo = new KeyBindingRepository();
+        repo.Save(binding);
+
+        DebugLog.Write($"ProfileDialog.SaveBinding_Click: saved. id={binding.Id}.");
+
+        LoadBindingList(page.Id);
+        UpdateKeyButtonColors();
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ClearBinding_Click
+    //
+    // Deletes the binding for the selected key from the database.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ClearBinding_Click(object sender, RoutedEventArgs e)
     {
+        if (string.IsNullOrWhiteSpace(SelectedKeyTextBlock.Text))
+        {
+            DebugLog.Write("ProfileDialog.ClearBinding_Click: no key selected.");
+            return;
+        }
+
+        if (PageListView.SelectedItem is not KeyPageViewModel page)
+        {
+            DebugLog.Write("ProfileDialog.ClearBinding_Click: no page selected.");
+            return;
+        }
+
+        string key = SelectedKeyTextBlock.Text;
+        DebugLog.Write($"ProfileDialog.ClearBinding_Click: page={page.Id} key='{key}'.");
+
+        var existing = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
+            ?.FirstOrDefault(b => b.Binding.Key == key);
+
+        if (existing == null)
+        {
+            DebugLog.Write("ProfileDialog.ClearBinding_Click: no binding found for key.");
+            return;
+        }
+
+        var repo = new KeyBindingRepository();
+        repo.Delete(existing.Binding.Id);
+
+        DebugLog.Write($"ProfileDialog.ClearBinding_Click: deleted. id={existing.Binding.Id}.");
+
+        ActionTextBox.Text = string.Empty;
+        RoundRobinCheckBox.IsChecked = false;
+        CommandTypeComboBox.SelectedIndex = 0;
+
+        LoadBindingList(page.Id);
+        UpdateKeyButtonColors();
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // BindingListView_SelectionChanged
+    //
+    // Fires when a binding is selected in the binding list.
+    // Highlights the corresponding key in the grid and loads the binding into the editor.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void BindingListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (BindingListView.SelectedItem is not KeyBindingViewModel item)
+        {
+            return;
+        }
+
+        DebugLog.Write($"ProfileDialog.BindingListView_SelectionChanged: key='{item.Binding.Key}'.");
+
+        // Update selected key label
+        SelectedKeyTextBlock.Text = item.Binding.Key;
+
+        // Update key button colors and highlight selected key
+        UpdateKeyButtonColors();
+
+        Grid? activeGrid = null;
+        if (G13Grid.Visibility == Visibility.Visible) activeGrid = G13Grid;
+        else if (G15Grid.Visibility == Visibility.Visible) activeGrid = G15Grid;
+        else if (DominatorX36Grid.Visibility == Visibility.Visible) activeGrid = DominatorX36Grid;
+
+        if (activeGrid != null)
+        {
+            var keyButton = activeGrid.Children.OfType<Button>()
+                .FirstOrDefault(b => b.Tag?.ToString() == item.Binding.Key);
+            if (keyButton != null)
+            {
+                keyButton.Background = Brushes.DodgerBlue;
+            }
+        }
+
+        // Load binding into editor
+        CommandTypeComboBox.SelectedItem = CommandTypeComboBox.Items
+            .OfType<ComboBoxItem>()
+            .FirstOrDefault(i => i.Content.ToString() == item.Binding.CommandType);
+        ActionTextBox.Text = item.Binding.Action;
+        RoundRobinCheckBox.IsChecked = item.Binding.RoundRobin;
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // PageComboBox_SelectionChanged
+    //
+    // Fires when the user selects a page from the page dropdown.
+    // Shows the key layout grid for the selected page's device and loads its bindings.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void PageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (PageComboBox.SelectedItem is not KeyPageViewModel page)
+        {
+            DebugLog.Write("ProfileDialog.PageComboBox_SelectionChanged: no page selected.");
+            G13Grid.Visibility = Visibility.Collapsed;
+            G15Grid.Visibility = Visibility.Collapsed;
+            DominatorX36Grid.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        DebugLog.Write($"ProfileDialog.PageComboBox_SelectionChanged: page='{page.Name}' device='{page.Device}'.");
+
+        G13Grid.Visibility = page.Device == "G13" ? Visibility.Visible : Visibility.Collapsed;
+        G15Grid.Visibility = page.Device == "G15" ? Visibility.Visible : Visibility.Collapsed;
+        DominatorX36Grid.Visibility = page.Device == "DominatorX36" ? Visibility.Visible : Visibility.Collapsed;
+
+        LoadBindingList(page.Id);
+        UpdateKeyButtonColors();
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ManagePages_Click
+    //
+    // Opens the Manage Pages dialog for creating and deleting key pages.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void ManagePages_Click(object sender, RoutedEventArgs e)
+    {
+        DebugLog.Write("ProfileDialog.ManagePages_Click: not yet implemented.");
+        MessageBox.Show("Manage Pages not yet implemented.", "Coming Soon", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 }

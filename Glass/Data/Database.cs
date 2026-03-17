@@ -78,6 +78,10 @@ public class Database
         {
             ApplyMigration(conn, 5, Migration_005);
         }
+        if (version < 6)
+        {
+            ApplyMigration(conn, 6, Migration_006);
+        }
     }
 
     private int GetSchemaVersion()
@@ -144,7 +148,9 @@ public class Database
     private const string Migration_005 = @"
     ALTER TABLE KeyBindings RENAME COLUMN params TO action;
 ";
-
+    private const string Migration_006 = @"
+    ALTER TABLE CharacterSets ADD COLUMN start_page_id INTEGER REFERENCES KeyPages(id);
+";
     private const string Schema = @"
         CREATE TABLE IF NOT EXISTS SchemaVersion (
             version     INTEGER NOT NULL,
