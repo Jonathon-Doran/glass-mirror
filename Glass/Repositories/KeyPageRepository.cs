@@ -106,6 +106,37 @@ public class KeyPageRepository
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // GetAllPages
+    //
+    // Returns all key pages ordered by device then name.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public List<KeyPage> GetAllPages()
+    {
+        DebugLog.Write(DebugLog.Log_Database, "KeyPageRepository.GetAllPages: loading.");
+
+        using var conn = Database.Instance.Connect();
+        conn.Open();
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT id, name, device FROM KeyPages ORDER BY device, name";
+
+        var pages = new List<KeyPage>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            pages.Add(new KeyPage
+            {
+                Id = reader.GetInt32(0),
+                Name = reader.GetString(1),
+                Device = reader.GetString(2)
+            });
+        }
+
+        DebugLog.Write(DebugLog.Log_Database, $"KeyPageRepository.GetAllPages: found {pages.Count} pages.");
+        return pages;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Save
     //
     // Inserts or updates a key page. If the page has an ID of 0, inserts a new record

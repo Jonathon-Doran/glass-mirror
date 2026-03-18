@@ -82,6 +82,10 @@ public class Database
         {
             ApplyMigration(conn, 6, Migration_006);
         }
+        if (version < 7)
+        {
+            ApplyMigration(conn, 7, Migration_007);
+        }
     }
 
     private int GetSchemaVersion()
@@ -151,6 +155,41 @@ public class Database
     private const string Migration_006 = @"
     ALTER TABLE CharacterSets ADD COLUMN start_page_id INTEGER REFERENCES KeyPages(id);
 ";
+
+    private const string Migration_007 = @"
+    CREATE TABLE IF NOT EXISTS Commands (
+        id      INTEGER PRIMARY KEY,
+        name    TEXT NOT NULL UNIQUE
+    );
+
+    CREATE TABLE IF NOT EXISTS CommandSteps (
+        id          INTEGER PRIMARY KEY,
+        command_id  INTEGER NOT NULL REFERENCES Commands(id),
+        sequence    INTEGER NOT NULL,
+        type        TEXT NOT NULL,
+        value       TEXT NOT NULL,
+        delay_ms    INTEGER NOT NULL DEFAULT 0,
+        UNIQUE (command_id, sequence)
+    );
+
+    CREATE TABLE IF NOT EXISTS KeyBindings_new (
+        id          INTEGER PRIMARY KEY,
+        key_page_id INTEGER NOT NULL REFERENCES KeyPages(id),
+        key         TEXT NOT NULL,
+        command_id  INTEGER REFERENCES Commands(id),
+        target      TEXT NOT NULL DEFAULT 'self',
+        round_robin INTEGER NOT NULL DEFAULT 0,
+        UNIQUE (key_page_id, key)
+    );
+
+    INSERT INTO KeyBindings_new (id, key_page_id, key, round_robin)
+    SELECT id, key_page_id, key, round_robin FROM KeyBindings;
+
+    DROP TABLE KeyBindings;
+
+    ALTER TABLE KeyBindings_new RENAME TO KeyBindings;
+";
+
     private const string Schema = @"
         CREATE TABLE IF NOT EXISTS SchemaVersion (
             version     INTEGER NOT NULL,

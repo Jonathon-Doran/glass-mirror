@@ -14,21 +14,7 @@ public class KeyBinding
     public int Id { get; set; }
     public int KeyPageId { get; set; }
     public string Key { get; set; } = string.Empty;
-    public string CommandType { get; set; } = string.Empty;
-
-    /// <summary>
-    /// If set, this binding sends to a relay group rather than a specific character.
-    /// </summary>
-    public int? RelayGroupId { get; set; }
-    public RelayGroup? RelayGroup { get; set; }
-
-    /// <summary>
-    /// If true, cycles through relay group members one at a time rather than broadcasting.
-    /// </summary>
+    public int? CommandId { get; set; }
+    public string Target { get; set; } = "self";
     public bool RoundRobin { get; set; }
-
-    /// <summary>
-    /// The keystroke combo or text string to execute when this binding fires.
-    /// </summary>
-    public string? Action { get; set; }
 }

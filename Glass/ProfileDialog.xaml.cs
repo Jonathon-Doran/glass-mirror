@@ -326,6 +326,8 @@ public partial class ProfileDialog : Window
         if (KeyboardLayoutTab.IsSelected)
         {
             LoadTargetGroupComboBox();
+            LoadPageComboBox();
+            LoadCommandComboBox();
         }
 
         if ((e.AddedItems.Count > 0) &&
@@ -333,6 +335,24 @@ public partial class ProfileDialog : Window
             (added.Header.ToString() == "Keyboard Layout"))
         {
             LoadKeyboardLayoutTab();
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // CommandTypeComboBox_SelectionChanged
+    //
+    // Fires when the user selects a command. Opens Manage Commands if that option is selected.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void CommandTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CommandTypeComboBox.SelectedItem is ComboBoxItem item &&
+            item.Content.ToString() == "Manage Commands...")
+        {
+            DebugLog.Write("ProfileDialog.CommandTypeComboBox_SelectionChanged: opening ManageCommandsDialog.");
+            CommandTypeComboBox.SelectedIndex = 2;
+            var dialog = new ManageCommandsDialog { Owner = this };
+            dialog.ShowDialog();
+            LoadCommandComboBox();
         }
     }
 
@@ -834,10 +854,13 @@ public partial class ProfileDialog : Window
         var repo = new KeyBindingRepository();
         var bindings = repo.GetBindingsForPage(pageId);
 
+        var commandRepo = new CommandRepository();
+        var commands = commandRepo.GetAllCommands().ToDictionary(c => c.Id, c => c.Name);
+
         var items = bindings.Select(b => new KeyBindingViewModel
         {
             Binding = b,
-            DisplayText = $"{b.Key}: {b.CommandType}: {b.Action}"
+            DisplayText = $"{b.Key}: {(b.CommandId.HasValue && commands.ContainsKey(b.CommandId.Value) ? commands[b.CommandId.Value] : "unbound")}: {b.Target}"
         }).ToList();
 
         BindingListView.ItemsSource = items;
@@ -876,6 +899,81 @@ public partial class ProfileDialog : Window
         DebugLog.Write($"ProfileDialog.LoadTargetGroupComboBox: loaded {groups.Count} groups.");
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // LoadPageComboBox
+    //
+    // Populates the PageComboBox from all key pages in the database.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void LoadPageComboBox()
+    {
+        DebugLog.Write("ProfileDialog.LoadPageComboBox: loading.");
+
+        var repo = new KeyPageRepository();
+        var pages = repo.GetAllPages();
+
+        PageComboBox.Items.Clear();
+
+        PageComboBox.Items.Add(new ComboBoxItem
+        {
+            Content = "Manage Pages..."
+        });
+        PageComboBox.Items.Add(new Separator());
+
+        foreach (var page in pages)
+        {
+            PageComboBox.Items.Add(new ComboBoxItem
+            {
+                Content = $"{page.Name} ({page.Device})",
+                Tag = page.Name
+            });
+        }
+
+        if (PageComboBox.Items.Count > 2)
+        {
+            PageComboBox.SelectedIndex = 2;
+            DebugLog.Write("ProfileDialog.LoadPageComboBox: defaulted to first item.");
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // LoadCommandComboBox
+    //
+    // Populates the CommandTypeComboBox from all commands in the database.
+    // "Manage Commands..." is the first item.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void LoadCommandComboBox()
+    {
+        DebugLog.Write("ProfileDialog.LoadCommandComboBox: loading.");
+
+        var repo = new CommandRepository();
+        var commands = repo.GetAllCommands();
+
+        CommandTypeComboBox.Items.Clear();
+
+        CommandTypeComboBox.Items.Add(new ComboBoxItem
+        {
+            Content = "Manage Commands..."
+        });
+        CommandTypeComboBox.Items.Add(new Separator());
+
+        foreach (var command in commands)
+        {
+            CommandTypeComboBox.Items.Add(new ComboBoxItem
+            {
+                Content = command.Name,
+                Tag = command.Id
+            });
+        }
+
+        if (CommandTypeComboBox.Items.Count > 2)
+        {
+            CommandTypeComboBox.SelectedIndex = 2;
+            DebugLog.Write("ProfileDialog.LoadCommandComboBox: defaulted to first command.");
+        }
+
+        DebugLog.Write($"ProfileDialog.LoadCommandComboBox: loaded {commands.Count} commands.");
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // UpdateKeyButtonColors
     //
@@ -912,7 +1010,7 @@ public partial class ProfileDialog : Window
         foreach (var child in activeGrid.Children.OfType<Button>())
         {
             string key = child.Tag?.ToString() ?? string.Empty;
-            child.Background = boundKeys.Contains(key) ? Brushes.Green : Brushes.LightGray;
+            child.Background = boundKeys.Contains(key) ? Brushes.Green : new SolidColorBrush(Color.FromRgb(80, 80, 80));
         }
     }
 
@@ -977,16 +1075,10 @@ public partial class ProfileDialog : Window
         string key = button.Tag?.ToString() ?? string.Empty;
         DebugLog.Write($"ProfileDialog.KeyButton_Click: key='{key}'.");
 
-        // Reset all key button backgrounds
         UpdateKeyButtonColors();
-
-        // Highlight selected key
         button.Background = Brushes.DodgerBlue;
-
-        // Update selected key label
         SelectedKeyTextBlock.Text = key;
 
-        // Load existing binding if any
         var binding = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
             ?.FirstOrDefault(b => b.Binding.Key == key);
 
@@ -994,18 +1086,19 @@ public partial class ProfileDialog : Window
         {
             CommandTypeComboBox.SelectedItem = CommandTypeComboBox.Items
                 .OfType<ComboBoxItem>()
-                .FirstOrDefault(i => i.Content.ToString() == binding.Binding.CommandType);
-            ActionTextBox.Text = binding.Binding.Action;
+                .FirstOrDefault(i => (int?)((ComboBoxItem)i).Tag == binding.Binding.CommandId);
+            TargetGroupComboBox.SelectedItem = TargetGroupComboBox.Items
+                .OfType<ComboBoxItem>()
+                .FirstOrDefault(i => i.Content.ToString() == binding.Binding.Target);
             RoundRobinCheckBox.IsChecked = binding.Binding.RoundRobin;
         }
         else
         {
             CommandTypeComboBox.SelectedIndex = 0;
-            ActionTextBox.Text = string.Empty;
+            TargetGroupComboBox.SelectedIndex = 0;
             RoundRobinCheckBox.IsChecked = false;
         }
     }
-
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // SaveBinding_Click
     //
@@ -1020,26 +1113,35 @@ public partial class ProfileDialog : Window
             return;
         }
 
-        if (PageListView.SelectedItem is not KeyPageViewModel page)
+        if (PageComboBox.SelectedItem is not ComboBoxItem pageItem || pageItem.Tag == null)
         {
             DebugLog.Write("ProfileDialog.SaveBinding_Click: no page selected.");
             return;
         }
 
+        string pageName = pageItem.Tag.ToString() ?? string.Empty;
+        var pageRepo = new KeyPageRepository();
+        var page = pageRepo.GetPage(pageName);
+
+        if (page == null)
+        {
+            DebugLog.Write($"ProfileDialog.SaveBinding_Click: page '{pageName}' not found.");
+            return;
+        }
+
         string key = SelectedKeyTextBlock.Text;
-        string commandType = (CommandTypeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? string.Empty;
-        string action = ActionTextBox.Text;
+        int? commandId = (CommandTypeComboBox.SelectedItem as ComboBoxItem)?.Tag is int id ? id : null;
+        string target = (TargetGroupComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "self";
         bool roundRobin = RoundRobinCheckBox.IsChecked == true;
 
-        DebugLog.Write($"ProfileDialog.SaveBinding_Click: page={page.Id} key='{key}' commandType='{commandType}' action='{action}' roundRobin={roundRobin}.");
+        DebugLog.Write($"ProfileDialog.SaveBinding_Click: page={page.Id} key='{key}' commandId={commandId} target='{target}' roundRobin={roundRobin}.");
 
-        // Find existing binding for this key on this page
         var existing = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
             ?.FirstOrDefault(b => b.Binding.Key == key);
 
         var binding = existing?.Binding ?? new KeyBinding { KeyPageId = page.Id, Key = key };
-        binding.CommandType = commandType;
-        binding.Action = action;
+        binding.CommandId = commandId;
+        binding.Target = target;
         binding.RoundRobin = roundRobin;
 
         var repo = new KeyBindingRepository();
@@ -1110,16 +1212,23 @@ public partial class ProfileDialog : Window
 
         DebugLog.Write($"ProfileDialog.BindingListView_SelectionChanged: key='{item.Binding.Key}'.");
 
-        // Update selected key label
         SelectedKeyTextBlock.Text = item.Binding.Key;
 
-        // Update key button colors and highlight selected key
         UpdateKeyButtonColors();
 
         Grid? activeGrid = null;
-        if (G13Grid.Visibility == Visibility.Visible) activeGrid = G13Grid;
-        else if (G15Grid.Visibility == Visibility.Visible) activeGrid = G15Grid;
-        else if (DominatorX36Grid.Visibility == Visibility.Visible) activeGrid = DominatorX36Grid;
+        if (G13Grid.Visibility == Visibility.Visible)
+        {
+            activeGrid = G13Grid;
+        }
+        else if (G15Grid.Visibility == Visibility.Visible)
+        {
+            activeGrid = G15Grid;
+        }
+        else if (DominatorX36Grid.Visibility == Visibility.Visible)
+        {
+            activeGrid = DominatorX36Grid;
+        }
 
         if (activeGrid != null)
         {
@@ -1131,11 +1240,12 @@ public partial class ProfileDialog : Window
             }
         }
 
-        // Load binding into editor
         CommandTypeComboBox.SelectedItem = CommandTypeComboBox.Items
             .OfType<ComboBoxItem>()
-            .FirstOrDefault(i => i.Content.ToString() == item.Binding.CommandType);
-        ActionTextBox.Text = item.Binding.Action;
+            .FirstOrDefault(i => (int?)((ComboBoxItem)i).Tag == item.Binding.CommandId);
+        TargetGroupComboBox.SelectedItem = TargetGroupComboBox.Items
+            .OfType<ComboBoxItem>()
+            .FirstOrDefault(i => i.Content.ToString() == item.Binding.Target);
         RoundRobinCheckBox.IsChecked = item.Binding.RoundRobin;
     }
 
@@ -1148,12 +1258,35 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void PageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (PageComboBox.SelectedItem is not KeyPageViewModel page)
+        if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
+        {
+            return;
+        }
+
+        if (PageComboBox.SelectedItem is not ComboBoxItem item)
         {
             DebugLog.Write("ProfileDialog.PageComboBox_SelectionChanged: no page selected.");
             G13Grid.Visibility = Visibility.Collapsed;
             G15Grid.Visibility = Visibility.Collapsed;
             DominatorX36Grid.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        if (item.Content.ToString() == "Manage Pages...")
+        {
+            DebugLog.Write("ProfileDialog.PageComboBox_SelectionChanged: Manage Pages selected.");
+            PageComboBox.SelectedIndex = 0;
+            ManagePages_Click(sender, e);
+            return;
+        }
+
+        string name = item.Tag?.ToString() ?? string.Empty;
+        var repo = new KeyPageRepository();
+        var page = repo.GetPage(name);
+
+        if (page == null)
+        {
+            DebugLog.Write($"ProfileDialog.PageComboBox_SelectionChanged: page '{name}' not found in database.");
             return;
         }
 
