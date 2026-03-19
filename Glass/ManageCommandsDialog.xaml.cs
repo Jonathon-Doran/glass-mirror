@@ -103,6 +103,7 @@ public partial class ManageCommandsDialog : Window
         NewRenameButton.Content = "Rename";
         NewRenameButton.IsEnabled = true;
         CommandNameTextBox.Text = command.Name;
+        ClearStepSelection();
         LoadStepList();
     }
 
@@ -309,11 +310,7 @@ public partial class ManageCommandsDialog : Window
             DebugLog.Write($"ManageCommandsDialog.NewRename_Click: created. id={command.Id}.");
 
             LoadCommandList();
-
-            _suppressNameLostFocus = true;
-            CommandListView.SelectedItem = (CommandListView.ItemsSource as List<Command>)
-                ?.FirstOrDefault(c => c.Id == command.Id);
-            _suppressNameLostFocus = false;
+            ClearSelection();
         }
         else
         {
@@ -686,6 +683,16 @@ public partial class ManageCommandsDialog : Window
             .FirstOrDefault(i => i.Content.ToString() == item.Step.Type);
         StepValueTextBox.Text = item.Step.Value;
         StepDelayTextBox.Text = item.Step.DelayMs.ToString();
+
+        if (_selectedStep.Type == "pageload" && int.TryParse(_selectedStep.Value, out int pageId))
+        {
+            StepValueTextBox.Text = _selectedStep.Value;
+            DebugLog.Write($"ManageCommandsDialog.StepListView_SelectionChanged: resolved pageload id={pageId} to '{StepValueTextBox.Text}'.");
+        }
+        else
+        {
+            StepValueTextBox.Text = _selectedStep.Value;
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////

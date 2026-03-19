@@ -35,6 +35,12 @@
                           KeyDown="CommandListView_KeyDown"
                           MouseDown="CommandListView_MouseDown"
                           ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="4,2,4,2"/>
+                            <Setter Property="MinHeight" Value="0"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Name}"/>
@@ -84,6 +90,12 @@
                       KeyDown="StepListView_KeyDown"
                       MouseDown="StepListView_MouseDown"
                       ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="4,2,4,2"/>
+                            <Setter Property="MinHeight" Value="0"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding DisplayText}"/>
@@ -104,6 +116,7 @@
                 <ComboBox x:Name="StepTypeComboBox" SelectedIndex="0">
                     <ComboBoxItem Content="text"/>
                     <ComboBoxItem Content="key"/>
+                    <ComboBoxItem Content="pageload"/>
                 </ComboBox>
             </DockPanel>
 

@@ -86,6 +86,10 @@ public class Database
         {
             ApplyMigration(conn, 7, Migration_007);
         }
+        if (version < 8)
+        {
+            ApplyMigration(conn, 8, Migration_008);
+        }
     }
 
     private int GetSchemaVersion()
@@ -123,7 +127,7 @@ public class Database
 
     private const string Migration_002 = @"
     ALTER TABLE Characters ADD COLUMN server TEXT NOT NULL DEFAULT 'Test';
-";
+    ";
     private const string Migration_003 = @"
     CREATE TABLE IF NOT EXISTS CharacterSetSlots (
         id                  INTEGER PRIMARY KEY,
@@ -133,7 +137,7 @@ public class Database
         UNIQUE (character_set_id, slot_number),
         UNIQUE (character_set_id, character_id)
     );
-";
+    ";
 
     private const string Migration_004 = @"
     CREATE TABLE IF NOT EXISTS WindowLayouts_new (
@@ -147,14 +151,14 @@ public class Database
     INSERT INTO WindowLayouts_new SELECT * FROM WindowLayouts;
     DROP TABLE WindowLayouts;
     ALTER TABLE WindowLayouts_new RENAME TO WindowLayouts;
-";
+    ";
 
     private const string Migration_005 = @"
     ALTER TABLE KeyBindings RENAME COLUMN params TO action;
-";
+    ";
     private const string Migration_006 = @"
     ALTER TABLE CharacterSets ADD COLUMN start_page_id INTEGER REFERENCES KeyPages(id);
-";
+    ";
 
     private const string Migration_007 = @"
     CREATE TABLE IF NOT EXISTS Commands (
@@ -188,7 +192,15 @@ public class Database
     DROP TABLE KeyBindings;
 
     ALTER TABLE KeyBindings_new RENAME TO KeyBindings;
-";
+    ";
+
+    private const string Migration_008 = @"
+    CREATE TABLE IF NOT EXISTS KeyAliases (
+        id      INTEGER PRIMARY KEY,
+        name    TEXT NOT NULL UNIQUE,
+        value   TEXT NOT NULL
+    );
+    ";
 
     private const string Schema = @"
         CREATE TABLE IF NOT EXISTS SchemaVersion (

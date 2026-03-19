@@ -571,6 +571,32 @@ public partial class MainWindow : Window
         DebugLog.Write(DebugLog.Log_Input, "Status requested.");
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // MenuItem_ManageCommands_Click
+    //
+    // Opens the Manage Commands dialog.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void MenuItem_ManageCommands_Click(object sender, RoutedEventArgs e)
+    {
+        DebugLog.Write("MainWindow.MenuItem_ManageCommands_Click: opening ManageCommandsDialog.");
+        var dialog = new ManageCommandsDialog { Owner = this };
+        dialog.ShowDialog();
+        DebugLog.Write("MainWindow.MenuItem_ManageCommands_Click: dialog closed.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // MenuItem_ManageKeyAliases_Click
+    //
+    // Opens the Manage Key Aliases dialog.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void MenuItem_ManageKeyAliases_Click(object sender, RoutedEventArgs e)
+    {
+        DebugLog.Write("MainWindow.MenuItem_ManageKeyAliases_Click: opening ManageKeyAliasesDialog.");
+        var dialog = new ManageKeyAliasesDialog { Owner = this };
+        dialog.ShowDialog();
+        DebugLog.Write("MainWindow.MenuItem_ManageKeyAliases_Click: dialog closed.");
+    }
+
     // Placeholder for EQ UI file generation.
     private void MenuItem_GenerateEQUI_Click(object sender, RoutedEventArgs e) { }
 }

@@ -35,6 +35,7 @@ public partial class ProfileDialog : Window
     public ObservableCollection<ComboBoxItem> MonitorComboBoxItems { get; set; } = new();
     public List<EnumeratedMonitor> EnumeratedDevices { get; set; } = new();
     public LayoutManager LayoutSettings { get; set; } = new();
+    private readonly CharacterRepository _characterRepo = new CharacterRepository();
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /// ProfileDialog
@@ -62,7 +63,22 @@ public partial class ProfileDialog : Window
             foreach (var slot in repo.GetSlots())
             {
                 _slotAssignments.Add(slot);
+                var character = _characterRepo.GetById(slot.CharacterId);
+                DebugLog.Write($"ProfileDialog: slot={slot.SlotNumber} characterId={slot.CharacterId} name='{character?.Name}'.");
             }
+
+            CharacterSlotsListView.ItemsSource = _slotAssignments.Select(s =>
+            {
+                var character = _characterRepo.GetById(s.CharacterId);
+                return new SlotAssignmentViewModel
+                {
+                    SlotNumber = s.SlotNumber,
+                    CharacterId = s.CharacterId,
+                    CharacterName = character?.Name ?? "(unknown)",
+                    ClassName = character?.Class.ToString() ?? string.Empty,
+                    AccountId = character?.AccountId ?? 0
+                };
+            }).ToList();
             PopulateCharacterList(repo.GetSlots());
         }
 
@@ -155,7 +171,19 @@ public partial class ProfileDialog : Window
         }
 
         ReassignSlotNumbers();
-        CharacterSlotsListView.ItemsSource = _slotAssignments;
+
+        CharacterSlotsListView.ItemsSource = _slotAssignments.Select(s =>
+        {
+            var character = _characterRepo.GetById(s.CharacterId);
+            return new SlotAssignmentViewModel
+            {
+                SlotNumber = s.SlotNumber,
+                CharacterId = s.CharacterId,
+                CharacterName = character?.Name ?? "(unknown)",
+                ClassName = character?.Class.ToString() ?? string.Empty,
+                AccountId = character?.AccountId ?? 0
+            };
+        }).ToList();
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -345,15 +373,32 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void CommandTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (CommandTypeComboBox.SelectedItem is ComboBoxItem item &&
-            item.Content.ToString() == "Manage Commands...")
+        if (!CommandTypeComboBox.IsDropDownOpen)
         {
-            DebugLog.Write("ProfileDialog.CommandTypeComboBox_SelectionChanged: opening ManageCommandsDialog.");
-            CommandTypeComboBox.SelectedIndex = 2;
-            var dialog = new ManageCommandsDialog { Owner = this };
-            dialog.ShowDialog();
-            LoadCommandComboBox();
+            DebugLog.Write("ProfileDialog.CommandTypeComboBox_SelectionChanged: dropdown not open, ignoring.");
+            return;
         }
+
+        if (e.AddedItems.Count == 0)
+        {
+            DebugLog.Write("ProfileDialog.CommandTypeComboBox_SelectionChanged: no items added.");
+            return;
+        }
+
+        if (CommandTypeComboBox.SelectedItem is not ComboBoxItem item ||
+            item.Content.ToString() != "Manage Commands...")
+        {
+            return;
+        }
+
+        DebugLog.Write("ProfileDialog.CommandTypeComboBox_SelectionChanged: opening ManageCommandsDialog.");
+
+        CommandTypeComboBox.IsDropDownOpen = false;
+        CommandTypeComboBox.SelectedIndex = 0;
+
+        var dialog = new ManageCommandsDialog { Owner = this };
+        dialog.ShowDialog();
+        LoadCommandComboBox();
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -857,11 +902,18 @@ public partial class ProfileDialog : Window
         var commandRepo = new CommandRepository();
         var commands = commandRepo.GetAllCommands().ToDictionary(c => c.Id, c => c.Name);
 
-        var items = bindings.Select(b => new KeyBindingViewModel
-        {
-            Binding = b,
-            DisplayText = $"{b.Key}: {(b.CommandId.HasValue && commands.ContainsKey(b.CommandId.Value) ? commands[b.CommandId.Value] : "unbound")}: {b.Target}"
-        }).ToList();
+        var items = bindings
+            .OrderBy(b =>
+            {
+                var digits = new string(b.Key.Where(char.IsDigit).ToArray());
+                return int.TryParse(digits, out int n) ? n : 0;
+            })
+            .ThenBy(b => b.Key)
+            .Select(b => new KeyBindingViewModel
+            {
+                Binding = b,
+                DisplayText = $"{b.Key}: {(b.CommandId.HasValue && commands.ContainsKey(b.CommandId.Value) ? commands[b.CommandId.Value] : "unbound")}: {b.Target}{(b.RoundRobin ? " [RR]" : "")}"
+            }).ToList();
 
         BindingListView.ItemsSource = items;
 
@@ -881,6 +933,12 @@ public partial class ProfileDialog : Window
         var groups = repo.GetAllGroupNames();
 
         TargetGroupComboBox.Items.Clear();
+
+        TargetGroupComboBox.Items.Add(new ComboBoxItem
+        {
+            Content = "Self",
+            Tag = "Self"
+        });
 
         foreach (var group in groups)
         {
@@ -1166,9 +1224,19 @@ public partial class ProfileDialog : Window
             return;
         }
 
-        if (PageListView.SelectedItem is not KeyPageViewModel page)
+        if (PageComboBox.SelectedItem is not ComboBoxItem pageItem || pageItem.Tag == null)
         {
             DebugLog.Write("ProfileDialog.ClearBinding_Click: no page selected.");
+            return;
+        }
+
+        string pageName = pageItem.Tag.ToString() ?? string.Empty;
+        var pageRepo = new KeyPageRepository();
+        var page = pageRepo.GetPage(pageName);
+
+        if (page == null)
+        {
+            DebugLog.Write($"ProfileDialog.ClearBinding_Click: page '{pageName}' not found.");
             return;
         }
 
@@ -1189,9 +1257,9 @@ public partial class ProfileDialog : Window
 
         DebugLog.Write($"ProfileDialog.ClearBinding_Click: deleted. id={existing.Binding.Id}.");
 
-        ActionTextBox.Text = string.Empty;
-        RoundRobinCheckBox.IsChecked = false;
         CommandTypeComboBox.SelectedIndex = 0;
+        TargetGroupComboBox.SelectedIndex = 0;
+        RoundRobinCheckBox.IsChecked = false;
 
         LoadBindingList(page.Id);
         UpdateKeyButtonColors();
@@ -1265,10 +1333,10 @@ public partial class ProfileDialog : Window
 
         if (PageComboBox.SelectedItem is not ComboBoxItem item)
         {
-            DebugLog.Write("ProfileDialog.PageComboBox_SelectionChanged: no page selected.");
             G13Grid.Visibility = Visibility.Collapsed;
             G15Grid.Visibility = Visibility.Collapsed;
             DominatorX36Grid.Visibility = Visibility.Collapsed;
+            DeviceLabel.Visibility = Visibility.Collapsed;
             return;
         }
 
@@ -1294,7 +1362,10 @@ public partial class ProfileDialog : Window
 
         G13Grid.Visibility = page.Device == "G13" ? Visibility.Visible : Visibility.Collapsed;
         G15Grid.Visibility = page.Device == "G15" ? Visibility.Visible : Visibility.Collapsed;
-        DominatorX36Grid.Visibility = page.Device == "DominatorX36" ? Visibility.Visible : Visibility.Collapsed;
+        DominatorX36Grid.Visibility = page.Device == "Dominator X36" ? Visibility.Visible : Visibility.Collapsed;
+
+        DeviceLabel.Text = page.Device;
+        DeviceLabel.Visibility = Visibility.Visible;
 
         LoadBindingList(page.Id);
         UpdateKeyButtonColors();
@@ -1303,11 +1374,16 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ManagePages_Click
     //
-    // Opens the Manage Pages dialog for creating and deleting key pages.
+    // Opens the Manage Pages dialog and refreshes the page combobox on return.
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ManagePages_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ProfileDialog.ManagePages_Click: not yet implemented.");
-        MessageBox.Show("Manage Pages not yet implemented.", "Coming Soon", MessageBoxButton.OK, MessageBoxImage.Information);
+        DebugLog.Write("ProfileDialog.ManagePages_Click: opening ManagePagesDialog.");
+
+        var dialog = new ManagePagesDialog { Owner = this };
+        dialog.ShowDialog();
+
+        DebugLog.Write("ProfileDialog.ManagePages_Click: dialog closed, refreshing page list.");
+        LoadPageComboBox();
     }
 }

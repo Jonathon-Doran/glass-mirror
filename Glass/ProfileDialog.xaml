@@ -74,11 +74,11 @@
                             <GridViewColumn Header="Slot" Width="50" 
                                 DisplayMemberBinding="{Binding SlotNumber}"/>
                             <GridViewColumn Header="Name" Width="150" 
-                                DisplayMemberBinding="{Binding Character.Name}"/>
+                                DisplayMemberBinding="{Binding CharacterName}"/>
                             <GridViewColumn Header="Class" Width="100" 
-                                DisplayMemberBinding="{Binding Character.Class}"/>
+                                DisplayMemberBinding="{Binding ClassName}"/>
                             <GridViewColumn Header="Account" Width="100" 
-                                DisplayMemberBinding="{Binding Character.AccountId}"/>
+                                DisplayMemberBinding="{Binding AccountId}"/>
                         </GridView>
                     </ListView.View>
                 </ListView>
@@ -194,7 +194,9 @@
                 <Grid Margin="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="28"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="4"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="8"/>
                         <RowDefinition Height="Auto"/>
@@ -225,8 +227,12 @@
                         </ListView>
                     </StackPanel>
 
+                    <TextBlock x:Name="DeviceLabel" Grid.Row="2"
+                           FontWeight="Bold" HorizontalAlignment="Left"
+                           Visibility="Collapsed"/>
+                    
                     <!-- Middle: key grid left, binding list right -->
-                    <Grid Grid.Row="2">
+                    <Grid Grid.Row="4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="500"/>
                             <ColumnDefinition Width="*"/>
@@ -386,8 +392,13 @@
                             <ListView Grid.Column="1" x:Name="BindingListView"
                                       SelectionChanged="BindingListView_SelectionChanged"
                                       ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                      VirtualizingPanel.IsVirtualizing="True">
+                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="Padding" Value="4,2,4,2"/>
+                                        <Setter Property="MinHeight" Value="0"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding DisplayText}"/>
@@ -399,7 +410,7 @@
                     </Grid>
 
                     <!-- Bottom: binding editor -->
-                    <Grid Grid.Row="4" Margin="0,4,0,0">
+                    <Grid Grid.Row="6" Margin="0,4,0,0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="6"/>

@@ -3,12 +3,15 @@
 Windows not positioned correctly
 
 Glass:
-Profile editor allows selecting multiple characters from the same account
-Launch dialog not hooked up
-Profile edit dialog not hooked up
 No way to delete a profile
 
 ISXGlass:
 File virtualization behavior is suspect — noted but not investigated
 
 Subsampling not in
+
+
+Variables
+
+driver.name
+driver.shortname
