@@ -28,7 +28,10 @@ public:
     ID3D11RenderTargetView* GetRenderTargetView() const;
     QuadRenderer& GetQuadRenderer();
 
+    ID3D11ShaderResourceView* GetBlackSRV() const;
+
 private:
+
     bool CreateRenderTarget();
     void ReleaseRenderTarget();
 
@@ -37,6 +40,7 @@ private:
     IDXGISwapChain* _swapChain;
     ID3D11RenderTargetView* _renderTargetView;
     QuadRenderer            _quadRenderer;
+    ID3D11ShaderResourceView* _blackSRV;
 
     int _width;
     int _height;

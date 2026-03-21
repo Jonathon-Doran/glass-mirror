@@ -115,7 +115,11 @@ void VideoWindow::Render()
 
         if (!srv)
         {
-            continue;
+            srv = _renderer.GetBlackSRV();
+            if (!srv)
+            {
+                continue;
+            }
         }
 
         D3D11_VIEWPORT vp = {};
@@ -127,8 +131,8 @@ void VideoWindow::Render()
         vp.MaxDepth = 1.0f;
         _renderer.GetContext()->RSSetViewports(1, &vp);
 
-        // float topCropUV = 100.0f / (float)slot->capture.GetHeight();
-        float topCropUV = 0.0f;
+        float topCropUV = 100.0f / (float)slot->capture.GetHeight();
+        //float topCropUV = 0.0f;
         _renderer.GetQuadRenderer().Render(_renderer.GetContext(), srv, topCropUV);
     }
 

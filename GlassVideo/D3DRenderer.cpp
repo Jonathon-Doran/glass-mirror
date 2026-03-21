@@ -10,6 +10,7 @@ D3DRenderer::D3DRenderer()
     , _context(nullptr)
     , _swapChain(nullptr)
     , _renderTargetView(nullptr)
+    , _blackSRV(nullptr)
     , _width(0)
     , _height(0)
 {
@@ -88,6 +89,43 @@ bool D3DRenderer::Initialize(HWND hwnd, int width, int height)
 
     Logger::Instance().Write("D3DRenderer: QuadRenderer initialized.");
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Create a 1x1 black texture for clearing empty slots.
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    D3D11_TEXTURE2D_DESC td = {};
+    td.Width = 1;
+    td.Height = 1;
+    td.MipLevels = 1;
+    td.ArraySize = 1;
+    td.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    td.SampleDesc.Count = 1;
+    td.Usage = D3D11_USAGE_IMMUTABLE;
+    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    uint32_t blackPixel = 0xFF000000;
+    D3D11_SUBRESOURCE_DATA initData = {};
+    initData.pSysMem = &blackPixel;
+    initData.SysMemPitch = sizeof(uint32_t);
+
+    ID3D11Texture2D* blackTex = nullptr;
+    hr = _device->CreateTexture2D(&td, &initData, &blackTex);
+    if (FAILED(hr))
+    {
+        Logger::Instance().Write("D3DRenderer: CreateTexture2D for black SRV failed: 0x%08X", hr);
+        return false;
+    }
+
+    hr = _device->CreateShaderResourceView(blackTex, nullptr, &_blackSRV);
+    blackTex->Release();
+    if (FAILED(hr))
+    {
+        Logger::Instance().Write("D3DRenderer: CreateShaderResourceView for black SRV failed: 0x%08X", hr);
+        return false;
+    }
+
+    Logger::Instance().Write("D3DRenderer: black SRV created.");
+
+
     Logger::Instance().Write("D3DRenderer: initialized. width=%d height=%d", width, height);
     return true;
 }
@@ -120,7 +158,11 @@ void D3DRenderer::Shutdown()
         _device->Release();
         _device = nullptr;
     }
-
+    if (_blackSRV)
+    {
+        _blackSRV->Release();
+        _blackSRV = nullptr;
+    }
     Logger::Instance().Write("D3DRenderer: shutdown complete.");
 }
 
@@ -182,6 +224,16 @@ void D3DRenderer::Present()
 ID3D11Device* D3DRenderer::GetDevice() const
 {
     return _device;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// GetBlackSRV
+//
+// Returns a 1x1 black shader resource view for rendering into empty slots.
+////////////////////////////////////////////////////////////////////////////////////////////////////
+ID3D11ShaderResourceView* D3DRenderer::GetBlackSRV() const
+{
+    return _blackSRV;
 }
 
 // Returns the D3D11 device context.

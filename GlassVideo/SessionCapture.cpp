@@ -66,6 +66,8 @@ bool SessionCapture::Initialize(ID3D11Device* device, HWND hwnd)
 
     _hwnd = hwnd;
     _device = device;
+    _shuttingDown = false;
+
     device->GetImmediateContext(&_context);
 
     // Wrap the D3D11 device for WinRT.
