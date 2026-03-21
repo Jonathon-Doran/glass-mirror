@@ -36,6 +36,7 @@ public partial class ProfileDialog : Window
     public List<EnumeratedMonitor> EnumeratedDevices { get; set; } = new();
     public LayoutManager LayoutSettings { get; set; } = new();
     private readonly CharacterRepository _characterRepo = new CharacterRepository();
+    private bool _initialized = false;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /// ProfileDialog
@@ -81,8 +82,13 @@ public partial class ProfileDialog : Window
             }).ToList();
             PopulateCharacterList(repo.GetSlots());
         }
+        else
+        {
+            PopulateCharacterList(new List<SlotAssignment>());
+        }
 
         ProfileName.TextChanged += (s, e) => ValidateSave();
+        _initialized = true;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -106,6 +112,7 @@ public partial class ProfileDialog : Window
 
         ValidateSave();
     }
+
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // CharacterSelection
@@ -328,6 +335,11 @@ public partial class ProfileDialog : Window
 
     private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (! _initialized)
+        {
+            return;
+        }
+
         if (e.Source is not TabControl)
         {
             return;

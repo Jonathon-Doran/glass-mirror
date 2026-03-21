@@ -1,4 +1,5 @@
-﻿using Glass.Core;
+﻿using Glass.ClientUI;
+using Glass.Core;
 using Glass.Data;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
@@ -597,6 +598,48 @@ public partial class MainWindow : Window
         DebugLog.Write("MainWindow.MenuItem_ManageKeyAliases_Click: dialog closed.");
     }
 
-    // Placeholder for EQ UI file generation.
-    private void MenuItem_GenerateEQUI_Click(object sender, RoutedEventArgs e) { }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // MenuItem_GenerateEQUI_Click
+    //
+    // Generates EQ client files for all characters in the database.
+    // Writes to the "UI Files" folder next to the Glass executable.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void MenuItem_GenerateEQUI_Click(object sender, RoutedEventArgs e)
+    {
+        DebugLog.Write("MainWindow.MenuItem_GenerateEQUI_Click: generating EQ UI files.");
+
+        string outputDirectory = Glass.Properties.Settings.Default.ClientFilesPath;
+
+        if (string.IsNullOrWhiteSpace(outputDirectory))
+        {
+            DebugLog.Write("MainWindow.MenuItem_GenerateEQUI_Click: ClientFilesDirectory not configured.");
+            MessageBox.Show("Please configure the Client Files Directory in settings before generating.", "Not Configured", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!Directory.Exists(outputDirectory))
+        {
+            Directory.CreateDirectory(outputDirectory);
+            DebugLog.Write($"MainWindow.MenuItem_GenerateEQUI_Click: created output directory '{outputDirectory}'.");
+        }
+
+        var characterRepo = new CharacterRepository();
+        var characters = characterRepo.GetAll();
+
+        DebugLog.Write($"MainWindow.MenuItem_GenerateEQUI_Click: generating files for {characters.Count} characters.");
+
+        var eqClientGenerator = new EqClientFileGenerator(outputDirectory);
+        var hotbuttonGenerator = new HotbuttonFileGenerator(outputDirectory);
+        var uiGenerator = new UiFileGenerator(outputDirectory);
+
+        foreach (var character in characters)
+        {
+            DebugLog.Write($"MainWindow.MenuItem_GenerateEQUI_Click: generating for '{character.Name}'.");
+            eqClientGenerator.Generate(character);
+            hotbuttonGenerator.Generate(character);
+            uiGenerator.Generate(character);
+        }
+
+        DebugLog.Write($"MainWindow.MenuItem_GenerateEQUI_Click: done. {characters.Count} characters processed.");
+    }
 }

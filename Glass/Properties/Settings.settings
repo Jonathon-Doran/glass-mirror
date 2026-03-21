@@ -8,5 +8,8 @@
     <Setting Name="RecentProfiles" Type="System.Collections.Specialized.StringCollection" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="ClientFilesPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">C:\Users\jhd0044\source\repos\Glass\Glass\UI Files</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

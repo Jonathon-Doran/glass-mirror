@@ -94,6 +94,10 @@ public class Database
         {
             ApplyMigration(conn, 9, Migration_009);
         }
+        if (version < 10)
+        {
+            ApplyMigration(conn, 10, Migration_010);
+        }
     }
 
     private int GetSchemaVersion()
@@ -243,6 +247,24 @@ public class Database
     DROP TABLE KeyBindings;
 
     ALTER TABLE KeyBindings_new RENAME TO KeyBindings;
+";
+
+    private const string Migration_010 = @"
+    CREATE TABLE IF NOT EXISTS Monitors_new (
+        id           INTEGER PRIMARY KEY,
+        machine_id   INTEGER NOT NULL REFERENCES Machines(id),
+        display_name TEXT NOT NULL,
+        width        INTEGER NOT NULL,
+        height       INTEGER NOT NULL,
+        orientation  INTEGER NOT NULL DEFAULT 0,
+        UNIQUE (machine_id, display_name)
+    );
+
+    INSERT OR IGNORE INTO Monitors_new SELECT * FROM Monitors;
+
+    DROP TABLE Monitors;
+
+    ALTER TABLE Monitors_new RENAME TO Monitors;
 ";
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

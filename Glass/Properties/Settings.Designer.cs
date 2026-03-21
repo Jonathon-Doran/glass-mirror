@@ -45,5 +45,17 @@ namespace Glass.Properties {
                 this["RecentProfiles"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Users\\jhd0044\\source\\repos\\Glass\\Glass\\UI Files")]
+        public string ClientFilesPath {
+            get {
+                return ((string)(this["ClientFilesPath"]));
+            }
+            set {
+                this["ClientFilesPath"] = value;
+            }
+        }
     }
 }

@@ -104,6 +104,25 @@ public class WindowLayoutRepository
                 insertPlacement.ExecuteNonQuery();
             }
 
+            // Upsert monitor dimensions for each monitor in the layout.
+            foreach (var monitor in monitors)
+            {
+                DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.Save: upserting monitor '{monitor.DeviceName}' {monitor.MonitorWidth}x{monitor.MonitorHeight}.");
+
+                using var monitorCmd = conn.CreateCommand();
+                monitorCmd.Transaction = tx;
+                monitorCmd.CommandText = @"
+                        INSERT INTO Monitors (machine_id, display_name, width, height, orientation)
+                        VALUES (0, @displayName, @width, @height, 0)
+                        ON CONFLICT(machine_id, display_name) DO UPDATE SET
+                            width  = excluded.width,
+                            height = excluded.height";
+                monitorCmd.Parameters.AddWithValue("@displayName", monitor.DeviceName);
+                monitorCmd.Parameters.AddWithValue("@width", monitor.MonitorWidth);
+                monitorCmd.Parameters.AddWithValue("@height", monitor.MonitorHeight);
+                monitorCmd.ExecuteNonQuery();
+            }
+
             tx.Commit();
             DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.Save: committed layoutId={layoutId}");
             return layoutId;
