@@ -598,6 +598,19 @@ public partial class MainWindow : Window
         DebugLog.Write("MainWindow.MenuItem_ManageKeyAliases_Click: dialog closed.");
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // KeyTest_Click
+    //
+    // Opens the Key Test dialog for verifying KeyDisplayControl rendering.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void KeyTest_Click(object sender, RoutedEventArgs e)
+    {
+        DebugLog.Write("MainWindow.KeyTest_Click: opening KeyTestDialog.");
+
+        var dialog = new KeyTestDialog { Owner = this };
+        dialog.ShowDialog();
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // MenuItem_GenerateEQUI_Click
     //

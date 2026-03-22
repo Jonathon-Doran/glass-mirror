@@ -11,7 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Generic.xml" />
     <None Remove="Resources\drag_handle.png" />
+    <None Remove="Themes\Generic.xml" />
   </ItemGroup>
 
   <ItemGroup>

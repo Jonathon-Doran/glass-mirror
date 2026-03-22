@@ -1,0 +1,29 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:Glass.Controls">
+
+    <Style TargetType="{x:Type controls:KeyDisplayControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type controls:KeyDisplayControl}">
+                    <Border x:Name="PART_Border"
+                        Background="#1A2A2A"
+                        BorderBrush="#2AFFD7"
+                        BorderThickness="1"
+                        CornerRadius="3"
+                        Width="70"
+                        Height="24">
+                        <TextBlock x:Name="PART_Text"
+                               Text="{TemplateBinding KeyName}"
+                               Foreground="#2AFFD7"
+                               FontFamily="Segoe UI"
+                               FontSize="11"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
