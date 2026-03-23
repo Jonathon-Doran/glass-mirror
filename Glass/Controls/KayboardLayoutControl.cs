@@ -4,6 +4,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
+using Glass.Data.Models;
+
 namespace Glass.Controls;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,7 +51,7 @@ public class KeyboardLayoutControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public override void OnApplyTemplate()
     {
-        DebugLog.Write($"KeyboardLayoutControl.OnApplyTemplate: type='{KeyboardType}'.");
+        DebugLog.Write($"KeyboardLayoutControl.OnApplyTemplate: type='{Device}'.");
 
         base.OnApplyTemplate();
 
@@ -63,26 +65,25 @@ public class KeyboardLayoutControl : Control
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // KeyboardType dependency property
+    // Device dependency property
     //
     // The device type to render. Determines the grid layout.
-    // Valid values: "G13", "G15", "Dominator X36"
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public static readonly DependencyProperty KeyboardTypeProperty =
+    public static readonly DependencyProperty DeviceProperty =
         DependencyProperty.Register(
-            nameof(KeyboardType),
-            typeof(string),
+            nameof(Device),
+            typeof(KeyboardType),
             typeof(KeyboardLayoutControl),
             new FrameworkPropertyMetadata(
-                string.Empty,
+                KeyboardType.G15,
                 FrameworkPropertyMetadataOptions.AffectsMeasure |
                 FrameworkPropertyMetadataOptions.AffectsRender,
                 OnKeyboardTypeChanged));
 
-    public string KeyboardType
+    public KeyboardType Device
     {
-        get => (string)GetValue(KeyboardTypeProperty);
-        set => SetValue(KeyboardTypeProperty, value);
+        get => (KeyboardType)GetValue(DeviceProperty);
+        set => SetValue(DeviceProperty, value);
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -253,7 +254,7 @@ public class KeyboardLayoutControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void RebuildGrid()
     {
-        DebugLog.Write($"KeyboardLayoutControl.RebuildGrid: type='{KeyboardType}'.");
+        DebugLog.Write($"KeyboardLayoutControl.RebuildGrid: type='{Device}'.");
 
         if ((_g13Grid == null) && (_g15Grid == null) && (_x36Grid == null))
         {
@@ -263,17 +264,17 @@ public class KeyboardLayoutControl : Control
 
         if (_g13Grid != null)
         {
-            _g13Grid.Visibility = (KeyboardType == "G13") ? Visibility.Visible : Visibility.Collapsed;
+            _g13Grid.Visibility = (Device == KeyboardType.G13) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         if (_g15Grid != null)
         {
-            _g15Grid.Visibility = (KeyboardType == "G15") ? Visibility.Visible : Visibility.Collapsed;
+            _g15Grid.Visibility = (Device == KeyboardType.G15) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         if (_x36Grid != null)
         {
-            _x36Grid.Visibility = (KeyboardType == "Dominator X36") ? Visibility.Visible : Visibility.Collapsed;
+            _x36Grid.Visibility = (Device == KeyboardType.DominatorX36) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         DebugLog.Write($"KeyboardLayoutControl.RebuildGrid: complete.");
@@ -312,7 +313,7 @@ public class KeyboardLayoutControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void RefreshKeys()
     {
-        DebugLog.Write($"KeyboardLayoutControl.RefreshKeys: type='{KeyboardType}'.");
+        DebugLog.Write($"KeyboardLayoutControl.RefreshKeys: type='{Device}'.");
 
         Grid? activeGrid = GetActiveGrid();
 
@@ -352,21 +353,12 @@ public class KeyboardLayoutControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private Grid? GetActiveGrid()
     {
-        if ((KeyboardType == "G13") && (_g13Grid != null))
+        return Device switch
         {
-            return _g13Grid;
-        }
-
-        if ((KeyboardType == "G15") && (_g15Grid != null))
-        {
-            return _g15Grid;
-        }
-
-        if ((KeyboardType == "Dominator X36") && (_x36Grid != null))
-        {
-            return _x36Grid;
-        }
-
-        return null;
+            KeyboardType.G13 => _g13Grid,
+            KeyboardType.G15 => _g15Grid,
+            KeyboardType.DominatorX36 => _x36Grid,
+            _ => null
+        };
     }
 }

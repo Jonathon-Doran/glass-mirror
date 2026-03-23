@@ -43,8 +43,8 @@ public partial class KeyTestDialog : Window
         TestControl.Keys = new Dictionary<string, KeyDisplay>
         {
             { "G1", new KeyDisplay { KeyName = "G1", Label = "Nuke" } },
-            { "G2", new KeyDisplay { KeyName = "G2", Label = "DoT" } },
-            { "G3", new KeyDisplay { KeyName = "G3", Label = "Slow", KeyType = KeyType.Toggle } },
+            { "G2", new KeyDisplay { KeyName = "G2", Label = "DoT", IsSelected = true } },
+            { "G3", new KeyDisplay { KeyName = "G3", Label = "Slow", KeyType = KeyType.Toggle, IsPressed = true } },
             { "G4", new KeyDisplay { KeyName = "G4", Label = "Assist" } },
         };
     }
