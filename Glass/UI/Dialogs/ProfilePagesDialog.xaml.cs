@@ -128,14 +128,6 @@ public partial class ProfilePagesDialog : Window
             {
                 item.InProfile = true;
                 DebugLog.Write($"ProfilePagesDialog.PageListView_MouseLeftButtonUp: added '{item.PageName}' to profile.");
-
-                // If this is the first page for this device, make it the start page
-                bool hasStartPage = _items.Any(p => (p.Device == item.Device) && p.IsStartPage);
-                if (!hasStartPage)
-                {
-                    item.IsStartPage = true;
-                    DebugLog.Write($"ProfilePagesDialog.PageListView_MouseLeftButtonUp: first page for device '{item.Device}', auto-set as start page.");
-                }
             }
         }
     }

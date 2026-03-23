@@ -36,9 +36,21 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
                 <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                    <Style TargetType="ListViewItem">
                         <Setter Property="Padding" Value="8,4,8,4"/>
                         <Setter Property="MinHeight" Value="0"/>
+                        <Setter Property="Background" Value="Black"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListViewItem">
+                                    <Border Background="{TemplateBinding Background}"
+                                               Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding InProfile}" Value="True">
                                 <Setter Property="Background" Value="#2AFFD7"/>
@@ -48,12 +60,15 @@
                                 <Setter Property="Background" Value="#FFD700"/>
                                 <Setter Property="Foreground" Value="Black"/>
                             </DataTrigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="{Binding Background, RelativeSource={RelativeSource Self}}"/>
-                            </Trigger>
                         </Style.Triggers>
                     </Style>
                 </ListView.ItemContainerStyle>
+                <ListView.Resources>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="Black"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="Transparent"/>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="Black"/>
+                </ListView.Resources>
             </ListView>
         </Border>
 
