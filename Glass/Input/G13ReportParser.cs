@@ -21,7 +21,7 @@ namespace Glass.Input;
 // Byte 6: bit 0=Applet, bit 1=L1, bit 2=L2, bit 3=L3, bit 4=L4, bit 5=M1, bit 6=M2, bit 7=M3
 // Byte 7: bit 0=MR, bit 1=G23, bit 2=G24  (mask out bit 7)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-public class G13ReportParser : IParseHidReport
+public class G13ReportParser : IParseHidReport, IParseHidAxes
 {
     private static readonly (int ByteIndex, int BitMask, string KeyName)[] KeyMap =
     {
@@ -77,6 +77,17 @@ public class G13ReportParser : IParseHidReport
     public KeyboardType Device => KeyboardType.G13;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // UpdateState
+    //
+    // Advances the previous report to the current report.
+    // Must be called after Parse and ParseAxes to prepare for the next report.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public void UpdateState(byte[] report)
+    {
+        _previousReport = report;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Parse
     //
     // Compares the incoming report against the previous report to detect
@@ -121,7 +132,45 @@ public class G13ReportParser : IParseHidReport
             }
         }
 
-        _previousReport = report;
+        return results;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ParseAxes
+    //
+    // Detects changes in the analog joystick axes and returns axis events.
+    // JoystickX is byte 1, JoystickY is byte 2, center value is 0x7F.
+    //
+    // report:  The raw report bytes from the device
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public IReadOnlyList<HidAxisEventArgs> ParseAxes(byte[] report)
+    {
+        var results = new List<HidAxisEventArgs>();
+
+        if ((report == null) || (report.Length < ReportLength))
+        {
+            return results;
+        }
+
+        if (report[0] != ReportId)
+        {
+            return results;
+        }
+
+        byte currentX = report[1];
+        byte currentY = report[2];
+        byte previousX = _previousReport[1];
+        byte previousY = _previousReport[2];
+
+        if (currentX != previousX)
+        {
+            results.Add(new HidAxisEventArgs("JoystickX", currentX, previousX));
+        }
+
+        if (currentY != previousY)
+        {
+            results.Add(new HidAxisEventArgs("JoystickY", currentY, previousY));
+        }
 
         return results;
     }

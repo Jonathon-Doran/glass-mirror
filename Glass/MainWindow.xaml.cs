@@ -50,8 +50,11 @@ public partial class MainWindow : Window
         _glassVideoPipeManager.MessageReceived += msg => Dispatcher.Invoke(() => Log($"GlassVideo: {msg}"));
         _glassVideoPipeManager.Start();
 
+
+
         Log("Glass started");
     }
+
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Window_Loaded
@@ -62,7 +65,7 @@ public partial class MainWindow : Window
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         Log("Window_Loaded");
-        _hidKeyInput.KeyStateChanged += OnGKeyPressed;
+        _hidKeyInput.KeyStateChanged += OnGKeyPressed; 
         _hidKeyInput.Start();
     }
 

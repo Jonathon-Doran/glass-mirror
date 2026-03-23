@@ -97,8 +97,17 @@ public class G15ReportParser : IParseHidReport
             }
         }
 
-        _previousReport = report;
-
         return results;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // UpdateState
+    //
+    // Advances the previous report to the current report.
+    // Must be called after all parsing to prepare for the next report.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public void UpdateState(byte[] report)
+    {
+        _previousReport = report;
     }
 }

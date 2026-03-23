@@ -17,14 +17,18 @@ public class HidKeyInput
 {
     private const string LogitechVendorId = "046D";
 
-    private readonly ConcurrentQueue<HidKeyEventArgs> _queue = new();
+    private readonly ConcurrentQueue<HidKeyEventArgs> _keyQueue = new();
+    private readonly ConcurrentQueue<HidAxisEventArgs> _axisQueue = new();
     private readonly List<HidDeviceReader> _readers = new();
     private readonly Dictionary<string, IParseHidReport> _parsers = new();
+    private readonly Dictionary<(HidDeviceInstance, string), byte> _axisState = new();
+    private readonly object _axisStateLock = new();
 
     private Thread? _dispatcherThread;
     private volatile bool _running;
 
     public event EventHandler<HidKeyEventArgs>? KeyStateChanged;
+    public event EventHandler<HidAxisEventArgs>? AxisChanged;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // HidKeyInput
@@ -73,7 +77,7 @@ public class HidKeyInput
         {
             DebugLog.Write($"HidKeyInput.Start: creating reader for {instance}.");
             var parser = _parsers[instance.Pid];
-            var reader = new HidDeviceReader(devicePath, instance, parser, _queue);
+            var reader = new HidDeviceReader(devicePath, instance, parser, _keyQueue, _axisQueue);
             _readers.Add(reader);
             reader.Start();
         }
@@ -124,17 +128,42 @@ public class HidKeyInput
 
         while (_running)
         {
-            while (_queue.TryDequeue(out var args))
+            while (_keyQueue.TryDequeue(out var keyArgs))
             {
-                DebugLog.Write($"HidKeyInput.DispatcherThread: dispatching key='{args.KeyName}' {args.Device} isPressed={args.IsPressed}.");
+                DebugLog.Write($"HidKeyInput.DispatcherThread: dispatching key='{keyArgs.KeyName}' {keyArgs.Device} isPressed={keyArgs.IsPressed}.");
 
                 try
                 {
-                    KeyStateChanged?.Invoke(this, args);
+                    KeyStateChanged?.Invoke(this, keyArgs);
                 }
                 catch (Exception ex)
                 {
-                    DebugLog.Write($"HidKeyInput.DispatcherThread: exception in handler: {ex.Message}.");
+                    DebugLog.Write($"HidKeyInput.DispatcherThread: exception in KeyStateChanged handler: {ex.Message}.");
+                }
+            }
+
+            while (_axisQueue.TryDequeue(out var axisArgs))
+            {
+                if (axisArgs == null)
+                {
+                    continue;
+                }
+
+                if (axisArgs.Device.HasValue)
+                {
+                    lock (_axisStateLock)
+                    {
+                        _axisState[(axisArgs.Device.Value, axisArgs.AxisName)] = axisArgs.Value;
+                    }
+                }
+
+                try
+                {
+                    AxisChanged?.Invoke(this, axisArgs);
+                }
+                catch (Exception ex)
+                {
+                    DebugLog.Write($"HidKeyInput.DispatcherThread: exception in AxisChanged handler: {ex.Message}.");
                 }
             }
 
@@ -285,4 +314,46 @@ public class HidKeyInput
         deviceId = $"{vid}-{pid}";
         return true;
     }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// GetAxisValue
+//
+// Returns the current value of a named axis for a device instance,
+// or null if the device type does not support analog axes.
+// Returns 127 (center) if the device supports axes but no value has been received yet.
+//
+// device:    The device instance to query
+// axisName:  The axis name e.g. "JoystickX", "JoystickY"
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public byte? GetAxisValue(HidDeviceInstance device, string axisName)
+{
+    if (!DeviceSupportsAxes(device.Type))
+    {
+        return null;
+    }
+
+    lock (_axisStateLock)
+    {
+        if (_axisState.TryGetValue((device, axisName), out byte value))
+        {
+            return value;
+        }
+    }
+
+    return 0x7F;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// DeviceSupportsAxes
+//
+// Returns true if the given keyboard type supports analog axis input.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+private static bool DeviceSupportsAxes(KeyboardType type)
+{
+    return type switch
+    {
+        KeyboardType.G13 => true,
+        _ => false
+    };
+}
 }

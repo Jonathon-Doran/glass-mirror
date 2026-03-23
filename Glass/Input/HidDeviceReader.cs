@@ -16,28 +16,32 @@ internal class HidDeviceReader
     private readonly string _devicePath;
     private readonly HidDeviceInstance _instance;
     private readonly IParseHidReport _parser;
-    private readonly ConcurrentQueue<HidKeyEventArgs> _queue;
+    private readonly ConcurrentQueue<HidKeyEventArgs> _keyQueue;
+    private readonly ConcurrentQueue<HidAxisEventArgs> _axisQueue;
     private volatile bool _running;
     private Thread? _thread;
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // HidDeviceReader
     //
     // devicePath:  The Win32 device path from Raw Input enumeration
     // instance:    The device instance this reader is bound to
     // parser:      The report parser for this device type
-    // queue:       The shared queue to push parsed events into
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // keyQueue:    The shared queue to push parsed key events into
+    // axisQueue:   The shared queue to push parsed axis events into
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public HidDeviceReader(
         string devicePath,
         HidDeviceInstance instance,
         IParseHidReport parser,
-        ConcurrentQueue<HidKeyEventArgs> queue)
+        ConcurrentQueue<HidKeyEventArgs> keyQueue,
+        ConcurrentQueue<HidAxisEventArgs> axisQueue)
     {
         _devicePath = devicePath;
         _instance = instance;
         _parser = parser;
-        _queue = queue;
+        _keyQueue = keyQueue;
+        _axisQueue = axisQueue;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -169,14 +173,27 @@ internal class HidDeviceReader
                     byte[] report = new byte[bytesRead];
                     Array.Copy(buffer, report, (int)bytesRead);
 
-                    var events = _parser.Parse(report);
+                    var keyEvents = _parser.Parse(report);
 
-                    foreach (var evt in events)
+                    foreach (var evt in keyEvents)
                     {
                         evt.Device = _instance;
                         DebugLog.Write($"HidDeviceReader.ReaderThread: {_instance} key='{evt.KeyName}' isPressed={evt.IsPressed}.");
-                        _queue.Enqueue(evt);
+                        _keyQueue.Enqueue(evt);
                     }
+
+                    if (_parser is IParseHidAxes axisParser)
+                    {
+                        var axisEvents = axisParser.ParseAxes(report);
+
+                        foreach (var evt in axisEvents)
+                        {
+                            evt.Device = _instance;
+                            _axisQueue.Enqueue(evt);
+                        }
+                    }
+
+                    _parser.UpdateState(report);
                 }
             }
         }
