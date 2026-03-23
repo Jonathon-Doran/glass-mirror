@@ -107,16 +107,16 @@ public class KeyboardLayoutControl : Control
     public static readonly DependencyProperty KeysProperty =
         DependencyProperty.Register(
             nameof(Keys),
-            typeof(IEnumerable<KeyDisplay>),
+            typeof(Dictionary<string, KeyDisplay>),
             typeof(KeyboardLayoutControl),
             new FrameworkPropertyMetadata(
                 null,
                 FrameworkPropertyMetadataOptions.AffectsRender,
                 OnKeysChanged));
 
-    public IEnumerable<KeyDisplay> Keys
+    public Dictionary<string, KeyDisplay> Keys
     {
-        get => (IEnumerable<KeyDisplay>)GetValue(KeysProperty);
+        get => (Dictionary<string, KeyDisplay>)GetValue(KeysProperty);
         set => SetValue(KeysProperty, value);
     }
 
@@ -150,6 +150,7 @@ public class KeyboardLayoutControl : Control
     {
         var control = (KeyboardLayoutControl)d;
         DebugLog.Write($"KeyboardLayoutControl.OnKeysChanged.");
+        control.UpdateChildShowLabel();
         control.RefreshKeys();
     }
 
@@ -184,6 +185,7 @@ public class KeyboardLayoutControl : Control
     {
         var control = (KeyboardLayoutControl)d;
         DebugLog.Write($"KeyboardLayoutControl.OnShowLabelChanged: showLabel='{e.NewValue}'.");
+        control.UpdateChildShowLabel();
         control.RefreshKeys();
     }
 
@@ -280,13 +282,91 @@ public class KeyboardLayoutControl : Control
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // UpdateChildShowLabel
+    //
+    // Pushes the current ShowLabel value to all KeyDisplayControl children in the active grid.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void UpdateChildShowLabel()
+    {
+        DebugLog.Write($"KeyboardLayoutControl.UpdateChildShowLabel: showLabel={ShowLabel}.");
+
+        Grid? activeGrid = GetActiveGrid();
+
+        if (activeGrid == null)
+        {
+            DebugLog.Write("KeyboardLayoutControl.UpdateChildShowLabel: no active grid.");
+            return;
+        }
+
+        foreach (var child in activeGrid.Children.OfType<KeyDisplayControl>())
+        {
+            child.ShowLabel = ShowLabel;
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // RefreshKeys
     //
-    // Refreshes key cell appearances when Keys or ShowLabel changes.
-    // Implementation will be added when the template is defined.
+    // Walks the active grid and updates each KeyDisplayControl from the Keys dictionary.
+    // Keys not present in the dictionary are shown with empty label and default state.
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void RefreshKeys()
     {
-        DebugLog.Write($"KeyboardLayoutControl.RefreshKeys.");
+        DebugLog.Write($"KeyboardLayoutControl.RefreshKeys: type='{KeyboardType}'.");
+
+        Grid? activeGrid = GetActiveGrid();
+
+        if (activeGrid == null)
+        {
+            DebugLog.Write("KeyboardLayoutControl.RefreshKeys: no active grid, returning.");
+            return;
+        }
+
+        foreach (var child in activeGrid.Children.OfType<KeyDisplayControl>())
+        {
+            string keyName = child.KeyName;
+
+            if ((Keys != null) && Keys.TryGetValue(keyName, out var keyDisplay))
+            {
+                child.Label = keyDisplay.Label;
+                child.KeyType = keyDisplay.KeyType;
+                child.IsSelected = keyDisplay.IsSelected;
+                child.IsPressed = keyDisplay.IsPressed;
+            }
+            else
+            {
+                child.Label = "-";
+                child.KeyType = KeyType.Momentary;
+                child.IsSelected = false;
+                child.IsPressed = false;
+            }
+        }
+
+        DebugLog.Write($"KeyboardLayoutControl.RefreshKeys: complete.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // GetActiveGrid
+    //
+    // Returns the currently visible grid based on KeyboardType, or null if none is active.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private Grid? GetActiveGrid()
+    {
+        if ((KeyboardType == "G13") && (_g13Grid != null))
+        {
+            return _g13Grid;
+        }
+
+        if ((KeyboardType == "G15") && (_g15Grid != null))
+        {
+            return _g15Grid;
+        }
+
+        if ((KeyboardType == "Dominator X36") && (_x36Grid != null))
+        {
+            return _x36Grid;
+        }
+
+        return null;
     }
 }

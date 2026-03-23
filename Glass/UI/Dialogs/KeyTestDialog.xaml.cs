@@ -17,6 +17,7 @@ public partial class KeyTestDialog : Window
     public KeyTestDialog()
     {
         InitializeComponent();
+
         KeyDown += (s, e) =>
         {
             if (e.Key == System.Windows.Input.Key.Escape)
@@ -25,7 +26,31 @@ public partial class KeyTestDialog : Window
                 Close();
             }
         };
+
+        Loaded += KeyTestDialog_Loaded;
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // KeyTestDialog_Loaded
+    //
+    // Pushes test data to the control after the window is fully loaded.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void KeyTestDialog_Loaded(object sender, RoutedEventArgs e)
+    {
+        DebugLog.Write("KeyTestDialog_Loaded: pushing test data.");
+
+        TestControl.ShowLabel = true;
+        TestControl.Keys = new Dictionary<string, KeyDisplay>
+        {
+            { "G1", new KeyDisplay { KeyName = "G1", Label = "Nuke" } },
+            { "G2", new KeyDisplay { KeyName = "G2", Label = "DoT" } },
+            { "G3", new KeyDisplay { KeyName = "G3", Label = "Slow", KeyType = KeyType.Toggle } },
+            { "G4", new KeyDisplay { KeyName = "G4", Label = "Assist" } },
+        };
+    }
+
+
+
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Key_Pressed
