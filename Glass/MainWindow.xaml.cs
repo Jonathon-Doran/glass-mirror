@@ -608,7 +608,7 @@ public partial class MainWindow : Window
         DebugLog.Write("MainWindow.KeyTest_Click: opening KeyTestDialog.");
 
         var dialog = new KeyTestDialog { Owner = this };
-        dialog.ShowDialog();
+        dialog.Show();
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

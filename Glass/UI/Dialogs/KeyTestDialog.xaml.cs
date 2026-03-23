@@ -17,6 +17,14 @@ public partial class KeyTestDialog : Window
     public KeyTestDialog()
     {
         InitializeComponent();
+        KeyDown += (s, e) =>
+        {
+            if (e.Key == System.Windows.Input.Key.Escape)
+            {
+                DebugLog.Write("KeyTestDialog: ESC pressed, closing.");
+                Close();
+            }
+        };
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -37,5 +45,15 @@ public partial class KeyTestDialog : Window
     private void Key_Released(object sender, LayoutEventArgs e)
     {
         DebugLog.Write($"KeyTestDialog.Key_Released: keyName='{e.KeyName}' isPressed={e.IsPressed}.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Window_MouseLeftButtonDown
+    //
+    // Allows the window to be dragged by clicking anywhere on it.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void Window_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        DragMove();
     }
 }

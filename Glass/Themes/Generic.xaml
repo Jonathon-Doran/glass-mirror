@@ -64,4 +64,55 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <Style TargetType="{x:Type controls:KeyboardLayoutControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type controls:KeyboardLayoutControl}">
+                    <Border Background="#1A2A2A" Padding="5">
+                        <StackPanel>
+
+                            <!-- G15 -->
+                            <Grid x:Name="PART_G15Grid" Visibility="Collapsed"
+                              HorizontalAlignment="Left" VerticalAlignment="Top">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="10"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="10"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <controls:KeyDisplayControl Grid.Row="0" Grid.Column="0" KeyName="G1"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="0" Grid.Column="1" KeyName="G2"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="0" Grid.Column="2" KeyName="G3"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="1" Grid.Column="0" KeyName="G4"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="1" Grid.Column="1" KeyName="G5"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="1" Grid.Column="2" KeyName="G6"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="3" Grid.Column="0" KeyName="G7"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="3" Grid.Column="1" KeyName="G8"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="3" Grid.Column="2" KeyName="G9"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="4" Grid.Column="0" KeyName="G10" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="4" Grid.Column="1" KeyName="G11" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="4" Grid.Column="2" KeyName="G12" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="6" Grid.Column="0" KeyName="G13" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="6" Grid.Column="1" KeyName="G14" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="6" Grid.Column="2" KeyName="G15" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="7" Grid.Column="0" KeyName="G16" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="7" Grid.Column="1" KeyName="G17" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="7" Grid.Column="2" KeyName="G18" Margin="1"/>
+                            </Grid>
+
+                        </StackPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>
