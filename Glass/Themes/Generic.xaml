@@ -59,6 +59,7 @@
                         <Trigger Property="ShowLabel" Value="True">
                             <Setter TargetName="PART_Text" Property="Text" Value="{Binding Label, RelativeSource={RelativeSource TemplatedParent}}"/>
                         </Trigger>
+
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -70,11 +71,21 @@
                 <ControlTemplate TargetType="{x:Type controls:KeyboardLayoutControl}">
                     <Border Background="#1A2A2A" Padding="5">
                         <StackPanel>
+                            <!-- Page name header -->
+                            <TextBlock x:Name="PART_PageName"
+                                       Text="{TemplateBinding PageName}"
+                                       Foreground="#2AFFD7"
+                                       FontFamily="Segoe UI"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,5"/>
 
+                            <Separator x:Name="PART_PageSeparator" Background="#2AFFD7" Margin="0,0,0,5" Opacity="0.3"/>
                             <!-- G15 -->
                             <Grid x:Name="PART_G15Grid" Visibility="Collapsed"
                               HorizontalAlignment="Left" VerticalAlignment="Top">
-                                <Grid.RowDefinitions>
+                                    <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="10"/>
@@ -108,9 +119,55 @@
                                 <controls:KeyDisplayControl Grid.Row="7" Grid.Column="1" KeyName="G17" Margin="1"/>
                                 <controls:KeyDisplayControl Grid.Row="7" Grid.Column="2" KeyName="G18" Margin="1"/>
                             </Grid>
-
+                            <!-- G13 -->
+                            <Grid x:Name="PART_G13Grid" Visibility="Collapsed"
+                                    HorizontalAlignment="Left" VerticalAlignment="Top">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <controls:KeyDisplayControl Grid.Row="0" Grid.Column="0" KeyName="G1"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="0" Grid.Column="1" KeyName="G2"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="0" Grid.Column="2" KeyName="G3"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="0" Grid.Column="3" KeyName="G4"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="0" Grid.Column="4" KeyName="G5"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="0" Grid.Column="5" KeyName="G6"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="0" Grid.Column="6" KeyName="G7"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="1" Grid.Column="0" KeyName="G8"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="1" Grid.Column="1" KeyName="G9"  Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="1" Grid.Column="2" KeyName="G10" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="1" Grid.Column="3" KeyName="G11" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="1" Grid.Column="4" KeyName="G12" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="1" Grid.Column="5" KeyName="G13" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="1" Grid.Column="6" KeyName="G14" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="2" Grid.Column="1" KeyName="G15" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="2" Grid.Column="2" KeyName="G16" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="2" Grid.Column="3" KeyName="G17" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="2" Grid.Column="4" KeyName="G18" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="2" Grid.Column="5" KeyName="G19" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="3" Grid.Column="2" KeyName="G20" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="3" Grid.Column="3" KeyName="G21" Margin="1"/>
+                                <controls:KeyDisplayControl Grid.Row="3" Grid.Column="4" KeyName="G22" Margin="1"/>
+                            </Grid>
                         </StackPanel>
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="PageName" Value="">
+                            <Setter TargetName="PART_PageName" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="PART_PageSeparator" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

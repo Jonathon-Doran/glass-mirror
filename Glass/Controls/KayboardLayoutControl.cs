@@ -121,6 +121,26 @@ public class KeyboardLayoutControl : Control
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // PageName dependency property
+    //
+    // The name of the currently active page, displayed in the header.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public static readonly DependencyProperty PageNameProperty =
+        DependencyProperty.Register(
+            nameof(PageName),
+            typeof(string),
+            typeof(KeyboardLayoutControl),
+            new FrameworkPropertyMetadata(
+                string.Empty,
+                FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public string PageName
+    {
+        get => (string)GetValue(PageNameProperty);
+        set => SetValue(PageNameProperty, value);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // OnKeysChanged
     //
     // Called when the Keys collection is replaced.
