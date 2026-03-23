@@ -23,7 +23,7 @@ public partial class MainWindow : Window
     private readonly SessionRegistry _sessionRegistry = new();
     private readonly HashSet<int> _definedSlots = new();
     private CharacterSetRepository? _activeProfile;
-    private readonly GKeyInput _gKeyInput = new GKeyInput();
+    private readonly HidKeyInput _hidKeyInput = new HidKeyInput();
 
     // Constructor — initializes UI, database, pipe manager, and logging.
     public MainWindow()
@@ -62,8 +62,8 @@ public partial class MainWindow : Window
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         Log("Window_Loaded");
-        _gKeyInput.GKeyPressed += OnGKeyPressed;
-        _gKeyInput.Start();
+        _hidKeyInput.KeyStateChanged += OnGKeyPressed;
+        _hidKeyInput.Start();
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,7 +77,7 @@ public partial class MainWindow : Window
         _isxGlassPipeManager.Dispose();
         await _glassVideoPipeManager.StopAsync();
         _glassVideoPipeManager.Dispose();
-        _gKeyInput.Stop();
+        _hidKeyInput.Stop();
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -457,9 +457,9 @@ public partial class MainWindow : Window
     // sender:  The GKeyInput instance
     // e:       The event args containing device handle and key index
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    private void OnGKeyPressed(object? sender, GKeyEventArgs e)
+    private void OnGKeyPressed(object? sender, HidKeyEventArgs e)
     {
-        DebugLog.Write(DebugLog.Log_Input, $"G-key pressed: device={e.DeviceHandle} key=G{e.KeyIndex}");
+        DebugLog.Write(DebugLog.Log_Input, $"G-key pressed: device={e.Device} key={e.KeyName} isPressed={e.IsPressed}");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
