@@ -31,7 +31,7 @@ public class ProfileRepository
         conn.Open();
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, name FROM Profiles WHERE name = @name";
+        cmd.CommandText = "SELECT id, name, machine_id FROM Profiles WHERE name = @name";
         cmd.Parameters.AddWithValue("@name", profileName);
 
         using var reader = cmd.ExecuteReader();
@@ -40,7 +40,8 @@ public class ProfileRepository
             _profile = new Profile
             {
                 Id = reader.GetInt32(0),
-                Name = reader.GetString(1)
+                Name = reader.GetString(1),
+                MachineId = reader.IsDBNull(2) ? null : reader.GetInt32(2)
             };
 
             reader.Close();
@@ -124,6 +125,7 @@ public class ProfileRepository
         using var conn = Database.Instance.Connect();
         conn.Open();
         using var tx = conn.BeginTransaction();
+
         try
         {
             using var checkCmd = conn.CreateCommand();
@@ -133,6 +135,7 @@ public class ProfileRepository
             var existingId = checkCmd.ExecuteScalar();
 
             int profileId;
+
             if (existingId != null)
             {
                 if (!overwrite)
@@ -150,13 +153,21 @@ public class ProfileRepository
                 deleteCmd.CommandText = "DELETE FROM ProfileSlots WHERE profile_id = @id";
                 deleteCmd.Parameters.AddWithValue("@id", profileId);
                 deleteCmd.ExecuteNonQuery();
+
+                using var updateCmd = conn.CreateCommand();
+                updateCmd.Transaction = tx;
+                updateCmd.CommandText = "UPDATE Profiles SET machine_id = @machineId WHERE id = @id";
+                updateCmd.Parameters.AddWithValue("@machineId", _profile.MachineId.HasValue ? _profile.MachineId.Value : DBNull.Value);
+                updateCmd.Parameters.AddWithValue("@id", profileId);
+                updateCmd.ExecuteNonQuery();
             }
             else
             {
                 using var insertCmd = conn.CreateCommand();
                 insertCmd.Transaction = tx;
-                insertCmd.CommandText = "INSERT INTO Profiles (name) VALUES (@name); SELECT last_insert_rowid();";
+                insertCmd.CommandText = "INSERT INTO Profiles (name, machine_id) VALUES (@name, @machineId); SELECT last_insert_rowid();";
                 insertCmd.Parameters.AddWithValue("@name", profileName);
+                insertCmd.Parameters.AddWithValue("@machineId", _profile.MachineId.HasValue ? _profile.MachineId.Value : DBNull.Value);
                 profileId = Convert.ToInt32(insertCmd.ExecuteScalar());
                 DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: inserted new profile, profileId={profileId}.");
             }
@@ -187,10 +198,15 @@ public class ProfileRepository
         }
     }
 
+    public void SetMachineId(int? machineId)
+    {
+        _profile.MachineId = machineId;
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // LoadCharacterSet
+    // LoadProfile
     //
-    // Loads the character set record by name from the database.
+    // Loads the profile by name from the database.
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private Profile LoadProfile(string profileName)
     {
@@ -271,5 +287,15 @@ public class ProfileRepository
 
         DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.GetAllNames: found {names.Count} profiles.");
         return names;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // GetMachineId
+    //
+    // Returns the machine ID assigned to this profile, or null if not assigned.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public int? GetMachineId()
+    {
+        return _profile.MachineId;
     }
 }

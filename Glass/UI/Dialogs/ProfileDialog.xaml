@@ -25,6 +25,13 @@
             <TextBox x:Name="ProfileName" Width="300"/>
         </StackPanel>
 
+        <!-- Machine -->
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
+            <TextBlock Text="Machine:" VerticalAlignment="Center" Margin="0,0,8,0" Width="90"/>
+            <ComboBox x:Name="MachineComboBox" Width="300"
+              SelectionChanged="MachineComboBox_SelectionChanged"/>
+        </StackPanel>
+        
         <!-- OK / Cancel -->
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
                     HorizontalAlignment="Right" Margin="0,12,0,0">

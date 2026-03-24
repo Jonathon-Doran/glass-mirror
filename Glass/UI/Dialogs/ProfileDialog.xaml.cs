@@ -52,6 +52,7 @@ public partial class ProfileDialog : Window
         InitializeComponent();
 
         DataContext = this;
+        LoadMachineComboBox();
         PopulateEnumeratedDevices();
 
         _profileName = profileName;
@@ -207,6 +208,11 @@ public partial class ProfileDialog : Window
         var profileName = ProfileName.Text.Trim();
         var repo = new ProfileRepository(profileName);
         repo.SetSlots(_slotAssignments.ToList());
+
+        if (MachineComboBox.SelectedItem is ComboBoxItem machineItem && machineItem.Tag is int machineId)
+        {
+            repo.SetMachineId(machineId);
+        }
 
 
         int profileId = repo.Save();
@@ -449,6 +455,64 @@ public partial class ProfileDialog : Window
 
         PageListView.ItemsSource = items;
         DebugLog.Write($"ProfileDialog.LoadKeyboardLayoutTab: loaded {items.Count} pages.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // LoadMachineComboBox
+    //
+    // Populates the machine combo box with all known machines.
+    // Selects the machine assigned to the current profile if one exists.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void LoadMachineComboBox()
+    {
+        DebugLog.Write("ProfileDialog.LoadMachineComboBox: loading.");
+
+        var repo = new MachineRepository();
+        var machines = repo.GetAll();
+
+        MachineComboBox.Items.Clear();
+
+        foreach (var machine in machines)
+        {
+            MachineComboBox.Items.Add(new ComboBoxItem
+            {
+                Content = machine.Name,
+                Tag = machine.Id
+            });
+        }
+
+        if (_profileName != null)
+        {
+            var profileRepo = new ProfileRepository(_profileName);
+            int? machineId = profileRepo.GetMachineId();
+
+            if (machineId.HasValue)
+            {
+                MachineComboBox.SelectedItem = MachineComboBox.Items
+                    .OfType<ComboBoxItem>()
+                    .FirstOrDefault(i => (int)i.Tag == machineId.Value);
+            }
+        }
+
+        if ((MachineComboBox.SelectedItem == null) && (MachineComboBox.Items.Count > 0))
+        {
+            MachineComboBox.SelectedIndex = 0;
+        }
+
+        DebugLog.Write($"ProfileDialog.LoadMachineComboBox: loaded {machines.Count} machines.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // MachineComboBox_SelectionChanged
+    //
+    // Fires when the user selects a machine.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void MachineComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (MachineComboBox.SelectedItem is ComboBoxItem item && item.Tag is int machineId)
+        {
+            DebugLog.Write($"ProfileDialog.MachineComboBox_SelectionChanged: machineId={machineId}.");
+        }
     }
 
     // Records the start position for drag detection.
