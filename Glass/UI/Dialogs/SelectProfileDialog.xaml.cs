@@ -16,7 +16,7 @@ public partial class SelectProfileDialog : Window
 
     private void LoadProfiles()
     {
-        ProfileList.ItemsSource = CharacterSetRepository.GetAllNames();
+        ProfileList.ItemsSource = ProfileRepository.GetAllNames();
     }
 
     private void ProfileList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

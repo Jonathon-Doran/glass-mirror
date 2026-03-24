@@ -3,7 +3,7 @@
 /// <summary>
 /// A named, portable group of characters. Not tied to any machine.
 /// </summary>
-public class CharacterSet
+public class Profile
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;

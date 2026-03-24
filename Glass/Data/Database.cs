@@ -110,6 +110,30 @@ public class Database
             pragmaOn.CommandText = "PRAGMA foreign_keys = ON";
             pragmaOn.ExecuteNonQuery();
         }
+        if (version < 12)
+        {
+            using var pragmaOff = conn.CreateCommand();
+            pragmaOff.CommandText = "PRAGMA foreign_keys = OFF";
+            pragmaOff.ExecuteNonQuery();
+
+            ApplyMigration(conn, 12, Migration_012);
+
+            using var pragmaOn = conn.CreateCommand();
+            pragmaOn.CommandText = "PRAGMA foreign_keys = ON";
+            pragmaOn.ExecuteNonQuery();
+        }
+        if (version < 13)
+        {
+            using var pragmaOff = conn.CreateCommand();
+            pragmaOff.CommandText = "PRAGMA foreign_keys = OFF";
+            pragmaOff.ExecuteNonQuery();
+
+            ApplyMigration(conn, 13, Migration_013);
+
+            using var pragmaOn = conn.CreateCommand();
+            pragmaOn.CommandText = "PRAGMA foreign_keys = ON";
+            pragmaOn.ExecuteNonQuery();
+        }
     }
 
     private int GetSchemaVersion()
@@ -307,6 +331,62 @@ public class Database
     PRAGMA foreign_keys = ON;
 ";
 
+    private const string Migration_012 = @"
+    ALTER TABLE CharacterSets RENAME TO Profiles;
+    ALTER TABLE CharacterSetSlots RENAME TO ProfileSlots;
+    ALTER TABLE CharacterSetMembers RENAME TO ProfileMembers;
+
+    CREATE TABLE ProfileSlots_new (
+        id          INTEGER PRIMARY KEY,
+        profile_id  INTEGER NOT NULL REFERENCES Profiles(id),
+        slot_number INTEGER NOT NULL,
+        character_id INTEGER NOT NULL REFERENCES Characters(id),
+        UNIQUE (profile_id, slot_number),
+        UNIQUE (profile_id, character_id)
+    );
+
+    INSERT INTO ProfileSlots_new SELECT id, character_set_id, slot_number, character_id FROM ProfileSlots;
+    DROP TABLE ProfileSlots;
+    ALTER TABLE ProfileSlots_new RENAME TO ProfileSlots;
+";
+
+    private const string Migration_013 = @"
+    DROP TABLE IF EXISTS CharacterSetMembers;
+    DROP TABLE IF EXISTS CharacterSets;
+
+    CREATE TABLE WindowLayouts_new (
+        id                  INTEGER PRIMARY KEY,
+        name                TEXT NOT NULL,
+        profile_id          INTEGER NOT NULL REFERENCES Profiles(id),
+        machine_id          INTEGER NOT NULL REFERENCES Machines(id),
+        monitor_fingerprint TEXT NOT NULL DEFAULT '',
+        UNIQUE (profile_id, machine_id, name)
+    );
+    INSERT INTO WindowLayouts_new SELECT id, name, character_set_id, machine_id, monitor_fingerprint FROM WindowLayouts;
+    DROP TABLE WindowLayouts;
+    ALTER TABLE WindowLayouts_new RENAME TO WindowLayouts;
+
+    CREATE TABLE ProfilePages_new (
+        id                  INTEGER PRIMARY KEY,
+        profile_id          INTEGER NOT NULL REFERENCES Profiles(id),
+        key_page_id         INTEGER NOT NULL REFERENCES KeyPages(id),
+        is_start_page       INTEGER NOT NULL DEFAULT 0,
+        UNIQUE (profile_id, key_page_id)
+    );
+    INSERT INTO ProfilePages_new SELECT id, character_set_id, key_page_id, is_start_page FROM ProfilePages;
+    DROP TABLE ProfilePages;
+    ALTER TABLE ProfilePages_new RENAME TO ProfilePages;
+
+    CREATE TABLE ProfileMembers_new (
+        profile_id      INTEGER NOT NULL REFERENCES Profiles(id),
+        character_id    INTEGER NOT NULL REFERENCES Characters(id),
+        PRIMARY KEY (profile_id, character_id)
+    );
+    INSERT INTO ProfileMembers_new SELECT character_set_id, character_id FROM ProfileMembers;
+    DROP TABLE ProfileMembers;
+    ALTER TABLE ProfileMembers_new RENAME TO ProfileMembers;
+
+";
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private const string Schema = @"

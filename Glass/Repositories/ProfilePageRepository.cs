@@ -19,24 +19,24 @@ public class ProfilePageRepository
     // Returns all key pages associated with the given profile,
     // including whether each is the start page.
     //
-    // characterSetId:  The profile to query
+    // profileId:  The profile to query
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public List<ProfilePage> GetPagesForProfile(int characterSetId)
+    public List<ProfilePage> GetPagesForProfile(int profileId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"ProfilePageRepository.GetPagesForProfile: characterSetId={characterSetId}.");
+        DebugLog.Write(DebugLog.Log_Database, $"ProfilePageRepository.GetPagesForProfile: characterSetId={profileId}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            SELECT pp.id, pp.character_set_id, pp.key_page_id, pp.is_start_page,
+            SELECT pp.id, pp.profile_id, pp.key_page_id, pp.is_start_page,
                    kp.name, kp.device
             FROM ProfilePages pp
             JOIN KeyPages kp ON kp.id = pp.key_page_id
-            WHERE pp.character_set_id = @characterSetId
+            WHERE pp.profile_id= @characterSetId
             ORDER BY kp.device, kp.name";
-        cmd.Parameters.AddWithValue("@characterSetId", characterSetId);
+        cmd.Parameters.AddWithValue("@characterSetId", profileId);
 
         var pages = new List<ProfilePage>();
         using var reader = cmd.ExecuteReader();
@@ -45,7 +45,7 @@ public class ProfilePageRepository
             pages.Add(new ProfilePage
             {
                 Id = reader.GetInt32(0),
-                CharacterSetId = reader.GetInt32(1),
+                ProfileId = reader.GetInt32(1),
                 KeyPageId = reader.GetInt32(2),
                 IsStartPage = reader.GetInt32(3) != 0,
                 PageName = reader.GetString(4),
@@ -78,7 +78,7 @@ public class ProfilePageRepository
         {
             using var delete = conn.CreateCommand();
             delete.Transaction = tx;
-            delete.CommandText = "DELETE FROM ProfilePages WHERE character_set_id = @characterSetId";
+            delete.CommandText = "DELETE FROM ProfilePages WHERE profile_id = @characterSetId";
             delete.Parameters.AddWithValue("@characterSetId", characterSetId);
             delete.ExecuteNonQuery();
 
@@ -87,7 +87,7 @@ public class ProfilePageRepository
                 using var insert = conn.CreateCommand();
                 insert.Transaction = tx;
                 insert.CommandText = @"
-                    INSERT INTO ProfilePages (character_set_id, key_page_id, is_start_page)
+                    INSERT INTO ProfilePages (profile_id, key_page_id, is_start_page)
                     VALUES (@characterSetId, @keyPageId, @isStartPage)";
                 insert.Parameters.AddWithValue("@characterSetId", characterSetId);
                 insert.Parameters.AddWithValue("@keyPageId", page.KeyPageId);

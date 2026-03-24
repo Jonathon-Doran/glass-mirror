@@ -5,56 +5,56 @@ using Microsoft.Data.Sqlite;
 namespace Glass.Data.Repositories;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// CharacterSetRepository
+// ProfileRepository
 //
 // Loads and caches all data for a single named character set.
 // All public methods query the in-memory cache — no database access after construction.
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-public class CharacterSetRepository
+public class ProfileRepository
 {
-    private CharacterSet _characterSet;
+    private Profile _profile;
     private List<SlotAssignment> _slots;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // CharacterSetRepository
+    // ProfileRepository
     //
     // Loads an existing character set from the database if it exists, otherwise creates a new
     // empty one.  Populate with SetSlots() and call Save() to persist.
     //
     // profileName:  The name of the profile to load or create
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public CharacterSetRepository(string profileName)
+    public ProfileRepository(string profileName)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository: opening profile '{profileName}'");
+        DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository: opening profile '{profileName}'");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, name FROM CharacterSets WHERE name = @name";
+        cmd.CommandText = "SELECT id, name FROM Profiles WHERE name = @name";
         cmd.Parameters.AddWithValue("@name", profileName);
 
         using var reader = cmd.ExecuteReader();
         if (reader.Read())
         {
-            _characterSet = new CharacterSet
+            _profile = new Profile
             {
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1)
             };
 
             reader.Close();
-            _slots = LoadSlots(_characterSet.Id);
-            DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository: loaded. id={_characterSet.Id} slots={_slots.Count}");
+            _slots = LoadSlots(_profile.Id);
+            DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository: loaded. id={_profile.Id} slots={_slots.Count}");
         }
         else
         {
-            _characterSet = new CharacterSet 
+            _profile = new Profile 
             { 
                 Name = profileName 
             };
             _slots = new List<SlotAssignment>();
-            DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository: '{profileName}' not found, created empty.");
+            DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository: '{profileName}' not found, created empty.");
         }
     }
 
@@ -65,7 +65,7 @@ public class CharacterSetRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public int GetId()
     {
-        return _characterSet?.Id ?? 0;
+        return _profile?.Id ?? 0;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,7 +77,7 @@ public class CharacterSetRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void SetSlots(List<SlotAssignment> slots)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository.SetSlots: {slots.Count} slots.");
+        DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.SetSlots: {slots.Count} slots.");
         _slots = slots;
     }
 
@@ -103,7 +103,7 @@ public class CharacterSetRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Save
     //
-    // Persists the character set name, slot assignments, and start page currently held by this
+    // Persists the profile name, slot assignments, and start page currently held by this
     // repository to the database. Returns the profile ID on success, or -1 if the profile already
     // exists and overwrite is false.
     //
@@ -112,12 +112,12 @@ public class CharacterSetRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public int Save(bool overwrite = false)
     {
-        string profileName = _characterSet.Name;
-        DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository.Save: name='{profileName}' slots={_slots.Count} overwrite={overwrite}");
+        string profileName = _profile.Name;
+        DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: name='{profileName}' slots={_slots.Count} overwrite={overwrite}");
 
         if (string.IsNullOrWhiteSpace(profileName))
         {
-            DebugLog.Write(DebugLog.Log_Database, "CharacterSetRepository.Save: profile name is empty, aborting.");
+            DebugLog.Write(DebugLog.Log_Database, "ProfileRepository.Save: profile name is empty, aborting.");
             throw new InvalidOperationException("Profile name must be set before calling Save.");
         }
 
@@ -128,7 +128,7 @@ public class CharacterSetRepository
         {
             using var checkCmd = conn.CreateCommand();
             checkCmd.Transaction = tx;
-            checkCmd.CommandText = "SELECT id FROM CharacterSets WHERE name = @name";
+            checkCmd.CommandText = "SELECT id FROM Profiles WHERE name = @name";
             checkCmd.Parameters.AddWithValue("@name", profileName);
             var existingId = checkCmd.ExecuteScalar();
 
@@ -137,17 +137,17 @@ public class CharacterSetRepository
             {
                 if (!overwrite)
                 {
-                    DebugLog.Write(DebugLog.Log_Database, "CharacterSetRepository.Save: profile exists and overwrite=false, returning -1.");
+                    DebugLog.Write(DebugLog.Log_Database, "ProfileRepository.Save: profile exists and overwrite=false, returning -1.");
                     tx.Rollback();
                     return -1;
                 }
 
                 profileId = Convert.ToInt32(existingId);
-                DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository.Save: overwriting profileId={profileId}, deleting existing slots.");
+                DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: overwriting profileId={profileId}, deleting existing slots.");
 
                 using var deleteCmd = conn.CreateCommand();
                 deleteCmd.Transaction = tx;
-                deleteCmd.CommandText = "DELETE FROM CharacterSetSlots WHERE character_set_id = @id";
+                deleteCmd.CommandText = "DELETE FROM ProfileSlots WHERE profile_id = @id";
                 deleteCmd.Parameters.AddWithValue("@id", profileId);
                 deleteCmd.ExecuteNonQuery();
             }
@@ -155,19 +155,19 @@ public class CharacterSetRepository
             {
                 using var insertCmd = conn.CreateCommand();
                 insertCmd.Transaction = tx;
-                insertCmd.CommandText = "INSERT INTO CharacterSets (name) VALUES (@name); SELECT last_insert_rowid();";
+                insertCmd.CommandText = "INSERT INTO Profiles (name) VALUES (@name); SELECT last_insert_rowid();";
                 insertCmd.Parameters.AddWithValue("@name", profileName);
                 profileId = Convert.ToInt32(insertCmd.ExecuteScalar());
-                DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository.Save: inserted new profile, profileId={profileId}.");
+                DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: inserted new profile, profileId={profileId}.");
             }
 
             foreach (var slot in _slots)
             {
-                DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository.Save: slot {slot.SlotNumber} = characterId={slot.CharacterId}.");
+                DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: slot {slot.SlotNumber} = characterId={slot.CharacterId}.");
 
                 using var insertSlot = conn.CreateCommand();
                 insertSlot.Transaction = tx;
-                insertSlot.CommandText = "INSERT INTO CharacterSetSlots (character_set_id, slot_number, character_id) VALUES (@setId, @slotNumber, @charId)";
+                insertSlot.CommandText = "INSERT INTO ProfileSlots (profile_id, slot_number, character_id) VALUES (@setId, @slotNumber, @charId)";
                 insertSlot.Parameters.AddWithValue("@setId", profileId);
                 insertSlot.Parameters.AddWithValue("@slotNumber", slot.SlotNumber);
                 insertSlot.Parameters.AddWithValue("@charId", slot.CharacterId);
@@ -175,13 +175,13 @@ public class CharacterSetRepository
             }
 
             tx.Commit();
-            _characterSet.Id = profileId;
-            DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository.Save: committed. profileId={profileId}");
+            _profile.Id = profileId;
+            DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: committed. profileId={profileId}");
             return profileId;
         }
         catch (Exception ex)
         {
-            DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository.Save: exception: {ex.Message}, rolling back.");
+            DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: exception: {ex.Message}, rolling back.");
             tx.Rollback();
             throw;
         }
@@ -192,22 +192,22 @@ public class CharacterSetRepository
     //
     // Loads the character set record by name from the database.
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    private CharacterSet LoadCharacterSet(string profileName)
+    private Profile LoadProfile(string profileName)
     {
         using var conn = Database.Instance.Connect();
         conn.Open();
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, name FROM CharacterSets WHERE name = @name";
+        cmd.CommandText = "SELECT id, name FROM Profiles WHERE name = @name";
         cmd.Parameters.AddWithValue("@name", profileName);
 
         using var reader = cmd.ExecuteReader();
         if (!reader.Read())
         {
-            throw new InvalidOperationException($"Character set '{profileName}' not found.");
+            throw new InvalidOperationException($"Profile '{profileName}' not found.");
         }
 
-        return new CharacterSet
+        return new Profile
         {
             Id = reader.GetInt32(0),
             Name = reader.GetString(1)
@@ -217,9 +217,9 @@ public class CharacterSetRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // LoadSlots
     //
-    // Loads all slot assignments for the given character set ID from the database.
+    // Loads all slot assignments for the given profile ID from the database.
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    private List<SlotAssignment> LoadSlots(int characterSetId)
+    private List<SlotAssignment> LoadSlots(int profileID)
     {
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -227,10 +227,10 @@ public class CharacterSetRepository
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
         SELECT slot_number, character_id
-        FROM CharacterSetSlots
-        WHERE character_set_id = @id
+        FROM ProfileSlots
+        WHERE profile_id = @id
         ORDER BY slot_number";
-        cmd.Parameters.AddWithValue("@id", characterSetId);
+        cmd.Parameters.AddWithValue("@id", profileID);
 
         var slots = new List<SlotAssignment>();
         using var reader = cmd.ExecuteReader();
@@ -254,13 +254,13 @@ public class CharacterSetRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public static List<string> GetAllNames()
     {
-        DebugLog.Write(DebugLog.Log_Database, "CharacterSetRepository.GetAllNames: loading.");
+        DebugLog.Write(DebugLog.Log_Database, "ProfileRepository.GetAllNames: loading.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT name FROM CharacterSets ORDER BY name";
+        cmd.CommandText = "SELECT name FROM Profiles ORDER BY name";
 
         var names = new List<string>();
         using var reader = cmd.ExecuteReader();
@@ -269,7 +269,7 @@ public class CharacterSetRepository
             names.Add(reader.GetString(0));
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"CharacterSetRepository.GetAllNames: found {names.Count} profiles.");
+        DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.GetAllNames: found {names.Count} profiles.");
         return names;
     }
 }

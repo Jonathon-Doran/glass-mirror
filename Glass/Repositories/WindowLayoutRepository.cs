@@ -8,15 +8,15 @@ namespace Glass.Data.Repositories;
 // Handles persistence of window layouts and character placements.
 public class WindowLayoutRepository
 {
-    // Returns the next available layout name for a character set, e.g. "Layout3".
-    public string GetNextLayoutName(int characterSetId)
+    // Returns the next available layout name for a profile, e.g. "Layout3".
+    public string GetNextLayoutName(int profileId)
     {
         using var conn = Database.Instance.Connect();
         conn.Open();
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT COUNT(*) FROM WindowLayouts WHERE character_set_id = @id";
-        cmd.Parameters.AddWithValue("@id", characterSetId);
+        cmd.CommandText = "SELECT COUNT(*) FROM WindowLayouts WHERE profile_id = @id";
+        cmd.Parameters.AddWithValue("@id", profileId);
         int count = Convert.ToInt32(cmd.ExecuteScalar());
 
         return $"Layout{count + 1}";
@@ -26,12 +26,12 @@ public class WindowLayoutRepository
     // Save
     //
     // Saves a window layout and its character placements. Overwrites an existing
-    // layout with the same name for this character set if one exists.
+    // layout with the same name for this profile if one exists.
     // Returns the layout ID.
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public int Save(int characterSetId, string layoutName, List<SlotAssignment> slots, List<MonitorConfig> monitors)
+    public int Save(int profileId, string layoutName, List<SlotAssignment> slots, List<MonitorConfig> monitors)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.Save: characterSetId={characterSetId} name='{layoutName}' slots={slots.Count} monitors={monitors.Count}");
+        DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.Save: profileID={profileId} name='{layoutName}' slots={slots.Count} monitors={monitors.Count}");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -41,8 +41,8 @@ public class WindowLayoutRepository
             // Check for existing layout with same name.
             using var checkCmd = conn.CreateCommand();
             checkCmd.Transaction = tx;
-            checkCmd.CommandText = "SELECT id FROM WindowLayouts WHERE character_set_id = @setId AND name = @name";
-            checkCmd.Parameters.AddWithValue("@setId", characterSetId);
+            checkCmd.CommandText = "SELECT id FROM WindowLayouts WHERE profile_id = @setId AND name = @name";
+            checkCmd.Parameters.AddWithValue("@setId", profileId);
             checkCmd.Parameters.AddWithValue("@name", layoutName);
             var existingId = checkCmd.ExecuteScalar();
 
@@ -60,13 +60,13 @@ public class WindowLayoutRepository
             }
             else
             {
-                DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.Save: inserting new layout characterSetId={characterSetId} layoutName='{layoutName}'");
+                DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.Save: inserting new layout profileId={profileId} layoutName='{layoutName}'");
 
                 using var insertCmd = conn.CreateCommand();
                 insertCmd.Transaction = tx;
-                insertCmd.CommandText = "INSERT INTO WindowLayouts (name, character_set_id, machine_id) VALUES (@name, @setId, 0)";
+                insertCmd.CommandText = "INSERT INTO WindowLayouts (name, profile_id, machine_id) VALUES (@name, @setId, 0)";
                 insertCmd.Parameters.AddWithValue("@name", layoutName);
-                insertCmd.Parameters.AddWithValue("@setId", characterSetId);
+                insertCmd.Parameters.AddWithValue("@setId", profileId);
                 insertCmd.ExecuteNonQuery();
 
                 using var idCmd = conn.CreateCommand();
@@ -152,8 +152,8 @@ public class WindowLayoutRepository
         layoutCmd.CommandText = @"
             SELECT wl.id 
             FROM WindowLayouts wl
-            JOIN CharacterSets cs ON cs.id = wl.character_set_id
-            WHERE cs.name = @name
+            JOIN Profiles ps ON ps.id = wl.profile_id
+            WHERE ps.name = @name
             ORDER BY wl.id
             LIMIT 1";
         layoutCmd.Parameters.AddWithValue("@name", profileName);
@@ -170,13 +170,13 @@ public class WindowLayoutRepository
 
         using var placementCmd = conn.CreateCommand();
         placementCmd.CommandText = @"
-            SELECT css.slot_number, cp.x, cp.y, cp.width, cp.height
+            SELECT profSlot.slot_number, cp.x, cp.y, cp.width, cp.height
             FROM CharacterPlacements cp
-            JOIN CharacterSetSlots css ON css.character_id = cp.character_id
-                AND css.character_set_id = (
-                    SELECT character_set_id FROM WindowLayouts WHERE id = @layoutId)
+            JOIN ProfileSlots profSlot ON profSlot.character_id = cp.character_id
+                AND profSlot.profile_id = (
+                    SELECT profile_id FROM WindowLayouts WHERE id = @layoutId)
             WHERE cp.window_layout_id = @layoutId
-            ORDER BY css.slot_number";
+            ORDER BY profSlot.slot_number";
         placementCmd.Parameters.AddWithValue("@layoutId", id);
 
         var placements = new List<SlotPlacement>();

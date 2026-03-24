@@ -156,7 +156,7 @@ public partial class ProfilePagesDialog : Window
             .Where(p => p.InProfile)
             .Select(p => new ProfilePage
             {
-                CharacterSetId = _characterSetId,
+                ProfileId = _characterSetId,
                 KeyPageId = p.KeyPageId,
                 IsStartPage = p.IsStartPage
             })

@@ -22,7 +22,7 @@ public partial class MainWindow : Window
     private readonly PipeManager _glassVideoPipeManager;
     private readonly SessionRegistry _sessionRegistry = new();
     private readonly HashSet<int> _definedSlots = new();
-    private CharacterSetRepository? _activeProfile;
+    private ProfileRepository? _activeProfile;
     private readonly HidKeyInput _hidKeyInput = new HidKeyInput();
 
     // Constructor — initializes UI, database, pipe manager, and logging.
@@ -218,7 +218,7 @@ public partial class MainWindow : Window
 
     private async Task LaunchProfile(string profileName)
     {
-        var repo = new CharacterSetRepository(profileName);
+        var repo = new ProfileRepository(profileName);
         var slots = repo.GetSlots();
         var charRepo = new CharacterRepository();
 

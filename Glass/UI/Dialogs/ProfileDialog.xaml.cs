@@ -61,7 +61,7 @@ public partial class ProfileDialog : Window
         {
             ProfileName.Text = profileName;
 
-            var repo = new CharacterSetRepository(profileName);
+            var repo = new ProfileRepository(profileName);
             foreach (var slot in repo.GetSlots())
             {
                 _slotAssignments.Add(slot);
@@ -205,7 +205,7 @@ public partial class ProfileDialog : Window
         RebuildSlotAssignments();
 
         var profileName = ProfileName.Text.Trim();
-        var repo = new CharacterSetRepository(profileName);
+        var repo = new ProfileRepository(profileName);
         repo.SetSlots(_slotAssignments.ToList());
 
 
@@ -425,7 +425,7 @@ public partial class ProfileDialog : Window
         DebugLog.Write("ProfileDialog.LoadKeyboardLayoutTab: loading.");
 
         var pageRepo = new KeyPageRepository();
-        var profileRepo = new CharacterSetRepository(ProfileName.Text);
+        var profileRepo = new ProfileRepository(ProfileName.Text);
 
         var pageNames = pageRepo.GetPageNames();
         var items = new List<KeyPageViewModel>();
@@ -1411,7 +1411,7 @@ public partial class ProfileDialog : Window
     {
         DebugLog.Write("ProfileDialog.AssignPages_Click: opening ProfilePagesDialog.");
 
-        var repo = new CharacterSetRepository(ProfileName.Text);
+        var repo = new ProfileRepository(ProfileName.Text);
         int id = repo.GetId();
 
         if (id == 0)
