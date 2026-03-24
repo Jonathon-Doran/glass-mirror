@@ -5,4 +5,5 @@ public class Command
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public List<CommandStep> Steps { get; set; } = new();
+    public string ShortName { get; set; } = string.Empty;
 }

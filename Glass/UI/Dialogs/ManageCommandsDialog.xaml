@@ -75,13 +75,19 @@
             </Grid.RowDefinitions>
 
             <!-- Name -->
-            <DockPanel Grid.Row="0">
-                <TextBlock DockPanel.Dock="Left" Text="Command:" VerticalAlignment="Center" Width="70" Margin="0,0,8,0"/>
-                <TextBox x:Name="CommandNameTextBox"
-                     TextChanged="CommandNameTextBox_TextChanged"
-                     LostFocus="CommandNameTextBox_LostFocus"
-                     KeyDown="CommandNameTextBox_KeyDown"/>
-            </DockPanel>
+            <StackPanel Grid.Row="0">
+                <DockPanel Margin="0,0,0,4">
+                    <TextBlock DockPanel.Dock="Left" Text="Command:" VerticalAlignment="Center" Width="70" Margin="0,0,8,0"/>
+                    <TextBox x:Name="CommandNameTextBox"
+                 TextChanged="CommandNameTextBox_TextChanged"
+                 LostFocus="CommandNameTextBox_LostFocus"
+                 KeyDown="CommandNameTextBox_KeyDown"/>
+                </DockPanel>
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Text="Short Name:" VerticalAlignment="Center" Width="70" Margin="0,0,8,0"/>
+                    <TextBox x:Name="ShortNameTextBox"/>
+                </DockPanel>
+            </StackPanel>
 
             <!-- Step list -->
             <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1">

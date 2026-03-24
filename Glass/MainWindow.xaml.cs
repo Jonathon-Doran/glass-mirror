@@ -23,7 +23,7 @@ public partial class MainWindow : Window
     private readonly SessionRegistry _sessionRegistry = new();
     private readonly HashSet<int> _definedSlots = new();
     private ProfileRepository? _activeProfile;
-    private readonly HidKeyInput _hidKeyInput = new HidKeyInput();
+    private readonly KeyboardManager _keyboardManager = new KeyboardManager();
     private Machine? _currentMachine;
 
     // Constructor — initializes UI, database, pipe manager, and logging.
@@ -80,8 +80,6 @@ public partial class MainWindow : Window
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         Log("Window_Loaded");
-        _hidKeyInput.KeyStateChanged += OnGKeyPressed; 
-        _hidKeyInput.Start();
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,7 +93,6 @@ public partial class MainWindow : Window
         _isxGlassPipeManager.Dispose();
         await _glassVideoPipeManager.StopAsync();
         _glassVideoPipeManager.Dispose();
-        _hidKeyInput.Stop();
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -282,12 +279,23 @@ public partial class MainWindow : Window
                 DebugLog.Write(DebugLog.Log_Sessions, $"LaunchProfile: no character found for id={slot.CharacterId}, skipping.");
                 continue;
             }
-
+            _keyboardManager.LoadProfile(profileName);
             Log($"  Launching: {character.Name} accountId={character.AccountId} server={character.Server}");
             _isxGlassPipeManager.Send($"launch {character.AccountId} {character.Name} {character.Server}");
             int delay = rng.Next(4000, 7000);
             await Task.Delay(delay);
         }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ToggleG15Osd_Click
+    //
+    // Temporarily toggles the G15 OSD for testing.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void ToggleG15Osd_Click(object sender, RoutedEventArgs e)
+    {
+        DebugLog.Write("MainWindow.ToggleG15Osd_Click: toggling G15 OSD.");
+        _keyboardManager.ToggleOsd(new HidDeviceInstance(KeyboardType.G15, 1, string.Empty));
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -465,19 +473,6 @@ public partial class MainWindow : Window
                 Log(msg);
                 break;
         }
-    }
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // OnGKeyPressed
-    //
-    // Called when a G-key is pressed on any connected Logitech device.
-    //
-    // sender:  The GKeyInput instance
-    // e:       The event args containing device handle and key index
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    private void OnGKeyPressed(object? sender, HidKeyEventArgs e)
-    {
-        DebugLog.Write(DebugLog.Log_Input, $"G-key pressed: device={e.Device} key={e.KeyName} isPressed={e.IsPressed}");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

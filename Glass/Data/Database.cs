@@ -139,6 +139,10 @@ public class Database
         {
             ApplyMigration(conn, 14, Migration_014);
         }
+        if (version < 15)
+        {
+            ApplyMigration(conn, 15, Migration_015);
+        }
     }
 
     private int GetSchemaVersion()
@@ -402,6 +406,10 @@ public class Database
     );
 
     ALTER TABLE Profiles ADD COLUMN machine_id INTEGER REFERENCES Machines(id);
+";
+
+    private const string Migration_015 = @"
+    ALTER TABLE Commands ADD COLUMN short_name TEXT NOT NULL DEFAULT '';
 ";
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
