@@ -15,6 +15,11 @@ public static class DebugLog
         _log = log;
     }
 
+    public static void Shutdown()
+    {
+        _log = null;
+    }
+
     // Writes a message unconditionally — for high priority messages that always log.
     public static void Write(string message)
     {

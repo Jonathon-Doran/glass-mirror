@@ -85,10 +85,13 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Window_Closing
     //
-    // Stops the pipe manager cleanly before the window closes.
+    // Stops the pipe manager and keyboard manager cleanly before the window closes.
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
+        DebugLog.Write("MainWindow.Window_Closing: shutting down.");
+        DebugLog.Shutdown();
+        _keyboardManager.UnloadProfile();
         await _isxGlassPipeManager.StopAsync();
         _isxGlassPipeManager.Dispose();
         await _glassVideoPipeManager.StopAsync();

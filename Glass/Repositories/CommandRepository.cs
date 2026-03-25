@@ -14,28 +14,35 @@ public class CommandRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // GetAllCommands
     //
-    // Returns all commands ordered alphabetically by name.
+    // Returns all commands ordered alphabetically by name, with steps populated.
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<Command> GetAllCommands()
     {
         DebugLog.Write(DebugLog.Log_Database, "CommandRepository.GetAllCommands: loading.");
 
-        using var conn = Database.Instance.Connect();
+        using SqliteConnection conn = Database.Instance.Connect();
         conn.Open();
 
-        using var cmd = conn.CreateCommand();
+        using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT id, name, short_name FROM Commands ORDER BY name";
 
-        var commands = new List<Command>();
-        using var reader = cmd.ExecuteReader();
-        while (reader.Read())
+        List<Command> commands = new List<Command>();
+        using (SqliteDataReader reader = cmd.ExecuteReader())
         {
-            commands.Add(new Command
+            while (reader.Read())
             {
-                Id = reader.GetInt32(0),
-                Name = reader.GetString(1),
-                ShortName = reader.GetString(2)
-            });
+                commands.Add(new Command
+                {
+                    Id = reader.GetInt32(0),
+                    Name = reader.GetString(1),
+                    ShortName = reader.GetString(2)
+                });
+            }
+        }
+
+        foreach (Command command in commands)
+        {
+            command.Steps = GetSteps(conn, command.Id);
         }
 
         DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.GetAllCommands: found {commands.Count} commands.");

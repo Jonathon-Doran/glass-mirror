@@ -268,18 +268,19 @@ public class KeyboardManager
 
         HidDeviceInstance instance = e.Device.Value;
 
-        if (!_activePages.TryGetValue(instance, out var activePage))
+        if (!_activePages.TryGetValue(instance, out KeyPage? activePage))
         {
             DebugLog.Write($"KeyboardManager.OnKeyStateChanged: no active page for {instance}.");
             return;
         }
 
-        if (!_bindingCache.TryGetValue(activePage.Id, out var bindings))
+        if (!_bindingCache.TryGetValue(activePage.Id, out List<KeyBinding>? bindings))
         {
+            DebugLog.Write($"KeyboardManager.OnKeyStateChanged: no bindings for page='{activePage.Name}'.");
             return;
         }
 
-        var binding = bindings.FirstOrDefault(b => b.Key == e.KeyName);
+        KeyBinding? binding = bindings.FirstOrDefault(b => b.Key == e.KeyName);
 
         if (binding == null)
         {
@@ -289,16 +290,78 @@ public class KeyboardManager
 
         if (!binding.CommandId.HasValue)
         {
+            DebugLog.Write($"KeyboardManager.OnKeyStateChanged: binding for key='{e.KeyName}' has no command.");
             return;
         }
 
-        if (!_commandCache.TryGetValue(binding.CommandId.Value, out var command))
+        if (!_commandCache.TryGetValue(binding.CommandId.Value, out Command? command))
         {
+            DebugLog.Write($"KeyboardManager.OnKeyStateChanged: commandId={binding.CommandId.Value} not found in cache.");
             return;
         }
 
         DebugLog.Write($"KeyboardManager.OnKeyStateChanged: key='{e.KeyName}' page='{activePage.Name}' command='{command.Name}' target='{binding.Target}'.");
 
-        // TODO: execute command via pipe
+        ExecuteCommand(command, instance, binding.Target, binding.RelayGroupId);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ExecuteCommand
+    //
+    // Executes all steps of a command for the triggering device instance.
+    //
+    // command:       The command to execute
+    // instance:      The device instance that triggered the command
+    // target:        The binding target (used for relay steps)
+    // relayGroupId:  The relay group ID if target is a group
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void ExecuteCommand(Command command, HidDeviceInstance instance, int target, int? relayGroupId)
+    {
+        DebugLog.Write($"KeyboardManager.ExecuteCommand: command='{command.Name}' instance={instance} target={target}.");
+
+        if ((command.Steps == null) || (command.Steps.Count == 0))
+        {
+            DebugLog.Write($"KeyboardManager.ExecuteCommand: command='{command.Name}' has no steps.");
+            return;
+        }
+
+        foreach (CommandStep step in command.Steps.OrderBy(s => s.Sequence))
+        {
+            DebugLog.Write($"KeyboardManager.ExecuteCommand: step={step.Sequence} type='{step.Type}' value='{step.Value}'.");
+
+            if (step.Type == "pageload")
+            {
+                ExecutePageLoad(instance, step.Value);
+            }
+            else
+            {
+                DebugLog.Write($"KeyboardManager.ExecuteCommand: step type='{step.Type}' not yet handled.");
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ExecutePageLoad
+    //
+    // Switches the active page for the given device instance to the named page.
+    // If the page is not found in the cache, logs and returns without changing state.
+    //
+    // instance:  The device instance to switch
+    // pageName:  The name of the page to load
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void ExecutePageLoad(HidDeviceInstance instance, string pageName)
+    {
+        DebugLog.Write($"KeyboardManager.ExecutePageLoad: instance={instance} pageName='{pageName}'.");
+
+        if (!_pageCache.TryGetValue((instance, pageName), out KeyPage? page))
+        {
+            DebugLog.Write($"KeyboardManager.ExecutePageLoad: page='{pageName}' not found in cache for {instance}, ignoring.");
+            return;
+        }
+
+        _activePages[instance] = page;
+        DebugLog.Write($"KeyboardManager.ExecutePageLoad: active page for {instance} set to '{page.Name}'.");
+
+        PushOsdData(instance, page);
     }
 }
