@@ -35,4 +35,9 @@ public class ProfilePageViewModel : INotifyPropertyChanged
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
+
+    public override string ToString()
+    {
+        return $"{PageName} ({Device})";
+    }
 }

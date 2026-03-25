@@ -247,6 +247,91 @@ public class KeyboardLayoutControl : Control
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // UpdateKey
+    //
+    // Updates the display state of a single key without refreshing the entire grid.
+    // Also updates the Keys dictionary so state is consistent.
+    //
+    // keyDisplay:  The new display state for the key
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public void UpdateKey(KeyDisplay keyDisplay)
+    {
+        DebugLog.Write($"KeyboardLayoutControl.UpdateKey: key='{keyDisplay.KeyName}'.");
+
+        if (Keys == null)
+        {
+            DebugLog.Write("KeyboardLayoutControl.UpdateKey: Keys dictionary is null, ignoring.");
+            return;
+        }
+
+        Keys[keyDisplay.KeyName] = keyDisplay;
+
+        Grid? activeGrid = GetActiveGrid();
+        if (activeGrid == null)
+        {
+            DebugLog.Write("KeyboardLayoutControl.UpdateKey: no active grid.");
+            return;
+        }
+
+        KeyDisplayControl? cell = activeGrid.Children
+            .OfType<KeyDisplayControl>()
+            .FirstOrDefault(c => c.KeyName == keyDisplay.KeyName);
+
+        if (cell == null)
+        {
+            DebugLog.Write($"KeyboardLayoutControl.UpdateKey: key='{keyDisplay.KeyName}' not found in grid.");
+            return;
+        }
+
+        cell.Label = keyDisplay.Label;
+        cell.KeyType = keyDisplay.KeyType;
+        cell.IsSelected = keyDisplay.IsSelected;
+        cell.IsPressed = keyDisplay.IsPressed;
+
+        DebugLog.Write($"KeyboardLayoutControl.UpdateKey: key='{keyDisplay.KeyName}' updated.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ClearKey
+    //
+    // Clears the display state of a single key, removing it from the Keys dictionary
+    // and resetting the corresponding KeyDisplayControl to its default appearance.
+    //
+    // keyName:  The key to clear
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public void ClearKey(string keyName)
+    {
+        DebugLog.Write($"KeyboardLayoutControl.ClearKey: key='{keyName}'.");
+
+        if (Keys != null)
+        {
+            Keys.Remove(keyName);
+        }
+
+        Grid? activeGrid = GetActiveGrid();
+        if (activeGrid == null)
+        {
+            return;
+        }
+
+        KeyDisplayControl? cell = activeGrid.Children
+            .OfType<KeyDisplayControl>()
+            .FirstOrDefault(c => c.KeyName == keyName);
+
+        if (cell == null)
+        {
+            return;
+        }
+
+        cell.Label = "-";
+        cell.KeyType = KeyType.Momentary;
+        cell.IsSelected = false;
+        cell.IsPressed = false;
+
+        DebugLog.Write($"KeyboardLayoutControl.ClearKey: key='{keyName}' cleared.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // RebuildGrid
     //
     // Shows the correct keyboard grid based on the current KeyboardType.

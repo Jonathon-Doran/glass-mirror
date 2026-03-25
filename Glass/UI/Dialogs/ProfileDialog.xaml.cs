@@ -982,32 +982,29 @@ public partial class ProfileDialog : Window
     {
         DebugLog.Write($"ProfileDialog.LoadBindingList: pageId={pageId}.");
 
-        var bindings = new KeyBindingRepository().GetBindingsForPage(pageId)
+        List<KeyBinding> bindings = new KeyBindingRepository().GetBindingsForPage(pageId)
             .OrderBy(b => System.Text.RegularExpressions.Regex.Replace(b.Key, @"\d+", m => m.Value.PadLeft(4, '0')))
             .ToList();
-        var commandMap = new CommandRepository().GetAllCommands().ToDictionary(c => c.Id, c => c);
-        var groupMap = new RelayGroupRepository().GetAllGroupNames().ToDictionary(g => g.Id, g => g.Name);
+        Dictionary<int, Command> commandMap = new CommandRepository().GetAllCommands().ToDictionary(c => c.Id, c => c);
+        Dictionary<int, string> groupMap = new RelayGroupRepository().GetAllGroupNames().ToDictionary(g => g.Id, g => g.Name);
 
-        var items = bindings.Select(b =>
+        List<KeyBindingViewModel> items = bindings.Select(b =>
         {
-            string commandName = (b.CommandId.HasValue && commandMap.TryGetValue(b.CommandId.Value, out var cmd))
+            string commandName = (b.CommandId.HasValue && commandMap.TryGetValue(b.CommandId.Value, out Command? cmd))
                 ? cmd.Name
                 : "(none)";
 
-            string shortName = (b.CommandId.HasValue && commandMap.TryGetValue(b.CommandId.Value, out var cmd2))
+            string shortName = (b.CommandId.HasValue && commandMap.TryGetValue(b.CommandId.Value, out Command? cmd2))
                 ? cmd2.ShortName
                 : string.Empty;
 
             string targetName = b.Target switch
             {
-                -1 => "(none)",
-                0 => "Self",
-                1 => "All Characters",
-                2 => "All Others",
-                3 => (b.RelayGroupId.HasValue && groupMap.TryGetValue(b.RelayGroupId.Value, out var gn))
-                        ? gn
-                        : "?",
-                _ => "?"
+                0 => "(none)",
+                1 => "Self",
+                2 => "All",
+                3 => "Others",
+                _ => groupMap.TryGetValue(b.Target, out string? gn) ? gn : "?"
             };
 
             return new KeyBindingViewModel
@@ -1027,11 +1024,8 @@ public partial class ProfileDialog : Window
     // LoadTargetGroupComboBox
     //
     // Populates the target group combo box with the special target values and all relay groups.
-    // Each item's Tag is an integer: -1=None, 0=Self, 1=All Characters, 2=All Others, 3=RelayGroup.
-    // For relay group items, the Tag is stored as a negative value offset to distinguish them —
-    // actually, relay group items store their relay_group_id in a separate field.
-    // Uses ComboBoxItem.Tag as int for special targets, and for relay groups stores the
-    // relay_group_id in a field accessible at save time.
+    // Special targets use fixed IDs: 0=none, 1=self, 2=all, 3=others.
+    // Relay groups use their database IDs directly (>=4).
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadTargetGroupComboBox()
     {
@@ -1039,15 +1033,15 @@ public partial class ProfileDialog : Window
 
         TargetGroupComboBox.Items.Clear();
 
-        TargetGroupComboBox.Items.Add(new ComboBoxItem { Content = "(none)", Tag = -1 });
-        TargetGroupComboBox.Items.Add(new ComboBoxItem { Content = "Self", Tag = 0 });
-        TargetGroupComboBox.Items.Add(new ComboBoxItem { Content = "All Characters", Tag = 1 });
-        TargetGroupComboBox.Items.Add(new ComboBoxItem { Content = "All Others", Tag = 2 });
+        TargetGroupComboBox.Items.Add(new ComboBoxItem { Content = "(none)", Tag = 0 });
+        TargetGroupComboBox.Items.Add(new ComboBoxItem { Content = "Self", Tag = 1 });
+        TargetGroupComboBox.Items.Add(new ComboBoxItem { Content = "All", Tag = 2 });
+        TargetGroupComboBox.Items.Add(new ComboBoxItem { Content = "Others", Tag = 3 });
 
-        var repo = new RelayGroupRepository();
-        var groups = repo.GetAllGroupNames();
+        RelayGroupRepository repo = new RelayGroupRepository();
+        List<(int Id, string Name)> groups = repo.GetAllGroupNames();
 
-        foreach (var group in groups)
+        foreach ((int Id, string Name) group in groups)
         {
             TargetGroupComboBox.Items.Add(new ComboBoxItem
             {
@@ -1084,7 +1078,7 @@ public partial class ProfileDialog : Window
             return;
         }
 
-        var profileRepo = new ProfileRepository(_profileName);
+        ProfileRepository profileRepo = new ProfileRepository(_profileName);
         int profileId = profileRepo.GetId();
 
         if (profileId == 0)
@@ -1093,15 +1087,18 @@ public partial class ProfileDialog : Window
             return;
         }
 
-        var pageRepo = new ProfilePageRepository();
-        var pages = pageRepo.GetPagesForProfile(profileId);
+        ProfilePageRepository pageRepo = new ProfilePageRepository();
+        List<ProfilePage> pages = pageRepo.GetPagesForProfile(profileId);
 
-        foreach (var page in pages)
+        foreach (ProfilePage page in pages)
         {
-            PageComboBox.Items.Add(new ComboBoxItem
+            PageComboBox.Items.Add(new ProfilePageViewModel
             {
-                Content = $"{page.PageName} ({page.Device.ToDeviceString()})",
-                Tag = page.KeyPageId
+                KeyPageId = page.KeyPageId,
+                PageName = page.PageName,
+                Device = page.Device,
+                InProfile = true,
+                IsStartPage = page.IsStartPage
             });
         }
 
@@ -1156,48 +1153,78 @@ public partial class ProfileDialog : Window
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // RefreshKey
+    //
+    // Updates the display state of a single key in the keyboard layout control.
+    // Builds a KeyDisplay from the current binding list for the given key.
+    //
+    // key:  The key to refresh
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void RefreshKey(string key)
+    {
+        DebugLog.Write($"ProfileDialog.RefreshKey: key='{key}'.");
+
+        string selectedKey = SelectedKeyTextBlock.Text;
+
+        KeyBindingViewModel? binding = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
+            ?.FirstOrDefault(b => b.Binding.Key == key);
+
+        KeyDisplay keyDisplay = new KeyDisplay
+        {
+            KeyName = key,
+            Label = binding?.ShortName ?? string.Empty,
+            KeyType = KeyType.Momentary,
+            IsSelected = (key == selectedKey)
+        };
+
+        KeyLayoutControl.UpdateKey(keyDisplay);
+
+        DebugLog.Write($"ProfileDialog.RefreshKey: key='{key}' label='{keyDisplay.Label}' isSelected={keyDisplay.IsSelected}.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // RefreshKeyLayout
     //
-    // Builds a KeyDisplay dictionary from the current binding list and pushes it to the
-    // KeyboardLayoutControl. The selected key is marked IsSelected.
+    // Updates the keyboard layout control to reflect the current binding list.
+    // Clears keys that no longer have bindings and refreshes keys that do.
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void RefreshKeyLayout()
     {
         DebugLog.Write("ProfileDialog.RefreshKeyLayout: refreshing.");
 
-        var boundKeys = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
-            ?.ToDictionary(b => b.Binding.Key, b => b)
-            ?? new Dictionary<string, KeyBindingViewModel>();
+        if (KeyLayoutControl.Keys == null)
+        {
+            KeyLayoutControl.Keys = new Dictionary<string, KeyDisplay>();
+        }
 
+        List<KeyBindingViewModel> boundItems = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
+            ?? new List<KeyBindingViewModel>();
+
+        HashSet<string> boundKeys = boundItems.Select(b => b.Binding.Key).ToHashSet();
+
+        // Clear keys that are no longer bound
+ 
+        foreach (string key in KeyLayoutControl.Keys.Keys.Where(k => !boundKeys.Contains(k)).ToList())
+        {
+            DebugLog.Write($"ProfileDialog.RefreshKeyLayout: clearing key='{key}'.");
+            KeyLayoutControl.ClearKey(key);
+        }
+ 
+
+        // Refresh all currently bound keys
+        foreach (KeyBindingViewModel item in boundItems)
+        {
+            RefreshKey(item.Binding.Key);
+        }
+
+        // Ensure the selected key is marked as selected even if unbound
         string selectedKey = SelectedKeyTextBlock.Text;
-
-        var keys = new Dictionary<string, KeyDisplay>();
-
-        foreach (var kvp in boundKeys)
+        if (!string.IsNullOrEmpty(selectedKey) && !boundKeys.Contains(selectedKey))
         {
-            keys[kvp.Key] = new KeyDisplay
-            {
-                KeyName = kvp.Key,
-                Label = kvp.Value.ShortName,
-                KeyType = KeyType.Momentary,
-                IsSelected = (kvp.Key == selectedKey)
-            };
+            RefreshKey(selectedKey);
         }
 
-        if (!string.IsNullOrEmpty(selectedKey) && !keys.ContainsKey(selectedKey))
-        {
-            keys[selectedKey] = new KeyDisplay
-            {
-                KeyName = selectedKey,
-                Label = string.Empty,
-                KeyType = KeyType.Momentary,
-                IsSelected = true
-            };
-        }
-
-        KeyLayoutControl.Keys = keys;
-
-        DebugLog.Write($"ProfileDialog.RefreshKeyLayout: pushed {keys.Count} keys.");
+        DebugLog.Write($"ProfileDialog.RefreshKeyLayout: complete.");
     }
 
     private void NewPage_Click(object sender, RoutedEventArgs e)
@@ -1258,12 +1285,12 @@ public partial class ProfileDialog : Window
         SelectedKeyTextBlock.Text = key;
         RefreshKeyLayout();
 
-        var binding = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
+        KeyBindingViewModel? binding = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
             ?.FirstOrDefault(b => b.Binding.Key == key);
 
         if (binding != null)
         {
-            DebugLog.Write($"ProfileDialog.KeyLayoutControl_KeyPressed: found binding. commandId={binding.Binding.CommandId} target={binding.Binding.Target} relayGroupId={binding.Binding.RelayGroupId}.");
+            DebugLog.Write($"ProfileDialog.KeyLayoutControl_KeyPressed: found binding. commandId={binding.Binding.CommandId} target={binding.Binding.Target}.");
 
             CommandTypeComboBox.SelectedItem = CommandTypeComboBox.Items
                 .OfType<ComboBoxItem>()
@@ -1271,10 +1298,7 @@ public partial class ProfileDialog : Window
 
             TargetGroupComboBox.SelectedItem = TargetGroupComboBox.Items
                 .OfType<ComboBoxItem>()
-                .FirstOrDefault(i => i.Tag is int tag &&
-                                     (binding.Binding.Target <= 2
-                                         ? tag == binding.Binding.Target
-                                         : tag == binding.Binding.RelayGroupId));
+                .FirstOrDefault(i => i.Tag is int tag && tag == binding.Binding.Target);
 
             RoundRobinCheckBox.IsChecked = binding.Binding.RoundRobin;
         }
@@ -1300,45 +1324,40 @@ public partial class ProfileDialog : Window
             MessageBox.Show("Please select a key first.", "No Key Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
+
         if (PageComboBox.SelectedItem is not ProfilePageViewModel page)
         {
             DebugLog.Write("ProfileDialog.SaveBinding_Click: no page selected.");
             return;
         }
+
         string key = SelectedKeyTextBlock.Text;
         int? commandId = (CommandTypeComboBox.SelectedItem as ComboBoxItem)?.Tag is int cid ? cid : null;
         bool roundRobin = RoundRobinCheckBox.IsChecked == true;
-        int target = -1;
-        int? relayGroupId = null;
+        int target = 0;
+
         if (TargetGroupComboBox.SelectedItem is ComboBoxItem targetItem && targetItem.Tag is int tag)
         {
-            if (tag <= 2)
-            {
-                target = tag;
-                relayGroupId = null;
-            }
-            else
-            {
-                target = 3;
-                relayGroupId = tag;
-            }
+            target = tag;
         }
-        DebugLog.Write($"ProfileDialog.SaveBinding_Click: page={page.KeyPageId} key='{key}' commandId={commandId} target={target} relayGroupId={relayGroupId} roundRobin={roundRobin}.");
-        var existing = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
-            ?.FirstOrDefault(b => b.Binding.Key == key);
 
-        var binding = existing?.Binding ?? new KeyBinding { KeyPageId = page.KeyPageId, Key = key };
+        DebugLog.Write($"ProfileDialog.SaveBinding_Click: page={page.KeyPageId} key='{key}' commandId={commandId} target={target} roundRobin={roundRobin}.");
+
+        List<KeyBindingViewModel>? existingItems = BindingListView.ItemsSource as List<KeyBindingViewModel>;
+        KeyBindingViewModel? existing = existingItems?.FirstOrDefault(b => b.Binding.Key == key);
+
+        KeyBinding binding = existing?.Binding ?? new KeyBinding { KeyPageId = page.KeyPageId, Key = key };
         binding.CommandId = commandId;
         binding.Target = target;
-        binding.RelayGroupId = relayGroupId;
         binding.RoundRobin = roundRobin;
 
-        var repo = new KeyBindingRepository();
+        KeyBindingRepository repo = new KeyBindingRepository();
         repo.Save(binding);
 
         DebugLog.Write($"ProfileDialog.SaveBinding_Click: saved. id={binding.Id}.");
+
         LoadBindingList(page.KeyPageId);
-        RefreshKeyLayout();
+        RefreshKey(key);
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1405,13 +1424,12 @@ public partial class ProfileDialog : Window
 
         CommandTypeComboBox.SelectedItem = CommandTypeComboBox.Items
             .OfType<ComboBoxItem>()
-            .FirstOrDefault(i => (int?)((ComboBoxItem)i).Tag == item.Binding.CommandId);
+            .FirstOrDefault(i => (int?)i.Tag == item.Binding.CommandId);
+
         TargetGroupComboBox.SelectedItem = TargetGroupComboBox.Items
             .OfType<ComboBoxItem>()
-            .FirstOrDefault(i => i.Tag is int tag &&
-                                 (item.Binding.Target <= 2
-                                     ? tag == item.Binding.Target
-                                     : tag == item.Binding.RelayGroupId));
+            .FirstOrDefault(i => i.Tag is int tag && tag == item.Binding.Target);
+
         RoundRobinCheckBox.IsChecked = item.Binding.RoundRobin;
     }
 
@@ -1429,44 +1447,30 @@ public partial class ProfileDialog : Window
             return;
         }
 
-        if (PageComboBox.SelectedItem is not ComboBoxItem item)
+        if (PageComboBox.SelectedItem is ComboBoxItem item)
         {
-            DebugLog.Write("ProfileDialog.PageComboBox_SelectionChanged: no item selected.");
+            if (item.Content.ToString() == "Manage Pages...")
+            {
+                DebugLog.Write("ProfileDialog.PageComboBox_SelectionChanged: Manage Pages selected.");
+                PageComboBox.SelectedIndex = 0;
+                ManagePages_Click(sender, e);
+            }
+            return;
+        }
+
+        if (PageComboBox.SelectedItem is not ProfilePageViewModel page)
+        {
+            DebugLog.Write("ProfileDialog.PageComboBox_SelectionChanged: no page selected.");
             KeyLayoutControl.Visibility = Visibility.Collapsed;
             return;
         }
 
-        if (item.Content.ToString() == "Manage Pages...")
-        {
-            DebugLog.Write("ProfileDialog.PageComboBox_SelectionChanged: Manage Pages selected.");
-            PageComboBox.SelectedIndex = 0;
-            ManagePages_Click(sender, e);
-            return;
-        }
-
-        if (item.Tag is not int keyPageId)
-        {
-            DebugLog.Write("ProfileDialog.PageComboBox_SelectionChanged: item has no valid tag, ignoring.");
-            KeyLayoutControl.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        var repo = new KeyPageRepository();
-        var page = repo.GetPage(keyPageId);
-
-        if (page == null)
-        {
-            DebugLog.Write($"ProfileDialog.PageComboBox_SelectionChanged: keyPageId={keyPageId} not found in database.");
-            KeyLayoutControl.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        DebugLog.Write($"ProfileDialog.PageComboBox_SelectionChanged: page='{page.Name}' device='{page.Device}'.");
+        DebugLog.Write($"ProfileDialog.PageComboBox_SelectionChanged: page='{page.PageName}' device='{page.Device}'.");
 
         KeyLayoutControl.Visibility = Visibility.Visible;
         KeyLayoutControl.Device = page.Device;
 
-        LoadBindingList(keyPageId);
+        LoadBindingList(page.KeyPageId);
         RefreshKeyLayout();
     }
 

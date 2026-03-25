@@ -155,6 +155,30 @@ public class Database
             pragmaOn.CommandText = "PRAGMA foreign_keys = ON";
             pragmaOn.ExecuteNonQuery();
         }
+        if (version < 17)
+        {
+            using SqliteCommand pragmaOff = conn.CreateCommand();
+            pragmaOff.CommandText = "PRAGMA foreign_keys = OFF";
+            pragmaOff.ExecuteNonQuery();
+
+            ApplyMigration(conn, 17, Migration_017);
+
+            using SqliteCommand pragmaOn = conn.CreateCommand();
+            pragmaOn.CommandText = "PRAGMA foreign_keys = ON";
+            pragmaOn.ExecuteNonQuery();
+        }
+        if (version < 18)
+        {
+            using SqliteCommand pragmaOff = conn.CreateCommand();
+            pragmaOff.CommandText = "PRAGMA foreign_keys = OFF";
+            pragmaOff.ExecuteNonQuery();
+
+            ApplyMigration(conn, 18, Migration_018);
+
+            using SqliteCommand pragmaOn = conn.CreateCommand();
+            pragmaOn.CommandText = "PRAGMA foreign_keys = ON";
+            pragmaOn.ExecuteNonQuery();
+        }
     }
 
     private int GetSchemaVersion()
@@ -439,6 +463,100 @@ public class Database
 
     ALTER TABLE KeyPages_new RENAME TO KeyPages;
     ";
+
+    private const string Migration_017 = @"
+    -- Rebuild KeyBindings: collapse relay_group_id into target, drop label
+    CREATE TABLE KeyBindings_new (
+        id          INTEGER PRIMARY KEY,
+        key_page_id INTEGER NOT NULL REFERENCES KeyPages(id),
+        key         TEXT NOT NULL,
+        command_id  INTEGER REFERENCES Commands(id),
+        target      INTEGER NOT NULL DEFAULT 0,
+        round_robin INTEGER NOT NULL DEFAULT 0,
+        UNIQUE (key_page_id, key)
+    );
+
+    INSERT INTO KeyBindings_new (id, key_page_id, key, command_id, target, round_robin)
+    SELECT
+        id,
+        key_page_id,
+        key,
+        command_id,
+        CASE
+            WHEN target = 3 AND relay_group_id IS NOT NULL THEN relay_group_id
+            ELSE target
+        END,
+        round_robin
+    FROM KeyBindings;
+
+    DROP TABLE KeyBindings;
+    ALTER TABLE KeyBindings_new RENAME TO KeyBindings;
+
+    -- Delete spurious special-case relay groups
+    DELETE FROM CharacterRelayGroups WHERE relay_group_id IN (
+        SELECT id FROM RelayGroups WHERE name IN ('All Characters', 'All Others')
+    );
+    DELETE FROM RelayGroups WHERE name IN ('All Characters', 'All Others');
+
+    -- Rebuild RelayGroups with clean sorted IDs starting at 4
+    CREATE TABLE RelayGroups_new (
+        id      INTEGER PRIMARY KEY,
+        name    TEXT NOT NULL UNIQUE
+    );
+
+    INSERT INTO RelayGroups_new (id, name) VALUES
+        ( 4, 'Dotters'),
+        ( 5, 'Enchanters'),
+        ( 6, 'Evacs'),
+        ( 7, 'Hasters'),
+        ( 8, 'Mages'),
+        ( 9, 'Mezzers'),
+        (10, 'Nukers'),
+        (11, 'Patch Healers'),
+        (12, 'Pet Users'),
+        (13, 'Prime Healers'),
+        (14, 'Rooters'),
+        (15, 'Shadowknights'),
+        (16, 'Shamen'),
+        (17, 'Snares'),
+        (18, 'Stunners'),
+        (19, 'Tanks'),
+        (20, 'Wizards');
+
+    DROP TABLE RelayGroups;
+    ALTER TABLE RelayGroups_new RENAME TO RelayGroups;
+";
+
+    private const string Migration_018 = @"
+    CREATE TABLE RelayGroups_new (
+        id      INTEGER PRIMARY KEY,
+        name    TEXT NOT NULL UNIQUE
+    );
+
+    INSERT INTO RelayGroups_new (id, name) VALUES
+        ( 4, 'Debuffers'),
+        ( 5, 'Dotters'),
+        ( 6, 'Enchanters'),
+        ( 7, 'Evacs'),
+        ( 8, 'Hasters'),
+        ( 9, 'Mages'),
+        (10, 'Mezzers'),
+        (11, 'Nukers'),
+        (12, 'Patch Healers'),
+        (13, 'Pet Users'),
+        (14, 'Prime Healers'),
+        (15, 'Rooters'),
+        (16, 'Shadowknights'),
+        (17, 'Shamen'),
+        (18, 'Slowers'),
+        (19, 'Snares'),
+        (20, 'Stunners'),
+        (21, 'Tanks'),
+        (22, 'Wizards');
+
+    DROP TABLE RelayGroups;
+    ALTER TABLE RelayGroups_new RENAME TO RelayGroups;
+";
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private const string Schema = @"

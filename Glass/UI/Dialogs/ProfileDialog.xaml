@@ -219,7 +219,7 @@
                                      Click="AssignPages_Click"/>
                         <CheckBox x:Name="ShowLabelsCheckBox" Content="Show Labels"
                                      VerticalAlignment="Center" Margin="16,0,0,0"
-                                     IsChecked="{Binding ShowLabel, ElementName=KeyLayoutControl, Mode=TwoWay}"/>
+                                    IsChecked="{Binding ShowLabel, ElementName=KeyLayoutControl, Mode=TwoWay}"/>
                     </StackPanel>
 
                     <!-- Hidden elements kept for code-behind compatibility -->
