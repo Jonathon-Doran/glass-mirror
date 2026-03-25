@@ -25,6 +25,7 @@ public partial class MainWindow : Window
     private ProfileRepository? _activeProfile;
     private readonly KeyboardManager _keyboardManager = new KeyboardManager();
     private Machine? _currentMachine;
+    private int _activeSessionCount = 0;
 
     // Constructor — initializes UI, database, pipe manager, and logging.
     public MainWindow()
@@ -237,9 +238,19 @@ public partial class MainWindow : Window
         var slots = repo.GetSlots();
         var charRepo = new CharacterRepository();
 
+        if (_activeProfile != null)
+        {
+            DebugLog.Write("MainWindow.LaunchProfile: a profile is already active, refusing launch.");
+            MessageBox.Show("A profile is already active. Please wait for all sessions to disconnect before launching a new profile.", "Profile Active", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         Log($"Launching profile: {profileName} ({slots.Count} characters)");
         _activeProfile = repo;
         _definedSlots.Clear();
+
+        _isxGlassPipeManager.Send("new_profile");
+        PushRelayGroupState(repo.GetId());
 
         // Load slot placements from the first layout for this profile.
         var layoutRepo = new WindowLayoutRepository();
@@ -283,8 +294,8 @@ public partial class MainWindow : Window
                 continue;
             }
             _keyboardManager.LoadProfile(profileName);
-            Log($"  Launching: {character.Name} accountId={character.AccountId} server={character.Server}");
-            _isxGlassPipeManager.Send($"launch {character.AccountId} {character.Name} {character.Server}");
+            Log($"  Launching: {character.Name} accountId={character.AccountId} server={character.Server} id={character.Id}");
+            _isxGlassPipeManager.Send($"launch {character.AccountId} {character.Name} {character.Server} {character.Id}");
             int delay = rng.Next(4000, 7000);
             await Task.Delay(delay);
         }
@@ -485,6 +496,9 @@ public partial class MainWindow : Window
                                 DebugLog.Write(DebugLog.Log_Sessions, $"HandleISXGlassMessage: no slot assignment found for character '{characterName}'.");
                             }
                         }
+
+                        _activeSessionCount++;
+                        DebugLog.Write($"session count incremented to {_activeSessionCount}.");
                     }
                     else
                     {
@@ -508,6 +522,17 @@ public partial class MainWindow : Window
                     DebugLog.Write(DebugLog.Log_Sessions, $"session_disconnected: {sessionName}");
                     _sessionRegistry.OnSessionDisconnected(sessionName);
                     _glassVideoPipeManager.Send($"unassign {sessionName}");
+
+                    _activeSessionCount--;
+                    DebugLog.Write($"session count decremented to {_activeSessionCount}.");
+
+                    if ((_activeSessionCount <= 0) && (_activeProfile != null))
+                    {
+                        DebugLog.Write(DebugLog.Log_Sessions, "MainWindow: all sessions disconnected, clearing active profile.");
+                        _activeSessionCount = 0;
+                        _activeProfile = null;
+                    }
+
                     break;
                 }
 

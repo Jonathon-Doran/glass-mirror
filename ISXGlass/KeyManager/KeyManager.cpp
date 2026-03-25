@@ -338,6 +338,45 @@ void KeyManager::StopRepeat(CommandID commandId, GroupID groupId)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// KeyManager::Reset
+//
+// Stops all running repeat threads and clears all group, command, and round-robin state.
+// Called when a new profile is launched to ensure stale state does not carry over.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void KeyManager::Reset()
+{
+    Logger::Instance().Write("KeyManager::Reset: stopping all repeat threads.");
+
+    std::unique_lock<std::mutex> lock(_mutex);
+
+    for (auto& pair : _repeats)
+    {
+        if (pair.second.running)
+        {
+            pair.second.running = false;
+        }
+    }
+
+    lock.unlock();
+
+    for (auto& pair : _repeats)
+    {
+        if (pair.second.thread.joinable())
+        {
+            pair.second.thread.join();
+        }
+    }
+
+    std::lock_guard<std::mutex> relock(_mutex);
+    _repeats.clear();
+    _groups.clear();
+    _commands.clear();
+    _roundRobinIterators.clear();
+
+    Logger::Instance().Write("KeyManager::Reset: complete.");
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // KeyManager::Shutdown
 //
 // Stops all running repeat threads cleanly.

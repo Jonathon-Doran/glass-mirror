@@ -73,6 +73,9 @@ public:
     // Stops auto-repeat for a command on a group.
     void StopRepeat(CommandID commandId, GroupID groupId);
 
+    // Clears state in preparation for a new profile
+    void Reset();
+
     // Shuts down all repeat threads cleanly.
     void Shutdown();
 

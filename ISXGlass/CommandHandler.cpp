@@ -320,6 +320,21 @@ static void HandleVar(const std::string& args)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// HandleNewProfile
+//
+// Called when Glass notifies ISXGlass that a new profile is being launched.
+// Resets all KeyManager state so stale group and command definitions are cleared
+// before the new profile's state is pushed.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static void HandleNewProfile(const std::string& args)
+{
+    Logger::Instance().Write("HandleNewProfile: resetting KeyManager state.");
+    g_KeyManager.Reset();
+    g_SessionManager.Reset();
+    Logger::Instance().Write("HandleNewProfile: reset complete.");
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // HandleRelayGroup
 //
 // Handles a bulk relay group membership message from Glass.
@@ -346,7 +361,7 @@ static void HandleRelayGroup(const std::string& args)
         {
             CharacterID characterId = (CharacterID)atoi(token.c_str());
             characterIds.push_back(characterId);
-            Logger::Instance().Write("HandleRelayGroup: characterId=%u", characterId);
+            Logger::Instance().Write("HandleRelayGroup: groupId=%u characterId=%u", groupId, characterId);
         }
     }
 
@@ -521,6 +536,10 @@ void HandleCommand(const std::string& cmd)
     else if (verb == "stop")
     {
         HandleStop(args);
+    }
+    else if (verb == "new_profile")
+    {
+        HandleNewProfile(args);
     }
     else if (verb == "relay_group")
     {

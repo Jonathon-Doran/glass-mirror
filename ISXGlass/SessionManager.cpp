@@ -704,6 +704,41 @@ void SessionManager::SetProcessAffinity(SessionEntry* entry)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SessionManager::Reset
+//
+// Closes all job object handles, clears the session cache, and clears pending launches.
+// Called when a new profile is launched to ensure stale session state does not carry over.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SessionManager::Reset()
+{
+    Logger::Instance().Write("SessionManager::Reset: clearing session state.");
+
+    for (auto& pair : _sessions)
+    {
+        if (pair.second.jobObject != nullptr)
+        {
+            Logger::Instance().WriteIf(Logger::Instance().Log_Sessions,
+                "SessionManager::Reset: closing job handle=%p for session='%s'.",
+                pair.second.jobObject, pair.second.sessionName.c_str());
+            CloseHandle(pair.second.jobObject);
+            pair.second.jobObject = nullptr;
+        }
+    }
+
+    _sessions.clear();
+
+    {
+        std::lock_guard<std::mutex> lock(_pendingMutex);
+        _pendingLaunches.clear();
+        Logger::Instance().WriteIf(Logger::Instance().Log_Sessions, "SessionManager::Reset: cleared pending launches.");
+    }
+
+    LSVariables::ClearCollection(ISXGLASS_CHARS_VAR);
+
+    Logger::Instance().Write("SessionManager::Reset: complete.");
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SendSessionConnected
 //
 // Formats and sends a session_connected notification to Glass.exe.

@@ -39,6 +39,9 @@ public:
     static bool GetAt(const char* name, unsigned int index, T& value);
     static bool GetStringAt(const char* name, unsigned int index, char* buf, unsigned int buflen);
 
+    // remove all variables from a collection
+    static void ClearCollection(const char* collectionName);
+
     // Remove a key from a collection
     static void Erase(const char* name, const char* key);
 

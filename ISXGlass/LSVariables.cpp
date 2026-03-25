@@ -367,6 +367,22 @@ template<> bool LSVariables::GetAt<unsigned char>(const char* name, unsigned int
     return true;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// LSVariables::ClearCollection
+//
+// Removes all entries from a LavishScript collection variable, leaving the
+// variable itself intact.
+//
+// collectionName:  The name of the collection variable to clear (e.g. "ISXGlassChars")
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void LSVariables::ClearCollection(const char* collectionName)
+{
+    char command[256];
+    snprintf(command, sizeof(command), "%s:Clear", collectionName);
+    Logger::Instance().Write("LSVariables::ClearCollection: %s", command);
+    pISInterface->ExecuteCommand(command);
+}
+
 // Remove a key from a collection.
 void LSVariables::Erase(const char* name, const char* key)
 {

@@ -66,7 +66,8 @@ public:
     // and assigns the given process to it. Stores the job handle in the session entry.
     void SetProcessAffinity(SessionEntry* entry);
 
-
+    // Clears state in preparation for a new profile
+    void Reset();
 private:
     // Parses the account ID from a session name e.g. "is9" -> 9.
     // Returns 0 if the name does not match the expected format.
