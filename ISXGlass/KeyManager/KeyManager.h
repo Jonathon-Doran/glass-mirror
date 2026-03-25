@@ -44,6 +44,14 @@ struct RepeatState
 class KeyManager
 {
 public:
+    // Stores pending group membership from a bulk relay_group message.
+    // Resolves any already-connected characters immediately.
+    void LoadRelayGroup(GroupID groupId, const std::vector<CharacterID>& characterIds);
+
+    // Resolves pending group memberships for the given character ID.
+    void ResolvePending(CharacterID characterId, const std::string& sessionName);
+
+
     // Registers a group ID.
     void DefineGroup(GroupID groupId);
 
@@ -81,6 +89,9 @@ private:
     std::map<GroupID, MemberSet::iterator>                 _roundRobinIterators;
     std::map<CommandID, CommandDefinition>                 _commands;
     std::map<std::pair<CommandID, GroupID>, RepeatState>   _repeats;
+
+    // Pending group membership: character IDs waiting for session connection
+    std::map<GroupID, std::set<CharacterID>> _pendingGroupMembers;
 };
 
 extern KeyManager g_KeyManager;

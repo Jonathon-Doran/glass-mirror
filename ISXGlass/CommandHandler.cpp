@@ -3,6 +3,8 @@
 #include "KeyManager.h"
 #include "Logger.h"
 
+#include <sstream>
+
 // Parse a string into up to 4 tokens separated by spaces.
 // Returns the number of tokens found.
 static int ParseTokens(const std::string& input, std::string* tokens, int maxTokens)
@@ -84,15 +86,22 @@ static void HandleStatus(const std::string& args)
     }
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// HandleLaunch
+//
+// Launches an EverQuest session for the given account.
+// Expects: accountId characterName server characterId
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void HandleLaunch(const std::string& args)
 {
-    std::string tokens[3];
-    int count = ParseTokens(args, tokens, 3);
+    std::string tokens[4];
+    int count = ParseTokens(args, tokens, 4);
 
-    if (count < 3)
+    if (count < 4)
     {
-        Logger::Instance().Write("HandleLaunch: requires accountId, characterName and server.");
-        g_PipeManager.Send("launch error requires accountId characterName and server");
+        Logger::Instance().Write("HandleLaunch: requires accountId, characterName, server, and characterId.");
+        g_PipeManager.Send("launch error requires accountId characterName server characterId");
         return;
     }
 
@@ -104,8 +113,12 @@ static void HandleLaunch(const std::string& args)
         return;
     }
 
-    Logger::Instance().Write("HandleLaunch: accountId=%u characterName=%s server=%s", accountId, tokens[1].c_str(), tokens[2].c_str());
-    g_SessionManager.Launch(accountId, tokens[1].c_str(), tokens[2].c_str());
+    CharacterID characterId = (CharacterID)atoi(tokens[3].c_str());
+
+    Logger::Instance().Write("HandleLaunch: accountId=%u characterName=%s server=%s characterId=%u",
+        accountId, tokens[1].c_str(), tokens[2].c_str(), characterId);
+
+    g_SessionManager.Launch(accountId, tokens[1].c_str(), tokens[2].c_str(), characterId);
     g_PipeManager.Send(("launch " + tokens[1]).c_str());
 }
 
@@ -305,6 +318,41 @@ static void HandleVar(const std::string& args)
         g_PipeManager.Send("var error unknown subverb");
     }
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// HandleRelayGroup
+//
+// Handles a bulk relay group membership message from Glass.
+// Expects: groupId characterId [characterId ...]
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static void HandleRelayGroup(const std::string& args)
+{
+    std::istringstream stream(args);
+    std::string token;
+
+    if (!std::getline(stream, token, ' '))
+    {
+        Logger::Instance().Write("HandleRelayGroup: missing groupId.");
+        return;
+    }
+
+    GroupID groupId = (GroupID)atoi(token.c_str());
+    Logger::Instance().Write("HandleRelayGroup: groupId=%u", groupId);
+
+    std::vector<CharacterID> characterIds;
+    while (std::getline(stream, token, ' '))
+    {
+        if (!token.empty())
+        {
+            CharacterID characterId = (CharacterID)atoi(token.c_str());
+            characterIds.push_back(characterId);
+            Logger::Instance().Write("HandleRelayGroup: characterId=%u", characterId);
+        }
+    }
+
+    g_KeyManager.LoadRelayGroup(groupId, characterIds);
+}
+
 static void HandleGroupDefine(const std::string& args)
 {
     std::string tokens[1];
@@ -473,6 +521,10 @@ void HandleCommand(const std::string& cmd)
     else if (verb == "stop")
     {
         HandleStop(args);
+    }
+    else if (verb == "relay_group")
+    {
+        HandleRelayGroup(args);
     }
     else
     {

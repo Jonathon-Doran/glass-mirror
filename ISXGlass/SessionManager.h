@@ -13,6 +13,7 @@
 #define ISXGLASS_CHARS_VAR "ISXGlassChars"
 
 typedef unsigned int SessionID;
+typedef unsigned int CharacterID;
 
 // Tracks all known information about an active Inner Space session.
 struct SessionEntry
@@ -20,6 +21,7 @@ struct SessionEntry
     std::string    sessionName;
     SessionID      sessionId;
     std::string    characterName;
+    CharacterID    characterId = 0;
     DWORD          pid = 0;
     HWND           hwnd = NULL;
     HANDLE         jobObject = NULL;
@@ -36,7 +38,7 @@ public:
 
     // Launches EverQuest in the given slot if not already active.
     // Stores the character name in the cache and in ISXGlassChars.
-    void Launch(SessionID sessionId, const char* characterName, const char* server);
+    void Launch(SessionID sessionId, const char* characterName, const char* server, CharacterID characterId);
 
     // Returns the character name for the given account ID, or empty string
     // if not known.
@@ -50,6 +52,9 @@ public:
     // Returns a pointer to the session entry for the given session name, or nullptr if not found.
     SessionEntry* FindSession(const std::string& sessionName);
     SessionEntry* FindSession(SessionID sessionId);
+
+    // Returns a pointer to the session entry for the given Glass character ID, or nullptr if not found.
+    SessionEntry* FindSessionForCharacter(unsigned int characterId);
 
     // Returns a copy of the full session cache.
     const std::map<SessionID, SessionEntry>& GetSessions() const;
@@ -76,7 +81,8 @@ private:
 
 
 
-    std::map<SessionID, SessionEntry> _sessions;
+    std::map<SessionID, SessionEntry>           _sessions;
+    std::map<CharacterID, SessionEntry>       _characterIdToSession;
 };
 
 extern SessionManager g_SessionManager;

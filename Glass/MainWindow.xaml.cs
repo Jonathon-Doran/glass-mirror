@@ -333,6 +333,45 @@ public partial class MainWindow : Window
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // PushRelayGroupState
+    //
+    // Sends the full relay group membership state for the given profile to ISXGlass.
+    // Sends one message per group: "relaygroup <groupId> <characterId1> <characterId2>..."
+    // Groups with no profile members are skipped.
+    // Called on ISXGlass connect if a profile is active, and on profile load if already connected.
+    //
+    // profileId:  The profile whose relay group state to push
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void PushRelayGroupState(int profileId)
+    {
+        DebugLog.Write($"MainWindow.PushRelayGroupState: profileId={profileId}.");
+
+        List<RelayGroup> groups = new RelayGroupRepository().GetAllGroupsForProfile(profileId);
+
+        foreach (RelayGroup group in groups)
+        {
+            if (group.Characters.Count == 0)
+            {
+                DebugLog.Write($"MainWindow.PushRelayGroupState: groupId={group.Id} name='{group.Name}' has no profile members, skipping.");
+                continue;
+            }
+
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.Append($"relay_group {group.Id}");
+            foreach (Character character in group.Characters)
+            {
+                sb.Append($" {character.Id}");
+            }
+
+            string message = sb.ToString();
+            DebugLog.Write($"MainWindow.PushRelayGroupState: sending: {message}");
+            _isxGlassPipeManager.Send(message);
+        }
+
+        DebugLog.Write("MainWindow.PushRelayGroupState: done.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // HandleLocalCommand
     //
     // Local command handler.  These are the "/" commands entered on the Glass console.

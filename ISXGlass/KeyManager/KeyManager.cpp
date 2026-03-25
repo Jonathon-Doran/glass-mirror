@@ -5,6 +5,74 @@
 KeyManager g_KeyManager;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// KeyManager::LoadRelayGroup
+//
+// Stores pending group membership from a bulk relay_group message.
+// Defines the group, stores all character IDs as pending, and resolves
+// any characters that are already connected.
+//
+// groupId:      The group to define
+// characterIds: The Glass character IDs that belong to this group
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void KeyManager::LoadRelayGroup(GroupID groupId, const std::vector<CharacterID>& characterIds)
+{
+    Logger::Instance().Write("KeyManager::LoadRelayGroup: groupId=%u count=%zu", groupId, characterIds.size());
+
+    std::vector<std::pair<CharacterID, std::string>> toResolve;
+
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+
+        if (_groups.find(groupId) == _groups.end())
+        {
+            _groups[groupId] = MemberSet();
+        }
+
+        _pendingGroupMembers[groupId] = std::set<CharacterID>(characterIds.begin(), characterIds.end());
+
+        for (CharacterID characterId : characterIds)
+        {
+            SessionEntry* entry = g_SessionManager.FindSessionForCharacter(characterId);
+            if (entry != nullptr)
+            {
+                toResolve.push_back({ characterId, entry->sessionName });
+            }
+        }
+    }
+
+    for (const auto& pair : toResolve)
+    {
+        ResolvePending(pair.first, pair.second);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// KeyManager::ResolvePending
+//
+// Resolves pending group memberships for the given character.
+// Called when a session connects. If the character has no pending memberships, returns silently.
+//
+// characterId:  The Glass character ID that just connected
+// sessionName:  The session name to add to any pending groups
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void KeyManager::ResolvePending(CharacterID characterId, const std::string& sessionName)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    for (auto& pair : _pendingGroupMembers)
+    {
+        if (pair.second.find(characterId) != pair.second.end())
+        {
+            GroupID groupId = pair.first;
+            _groups[groupId].insert(sessionName);
+            _roundRobinIterators[groupId] = _groups[groupId].begin();
+            Logger::Instance().Write("KeyManager::ResolvePending: characterId=%u resolved to session=%s in groupId=%u",
+                characterId, sessionName.c_str(), groupId);
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // KeyManager::DefineGroup
 //
 // Registers a group ID. Creates an empty member set if the group does not already exist.

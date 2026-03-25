@@ -1,6 +1,7 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.modernwpf.com/2019"
     xmlns:controls="clr-namespace:Glass.Controls">
 
     <Style TargetType="{x:Type controls:KeyDisplayControl}">
@@ -231,4 +232,54 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <Style TargetType="{x:Type controls:RelayGroupMatrix}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type controls:RelayGroupMatrix}">
+                    <Border Background="#1A2A2A" Padding="6">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Top-left: static corner -->
+                            <Border Grid.Row="0" Grid.Column="0" Background="#1A2A2A"/>
+
+                            <!-- Top-right: character name headers, horizontal scroll only -->
+                            <ScrollViewer x:Name="PART_HeaderScrollViewer"
+                                      Grid.Row="0" Grid.Column="1"
+                                      HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Disabled">
+                                <Grid x:Name="PART_HeaderGrid"/>
+                            </ScrollViewer>
+
+                            <!-- Bottom-left: group name labels, vertical scroll only -->
+                            <ScrollViewer x:Name="PART_LabelScrollViewer"
+                                      Grid.Row="1" Grid.Column="0"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      VerticalScrollBarVisibility="Hidden">
+                                <Grid x:Name="PART_LabelGrid"/>
+                            </ScrollViewer>
+                            
+                            <!-- Bottom-right: cell grid, scrolls both directions -->
+                            <ScrollViewer x:Name="PART_ScrollViewer"
+                                      Grid.Row="1" Grid.Column="1"
+                                      HorizontalScrollBarVisibility="Visible"
+                                      VerticalScrollBarVisibility="Visible"
+                                      ui:ScrollViewerHelper.AutoHideScrollBars="False">
+                                <Grid x:Name="PART_Grid"/>
+                            </ScrollViewer>
+
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>
+

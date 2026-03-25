@@ -2,6 +2,7 @@
 #include "ISXGlass.h"
 #include "SessionManager.h"
 #include "Logger.h"
+#include "KeyManager.h"
 
 SessionManager g_SessionManager;
 
@@ -188,7 +189,7 @@ void SessionManager::AddPendingLaunch(const std::string& sessionName)
 // server:  The name of the server
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void SessionManager::Launch(SessionID sessionId, const char* characterName, const char* server)
+void SessionManager::Launch(SessionID sessionId, const char* characterName, const char* server, CharacterID characterId)
 {
     if (IsSessionActive(sessionId))
     {
@@ -226,6 +227,14 @@ void SessionManager::Launch(SessionID sessionId, const char* characterName, cons
     entry.sessionId = sessionId;
     entry.characterName = characterName;
     entry.jobObject = nullptr;
+    entry.characterId = characterId;
+
+    if (characterId != 0)
+    {
+        _characterIdToSession[characterId] = entry;
+        Logger::Instance().WriteIf(Logger::Instance().Log_Sessions, "SessionManager::Launch: mapped characterId=%u to session=%s", characterId, sessionName.c_str());
+    }
+
     _sessions[sessionId] = entry;
     Logger::Instance().WriteIf(Logger::Instance().Log_Sessions, "SessionManager::Launch: session entry created for sessionId=%u", sessionId);
 
@@ -352,6 +361,12 @@ static void OnSessionRenamed(int argc, char* argv[], PLSOBJECT pThis)
     Logger::Instance().WriteIf(Logger::Instance().Log_Sessions, "OnSessionRenamed: HUD indicators hidden for session=%s", sessionName.c_str());
   
     entry->hwnd = hwnd;
+
+    if (entry->characterId != 0)
+    {
+        g_KeyManager.ResolvePending(entry->characterId, sessionName);
+    }
+
     // Notify Glass.exe of new session
     g_SessionManager.SendSessionConnected(sessionName, pid, hwnd);
 }
@@ -479,6 +494,26 @@ SessionEntry* SessionManager::FindSession(SessionID sessionId)
     {
         return nullptr;
     }
+    return &it->second;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// FindSessionForCharacter
+//
+// Returns a pointer to the session entry for the given Glass character ID,
+// or nullptr if not found.
+//
+// characterId:  The Glass database character ID to look up
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+SessionEntry* SessionManager::FindSessionForCharacter(CharacterID characterId)
+{
+    auto it = _characterIdToSession.find(characterId);
+    if (it == _characterIdToSession.end())
+    {
+        Logger::Instance().Write("SessionManager::FindSessionForCharacter: characterId=%u not found.", characterId);
+        return nullptr;
+    }
+
     return &it->second;
 }
 

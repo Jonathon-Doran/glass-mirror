@@ -229,8 +229,6 @@
                         <Button    x:Name="NewPageButton"    Click="NewPage_Click"/>
                         <Button    x:Name="RenamePageButton" Click="RenamePage_Click"/>
                         <Button    x:Name="DeletePageButton" Click="DeletePage_Click"/>
-                        <CheckBox  x:Name="PageInProfileCheckBox" Click="PageInProfile_Click"/>
-                        <CheckBox  x:Name="PageIsStartCheckBox"   Click="PageIsStart_Click"/>
                         <ListView  x:Name="PageListView" SelectionChanged="PageListView_SelectionChanged">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
@@ -311,6 +309,9 @@
                         </StackPanel>
                     </Grid>
                 </Grid>
+            </TabItem>
+            <TabItem x:Name="RelayGroupsTab" Header="Relay Groups">
+                <controls:RelayGroupMatrix x:Name="RelayGroupMatrixControl" Margin="8"/>
             </TabItem>
         </TabControl>
 

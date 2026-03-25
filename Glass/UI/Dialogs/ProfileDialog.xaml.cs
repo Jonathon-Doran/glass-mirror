@@ -377,6 +377,11 @@ public partial class ProfileDialog : Window
             LoadCommandComboBox();
         }
 
+        if (RelayGroupsTab.IsSelected)
+        {
+            LoadRelayGroupsTab();
+        }
+
         if ((e.AddedItems.Count > 0) &&
             (e.AddedItems[0] is TabItem added) &&
             (added.Header.ToString() == "Keyboard Layout"))
@@ -509,6 +514,42 @@ public partial class ProfileDialog : Window
         }
 
         DebugLog.Write($"ProfileDialog.LoadMachineComboBox: loaded {machines.Count} machines.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // LoadRelayGroupsTab
+    //
+    // Loads relay groups and character membership for the active profile into the matrix control.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void LoadRelayGroupsTab()
+    {
+        DebugLog.Write("ProfileDialog.LoadRelayGroupsTab: loading.");
+
+        List<RelayGroup> groups = new RelayGroupRepository().GetAllGroups();
+        DebugLog.Write($"ProfileDialog.LoadRelayGroupsTab: {groups.Count} groups.");
+
+        List<Character> characters = _slotAssignments
+            .Select(s => _characterRepo.GetById(s.CharacterId))
+            .Where(c => c != null)
+            .Cast<Character>()
+            .ToList();
+        DebugLog.Write($"ProfileDialog.LoadRelayGroupsTab: {characters.Count} characters.");
+
+        HashSet<(int GroupId, int CharacterId)> membership = new HashSet<(int, int)>();
+        foreach (RelayGroup group in groups)
+        {
+            foreach (Character member in group.Characters)
+            {
+                membership.Add((group.Id, member.Id));
+            }
+        }
+        DebugLog.Write($"ProfileDialog.LoadRelayGroupsTab: {membership.Count} membership pairs.");
+
+        RelayGroupMatrixControl.Load(groups, characters, membership);
+        RelayGroupMatrixControl.MembershipChanged -= RelayGroupMatrixControl_MembershipChanged;         // prevent double-wiring
+        RelayGroupMatrixControl.MembershipChanged += RelayGroupMatrixControl_MembershipChanged;
+
+        DebugLog.Write("ProfileDialog.LoadRelayGroupsTab: done.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -986,7 +1027,7 @@ public partial class ProfileDialog : Window
             .OrderBy(b => System.Text.RegularExpressions.Regex.Replace(b.Key, @"\d+", m => m.Value.PadLeft(4, '0')))
             .ToList();
         Dictionary<int, Command> commandMap = new CommandRepository().GetAllCommands().ToDictionary(c => c.Id, c => c);
-        Dictionary<int, string> groupMap = new RelayGroupRepository().GetAllGroupNames().ToDictionary(g => g.Id, g => g.Name);
+        Dictionary<int, string> groupMap = new RelayGroupRepository().GetAllGroups().ToDictionary(g => g.Id, g => g.Name);
 
         List<KeyBindingViewModel> items = bindings.Select(b =>
         {
@@ -1039,9 +1080,9 @@ public partial class ProfileDialog : Window
         TargetGroupComboBox.Items.Add(new ComboBoxItem { Content = "Others", Tag = 3 });
 
         RelayGroupRepository repo = new RelayGroupRepository();
-        List<(int Id, string Name)> groups = repo.GetAllGroupNames();
+        List<RelayGroup> groups = repo.GetAllGroups();
 
-        foreach ((int Id, string Name) group in groups)
+        foreach (RelayGroup group in groups)
         {
             TargetGroupComboBox.Items.Add(new ComboBoxItem
             {
@@ -1261,14 +1302,6 @@ public partial class ProfileDialog : Window
 
         LoadBindingList(page.KeyPageId);
         RefreshKeyLayout();
-    }
-
-    private void PageInProfile_Click(object sender, RoutedEventArgs e)
-    {
-    }
-
-    private void PageIsStart_Click(object sender, RoutedEventArgs e)
-    {
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1514,5 +1547,29 @@ public partial class ProfileDialog : Window
 
         LoadPageComboBox();
         LoadKeyboardLayoutTab();
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // RelayGroupMatrixControl_MembershipChanged
+    //
+    // Fires when the user toggles a cell in the relay group matrix.
+    // Persists the change to the database.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void RelayGroupMatrixControl_MembershipChanged(object? sender, RelayGroupMatrix.MembershipChangedEventArgs e)
+    {
+        DebugLog.Write($"ProfileDialog.RelayGroupMatrixControl_MembershipChanged: groupId={e.GroupId} characterId={e.CharacterId} added={e.Added}.");
+
+        RelayGroupRepository repo = new RelayGroupRepository();
+
+        if (e.Added)
+        {
+            repo.AddMember(e.GroupId, e.CharacterId);
+        }
+        else
+        {
+            repo.RemoveMember(e.GroupId, e.CharacterId);
+        }
+
+        DebugLog.Write($"ProfileDialog.RelayGroupMatrixControl_MembershipChanged: done.");
     }
 }

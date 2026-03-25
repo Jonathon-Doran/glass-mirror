@@ -1,8 +1,0 @@
-﻿<UserControl x:Class="Glass.Controls.RelayGroupMatrix"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <ScrollViewer HorizontalScrollBarVisibility="Auto" 
-                  VerticalScrollBarVisibility="Auto">
-        <Grid x:Name="MatrixGrid"/>
-    </ScrollViewer>
-</UserControl>
