@@ -407,47 +407,68 @@ static void HandleGroupRemove(const std::string& args)
     g_KeyManager.RemoveFromGroup(groupId, tokens[1]);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// HandleCmdDefine
+//
+// Declares a command ID, clearing any existing steps.
+// Protocol: cmd_define <commandId>
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void HandleCmdDefine(const std::string& args)
 {
-    std::string tokens[3];
-    if (ParseTokens(args, tokens, 3) < 3)
+    std::string tokens[1];
+    if (ParseTokens(args, tokens, 1) < 1)
     {
-        Logger::Instance().Write("HandleCmdDefine: requires commandId, type, and action.");
+        Logger::Instance().Write("HandleCmdDefine: requires commandId.");
         return;
     }
     CommandID commandId = (CommandID)atoi(tokens[0].c_str());
+    Logger::Instance().Write("HandleCmdDefine: commandId=%u", commandId);
+    g_KeyManager.DeclareCommand(commandId);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// HandleCmdStep
+//
+// Adds a single step to an existing command definition.
+// Protocol: cmd_step <commandId> <sequence> <type> <delayMs> <value>
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static void HandleCmdStep(const std::string& args)
+{
+ 
+
+    std::string tokens[5];
+    if (ParseTokens(args, tokens, 5) < 5)
+    {
+        Logger::Instance().Write("HandleCmdStep: requires commandId, sequence, type, delayMs, and value.");
+        return;
+    }
+
+    CommandID    commandId = (CommandID)atoi(tokens[0].c_str());
+    StepID       sequence = (StepID)atoi(tokens[1].c_str());
+    unsigned int delayMs = (unsigned int)atoi(tokens[3].c_str());
+    std::string& value = tokens[4];
+
     CommandActionType actionType;
-    if (tokens[1] == "key")
+    if (tokens[2] == "key")
     {
         actionType = CommandActionType::Keystroke;
     }
-    else if (tokens[1] == "text")
+    else if (tokens[2] == "text")
     {
         actionType = CommandActionType::Text;
     }
     else
     {
-        Logger::Instance().Write("HandleCmdDefine: unknown type: %s", tokens[1].c_str());
+        Logger::Instance().Write("HandleCmdStep: unknown type: %s", tokens[2].c_str());
         return;
     }
-    Logger::Instance().Write("HandleCmdDefine: commandId=%u type=%s action=%s",
-        commandId, tokens[1].c_str(), tokens[2].c_str());
-    g_KeyManager.DefineCommand(commandId, actionType, tokens[2]);
+
+    Logger::Instance().Write("HandleCmdStep: commandId=%u sequence=%u type=%s delayMs=%u value=%s",
+        commandId, sequence, tokens[2].c_str(), delayMs, value.c_str());
+
+    g_KeyManager.AddCommandStep(commandId, sequence, actionType, delayMs, value);
 }
 
-static void HandleKey(const std::string& args)
-{
-    std::string tokens[2];
-    if (ParseTokens(args, tokens, 2) < 2)
-    {
-        Logger::Instance().Write("HandleKey: requires commandId and groupId.");
-        return;
-    }
-    CommandID commandId = (CommandID)atoi(tokens[0].c_str());
-    GroupID groupId = (GroupID)atoi(tokens[1].c_str());
-    Logger::Instance().Write("HandleKey: commandId=%u groupId=%u", commandId, groupId);
-    g_KeyManager.ExecuteKey(commandId, groupId);
-}
 
 static void HandleStart(const std::string& args)
 {
@@ -478,13 +499,34 @@ static void HandleStop(const std::string& args)
     g_KeyManager.StopRepeat(commandId, groupId);
 }
 
-// ----------------------------------------------------------------------------
-// Dispatcher
-// ----------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// HandleCmdExecute
+//
+// Executes a command on the given target group.
+// Protocol: cmd_execute <commandId> <groupId>
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static void HandleCmdExecute(const std::string& args)
+{
+    std::string tokens[2];
+    if (ParseTokens(args, tokens, 2) < 2)
+    {
+        Logger::Instance().Write("HandleCmdExecute: requires commandId and groupId.");
+        return;
+    }
+    CommandID commandId = (CommandID)atoi(tokens[0].c_str());
+    GroupID groupId = (GroupID)atoi(tokens[1].c_str());
+    Logger::Instance().Write("HandleCmdExecute: commandId=%u groupId=%u", commandId, groupId);
+    g_KeyManager.ExecuteCommand(commandId, groupId);
+}
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// HandleCommand
+//
 // Dispatches a single command received from Glass.exe.
 // Called from PulseService on the Inner Space pulse thread.
 // No blocking operations permitted.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void HandleCommand(const std::string& cmd)
 {
     Logger::Instance().Write("HandleCommand: %s", cmd.c_str());
@@ -525,9 +567,13 @@ void HandleCommand(const std::string& cmd)
     {
         HandleCmdDefine(args);
     }
-    else if (verb == "key")
+    else if (verb == "cmd_step")
     {
-        HandleKey(args);
+        HandleCmdStep(args);
+    }
+    else if (verb == "cmd_execute")
+    {
+        HandleCmdExecute(args);
     }
     else if (verb == "start")
     {

@@ -4,6 +4,7 @@ using Glass.Data.Repositories;
 using Glass.Input;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Data;
 
 namespace Glass.Core;
 
@@ -34,11 +35,16 @@ public class KeyboardManager
     // OSD windows keyed by device instance — created on LoadProfile, shown on trigger
     private readonly Dictionary<HidDeviceInstance, KeyboardOsdWindow> _osdWindows = new();
 
+    private readonly Action<string> _pipeSend;
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // KeyboardManager
+    //
+    // pipeSend:  Delegate used to send messages to ISXGlass over the pipe
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public KeyboardManager()
+    public KeyboardManager(Action<string> pipeSend)
     {
+        _pipeSend = pipeSend;
         DebugLog.Write("KeyboardManager: initialized.");
     }
 
@@ -309,11 +315,13 @@ public class KeyboardManager
     // ExecuteCommand
     //
     // Executes all steps of a command for the triggering device instance.
+    // Relay steps (key/text) are sent to ISXGlass via cmd_execute.
+    // Page load steps are handled locally.
     //
     // command:       The command to execute
     // instance:      The device instance that triggered the command
-    // target:        The binding target (used for relay steps)
-    // relayGroupId:  The relay group ID if target is a group
+    // target:        The relay group ID to execute on
+    // relayGroupId:  Unused — target is used directly
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ExecuteCommand(Command command, HidDeviceInstance instance, int target, int? relayGroupId)
     {
@@ -323,6 +331,17 @@ public class KeyboardManager
         {
             DebugLog.Write($"KeyboardManager.ExecuteCommand: command='{command.Name}' has no steps.");
             return;
+        }
+
+        if (target > 0)
+        {
+            string message = $"cmd_execute {command.Id} {target}";
+            DebugLog.Write($"KeyboardManager.ExecuteCommand: sending: {message}");
+            _pipeSend(message);
+        }
+        else
+        {
+            DebugLog.Write($"KeyboardManager.ExecuteCommand: target={target} is not a valid group, skipping pipe send.");
         }
 
         foreach (CommandStep step in command.Steps.OrderBy(s => s.Sequence))
@@ -335,7 +354,7 @@ public class KeyboardManager
             }
             else
             {
-                DebugLog.Write($"KeyboardManager.ExecuteCommand: step type='{step.Type}' not yet handled.");
+                DebugLog.Write($"KeyboardManager.ExecuteCommand: step type='{step.Type}' handled by ISXGlass.");
             }
         }
     }

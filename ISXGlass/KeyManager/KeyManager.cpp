@@ -4,6 +4,20 @@
 
 KeyManager g_KeyManager;
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// KeyManager::Start
+//
+// Starts the execution worker thread.
+// Called once during ISXGlass initialization.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void KeyManager::Start()
+{
+    _execRunning = true;
+    _execThread = std::thread(&KeyManager::ExecutionWorker, this);
+    Logger::Instance().Write("KeyManager::Start: execution worker thread started.");
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // KeyManager::LoadRelayGroup
 //
@@ -139,26 +153,57 @@ void KeyManager::RemoveFromGroup(GroupID groupId, const std::string& sessionName
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// KeyManager::DefineCommand
+// KeyManager::DeclareCommand
 //
-// Defines or replaces a command definition.
+// Registers a command ID, clearing any existing steps.
+// Called when Glass sends cmd_define before the cmd_step messages.
 //
-// commandId:   The command ID
-// actionType:  Keystroke or Text
-// action:      The keystroke combo or text string
+// commandId:  The command ID to declare
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void KeyManager::DefineCommand(CommandID commandId, CommandActionType actionType, const std::string& action)
+void KeyManager::DeclareCommand(CommandID commandId)
 {
     std::lock_guard<std::mutex> lock(_mutex);
 
-    CommandDefinition def;
+    CommandDefinition& def = _commands[commandId];
     def.id = commandId;
-    def.actionType = actionType;
-    def.action = action;
-    _commands[commandId] = def;
+    def.steps.clear();
 
-    Logger::Instance().Write("KeyManager::DefineCommand: commandId=%u type=%d action=%s",
-        commandId, (int)actionType, action.c_str());
+    Logger::Instance().Write("KeyManager::DeclareCommand: commandId=%u", commandId);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// KeyManager::AddCommandStep
+//
+// Adds a single step to an existing command definition.
+// If the command has not been declared, logs a warning and returns.
+//
+// commandId:   The command to add the step to
+// sequence:    The step sequence number — steps execute in ascending sequence order
+// actionType:  Keystroke or Text
+// delayMs:     Milliseconds to wait after executing this step
+// value:       The keystroke string or text string to execute
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void KeyManager::AddCommandStep(CommandID commandId, StepID sequence, CommandActionType actionType, unsigned int delayMs, const std::string& value)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    auto it = _commands.find(commandId);
+    if (it == _commands.end())
+    {
+        Logger::Instance().Write("KeyManager::AddCommandStep: commandId=%u not declared, ignoring step sequence=%u.", commandId, sequence);
+        return;
+    }
+
+    CommandStep step;
+    step.sequence = sequence;
+    step.actionType = actionType;
+    step.delayMs = delayMs;
+    step.value = value;
+
+    it->second.steps[sequence] = step;
+
+    Logger::Instance().Write("KeyManager::AddCommandStep: commandId=%u sequence=%u type=%d delayMs=%u value=%s",
+        commandId, sequence, (int)actionType, delayMs, value.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -199,67 +244,38 @@ std::string KeyManager::RoundRobinNext(GroupID groupId)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// KeyManager::ExecuteOnSession
+// KeyManager::ExecuteCommand
 //
-// Executes a command on a single session via IS relay.
-// For Keystroke actions, relays a press command.
-// For Text actions, relays the text string.
-//
-// cmd:         The command definition
-// sessionName: The session to execute on
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void KeyManager::ExecuteOnSession(const CommandDefinition& cmd, const std::string& sessionName)
-{
-    char command[512] = {};
-
-    if (cmd.actionType == CommandActionType::Keystroke)
-    {
-        snprintf(command, sizeof(command), "relay %s \"press %s\"",
-            sessionName.c_str(), cmd.action.c_str());
-    }
-    else
-    {
-        snprintf(command, sizeof(command), "relay %s \"%s\"",
-            sessionName.c_str(), cmd.action.c_str());
-    }
-
-    Logger::Instance().Write("KeyManager::ExecuteOnSession: %s", command);
-    pISInterface->ExecuteCommand(command);
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// KeyManager::ExecuteKey
-//
-// Executes a command on all sessions in the given group.
+// Executes a command on all sessions in the given group via the execution queue.
 // If the command definition does not exist or the group is empty, logs and returns.
 //
 // commandId:  The command to execute
 // groupId:    The target group
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void KeyManager::ExecuteKey(CommandID commandId, GroupID groupId)
+void KeyManager::ExecuteCommand(CommandID commandId, GroupID groupId)
 {
     std::lock_guard<std::mutex> lock(_mutex);
 
     auto cmdIt = _commands.find(commandId);
     if (cmdIt == _commands.end())
     {
-        Logger::Instance().Write("KeyManager::ExecuteKey: commandId=%u not found.", commandId);
+        Logger::Instance().Write("KeyManager::ExecuteCommand: commandId=%u not found.", commandId);
         return;
     }
 
     auto groupIt = _groups.find(groupId);
     if ((groupIt == _groups.end()) || groupIt->second.empty())
     {
-        Logger::Instance().Write("KeyManager::ExecuteKey: groupId=%u not found or empty.", groupId);
+        Logger::Instance().Write("KeyManager::ExecuteCommand: groupId=%u not found or empty.", groupId);
         return;
     }
 
-    Logger::Instance().Write("KeyManager::ExecuteKey: commandId=%u groupId=%u members=%zu",
+    Logger::Instance().Write("KeyManager::ExecuteCommand: commandId=%u groupId=%u members=%zu",
         commandId, groupId, groupIt->second.size());
 
     for (const auto& sessionName : groupIt->second)
     {
-        ExecuteOnSession(cmdIt->second, sessionName);
+        EnqueueExecution(cmdIt->second, sessionName);
     }
 }
 
@@ -298,7 +314,7 @@ void KeyManager::StartRepeat(CommandID commandId, GroupID groupId, unsigned int 
             Logger::Instance().Write("KeyManager: repeat thread started. commandId=%u groupId=%u", commandId, groupId);
             while (state.running)
             {
-                ExecuteKey(commandId, groupId);
+                ExecuteCommand(commandId, groupId);
                 std::this_thread::sleep_for(std::chrono::milliseconds(intervalMs));
             }
             Logger::Instance().Write("KeyManager: repeat thread stopped. commandId=%u groupId=%u", commandId, groupId);
@@ -340,7 +356,8 @@ void KeyManager::StopRepeat(CommandID commandId, GroupID groupId)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // KeyManager::Reset
 //
-// Stops all running repeat threads and clears all group, command, and round-robin state.
+// Stops all running repeat threads and clears all group, command, round-robin,
+// and execution queue state. The execution worker thread continues running.
 // Called when a new profile is launched to ensure stale state does not carry over.
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void KeyManager::Reset()
@@ -367,6 +384,15 @@ void KeyManager::Reset()
         }
     }
 
+    {
+        std::lock_guard<std::mutex> execLock(_execMutex);
+        while (!_execQueue.empty())
+        {
+            _execQueue.pop();
+        }
+        Logger::Instance().Write("KeyManager::Reset: execution queue cleared.");
+    }
+
     std::lock_guard<std::mutex> relock(_mutex);
     _repeats.clear();
     _groups.clear();
@@ -377,9 +403,156 @@ void KeyManager::Reset()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// KeyManager::ExecutionWorker
+//
+// Worker thread that drains the execution queue.
+// Blocks on the condition variable when the queue is empty.
+// Exits cleanly when _execRunning is false and the queue is empty.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void KeyManager::ExecutionWorker()
+{
+    Logger::Instance().Write("KeyManager::ExecutionWorker: started.");
+
+    while (true)
+    {
+        std::function<void()> task;
+
+        {
+            std::unique_lock<std::mutex> lock(_execMutex);
+            _execCV.wait(lock, [this]()
+                {
+                    return (!_execQueue.empty() || !_execRunning);
+                });
+
+            if (!_execRunning && _execQueue.empty())
+            {
+                Logger::Instance().Write("KeyManager::ExecutionWorker: exiting.");
+                return;
+            }
+
+            task = std::move(_execQueue.front());
+            _execQueue.pop();
+        }
+
+        task();
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// KeyManager::CharacterDelay
+//
+// Returns a randomized inter-character delay in milliseconds simulating
+// natural human typing at approximately 120wpm.
+// Distribution is non-linear:
+//   60% chance: 60-100ms  (fast keystrokes)
+//   30% chance: 100-180ms (brief pause)
+//   10% chance: 180-400ms (occasional hesitation)
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+unsigned int KeyManager::CharacterDelay()
+{
+    int roll = rand() % 100;
+
+    if (roll < 60)
+    {
+        return 60 + (rand() % 41);
+    }
+    else if (roll < 90)
+    {
+        return 100 + (rand() % 81);
+    }
+    else
+    {
+        return 180 + (rand() % 221);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// KeyManager::EnqueueExecution
+//
+// Enqueues all steps of a command for execution on the given session.
+// Keystroke steps are sent as a single relay press command.
+// Text steps are sent one character at a time with randomized inter-character delays.
+// A step delay is applied after all characters of a step are sent, if delayMs is non-zero.
+//
+// cmd:         The command definition containing the steps to execute
+// sessionName: The session to execute on
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void KeyManager::EnqueueExecution(const CommandDefinition& cmd, const std::string& sessionName)
+{
+    if (cmd.steps.empty())
+    {
+        Logger::Instance().Write("KeyManager::EnqueueExecution: commandId=%u has no steps, skipping session=%s.",
+            cmd.id, sessionName.c_str());
+        return;
+    }
+
+    Logger::Instance().Write("KeyManager::EnqueueExecution: commandId=%u steps=%zu session=%s.",
+        cmd.id, cmd.steps.size(), sessionName.c_str());
+
+
+    for (const auto& pair : cmd.steps)
+    {
+        const CommandStep step = pair.second;
+        const std::string session = sessionName;
+        const CommandID cmdId = cmd.id;
+
+        if (step.actionType == CommandActionType::Keystroke)
+        {
+            std::lock_guard<std::mutex> lock(_execMutex);
+            _execQueue.push([this, step, session, cmdId]()
+                {
+                    char command[512] = {};
+                    snprintf(command, sizeof(command), "relay %s \"press %s\"",
+                        session.c_str(), step.value.c_str());
+                    Logger::Instance().Write("KeyManager::ExecutionWorker: commandId=%u sequence=%u keystroke: %s",
+                        cmdId, step.sequence, command);
+                    pISInterface->ExecuteCommand(command);
+
+                    if (step.delayMs > 0)
+                    {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(step.delayMs));
+                    }
+                });
+        }
+        else
+        {
+            // Text — one task per character with randomized delay
+            for (char ch : step.value)
+            {
+                std::lock_guard<std::mutex> lock(_execMutex);
+                const char character = ch;
+                unsigned int delay = CharacterDelay();
+                _execQueue.push([this, character, session, cmdId, step, delay]()
+                    {
+                        char command[512] = {};
+                        snprintf(command, sizeof(command), "relay %s \"press %c\"",
+                            session.c_str(), character);
+                        Logger::Instance().Write("KeyManager::ExecutionWorker: commandId=%u sequence=%u text char='%c'",
+                            cmdId, step.sequence, character);
+                        pISInterface->ExecuteCommand(command);
+                        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+                    });
+            }
+
+            if (step.delayMs > 0)
+            {
+                std::lock_guard<std::mutex> lock(_execMutex);
+                unsigned int delayMs = step.delayMs;
+                _execQueue.push([delayMs]()
+                    {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+                    });
+            }
+        }
+    }
+
+    _execCV.notify_one();
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // KeyManager::Shutdown
 //
-// Stops all running repeat threads cleanly.
+// Stops all running repeat threads and the execution worker thread cleanly.
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void KeyManager::Shutdown()
 {
@@ -405,8 +578,19 @@ void KeyManager::Shutdown()
         }
     }
 
-    std::lock_guard<std::mutex> relock(_mutex);
-    _repeats.clear();
+    {
+        std::lock_guard<std::mutex> relock(_mutex);
+        _repeats.clear();
+    }
+
+    // Stop execution worker thread
+    _execRunning = false;
+    _execCV.notify_all();
+
+    if (_execThread.joinable())
+    {
+        _execThread.join();
+    }
 
     Logger::Instance().Write("KeyManager::Shutdown: complete.");
 }

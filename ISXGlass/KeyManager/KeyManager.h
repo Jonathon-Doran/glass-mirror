@@ -6,11 +6,16 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include <queue>
+#include <condition_variable>
+#include <functional>
 #include <windows.h>
 
 typedef unsigned int CommandID;
 typedef unsigned int GroupID;
-typedef std::set<std::string>  MemberSet;
+typedef unsigned int StepID;
+typedef unsigned int CharacterID;
+typedef std::set<std::string> MemberSet;
 
 // Describes the type of action a command performs.
 enum class CommandActionType
@@ -19,38 +24,60 @@ enum class CommandActionType
     Text
 };
 
-// A command definition — maps a command ID to an action.
+// A single step within a command.
+struct CommandStep
+{
+    StepID              sequence;
+    CommandActionType   actionType;
+    unsigned int        delayMs;
+    std::string         value;
+};
+
+// A command definition — maps a command ID to an ordered map of steps.
 struct CommandDefinition
 {
-    CommandID            id;
-    CommandActionType    actionType;
-    std::string          action;  // keystroke string or text string
+    CommandID                        id;
+    std::map<StepID, CommandStep>    steps;
 };
 
 // Tracks repeat state for a running auto-repeat binding.
 struct RepeatState
 {
-    CommandID       commandId;
-    GroupID         groupId;
-    unsigned int    intervalMs;
-    std::thread     thread;
+    CommandID         commandId;
+    GroupID           groupId;
+    unsigned int      intervalMs;
+    std::thread       thread;
     std::atomic<bool> running;
 
     RepeatState() : commandId(0), groupId(0), intervalMs(0), running(false) {}
 };
 
-// KeyManager owns group membership, command definitions, round-robin state,
-// and auto-repeat threads for the ISXGlass keyboard system.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// KeyManager
+//
+// Owns group membership, command definitions, round-robin state, auto-repeat
+// threads, and the execution queue for the ISXGlass keyboard system.
+//
+// All pISInterface->ExecuteCommand calls are routed through a single worker
+// thread to prevent concurrent access to the IS interface.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 class KeyManager
 {
 public:
+    // Starts the execution worker thread.
+    void Start();
+
+    // Stops the execution worker thread and all repeat threads cleanly.
+    void Shutdown();
+
+    // Clears state in preparation for a new profile.
+    void Reset();
+
     // Stores pending group membership from a bulk relay_group message.
-    // Resolves any already-connected characters immediately.
     void LoadRelayGroup(GroupID groupId, const std::vector<CharacterID>& characterIds);
 
     // Resolves pending group memberships for the given character ID.
     void ResolvePending(CharacterID characterId, const std::string& sessionName);
-
 
     // Registers a group ID.
     void DefineGroup(GroupID groupId);
@@ -61,11 +88,14 @@ public:
     // Removes a session from a group.
     void RemoveFromGroup(GroupID groupId, const std::string& sessionName);
 
-    // Defines or replaces a command definition.
-    void DefineCommand(CommandID commandId, CommandActionType actionType, const std::string& action);
+    // Declares a command ID, clearing any existing steps.
+    void DeclareCommand(CommandID commandId);
 
-    // Executes a command on the given target group.
-    void ExecuteKey(CommandID commandId, GroupID groupId);
+    // Adds or replaces a single step in an existing command definition.
+    void AddCommandStep(CommandID commandId, StepID sequence, CommandActionType actionType, unsigned int delayMs, const std::string& value);
+
+    // Executes a command on the given target group via the execution queue.
+    void ExecuteCommand(CommandID commandId, GroupID groupId);
 
     // Starts auto-repeat for a command on a group at the given interval.
     void StartRepeat(CommandID commandId, GroupID groupId, unsigned int intervalMs);
@@ -73,28 +103,32 @@ public:
     // Stops auto-repeat for a command on a group.
     void StopRepeat(CommandID commandId, GroupID groupId);
 
-    // Clears state in preparation for a new profile
-    void Reset();
-
-    // Shuts down all repeat threads cleanly.
-    void Shutdown();
-
 private:
-    // Returns the next session name in round-robin order for the given group,
-    // or empty string if the group is empty.
+    // Returns the next session name in round-robin order for the given group.
     std::string RoundRobinNext(GroupID groupId);
 
-    // Executes the given command on a single session.
-    void ExecuteOnSession(const CommandDefinition& cmd, const std::string& sessionName);
+    // Enqueues all steps of a command for execution on the given session.
+    void EnqueueExecution(const CommandDefinition& cmd, const std::string& sessionName);
 
-    std::mutex                                             _mutex;
-    std::map<GroupID, MemberSet>                           _groups;                 // map of group to membership
-    std::map<GroupID, MemberSet::iterator>                 _roundRobinIterators;
-    std::map<CommandID, CommandDefinition>                 _commands;
-    std::map<std::pair<CommandID, GroupID>, RepeatState>   _repeats;
+    // Worker thread entry point — drains the execution queue.
+    void ExecutionWorker();
 
-    // Pending group membership: character IDs waiting for session connection
-    std::map<GroupID, std::set<CharacterID>> _pendingGroupMembers;
+    // Computes a randomized inter-character delay in milliseconds.
+    unsigned int CharacterDelay();
+
+    std::mutex                                           _mutex;
+    std::map<GroupID, MemberSet>                         _groups;
+    std::map<GroupID, MemberSet::iterator>               _roundRobinIterators;
+    std::map<CommandID, CommandDefinition>               _commands;
+    std::map<std::pair<CommandID, GroupID>, RepeatState> _repeats;
+    std::map<GroupID, std::set<CharacterID>>             _pendingGroupMembers;
+
+    // Execution queue
+    std::queue<std::function<void()>>   _execQueue;
+    std::mutex                          _execMutex;
+    std::condition_variable             _execCV;
+    std::atomic<bool>                   _execRunning;
+    std::thread                         _execThread;
 };
 
 extern KeyManager g_KeyManager;

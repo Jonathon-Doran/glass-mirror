@@ -56,8 +56,7 @@ bool ISXGlass::Initialize(ISInterface* p_ISInterface)
 
     g_PipeManager.Start(OnCommandReceived);
     g_SessionManager.Initialize();
-
-
+    g_KeyManager.Start();
 
     return true;
 }

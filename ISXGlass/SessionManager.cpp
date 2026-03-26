@@ -272,12 +272,12 @@ static void OnSessionConnected(int argc, char* argv[], PLSOBJECT pThis)
     Logger::Instance().WriteIf(Logger::Instance().Log_Sessions, "OnSessionConnected: sessionName='%s' pid=%u", sessionName.c_str(), pid);
 
     entry = g_SessionManager.FindSession(sessionName);
-    entry->pid = pid;
 
     if (entry)
     {
         Logger::Instance().Write("OnSessionConnected:  found session entry");
     }
+    entry->pid = pid;
 
     g_SessionManager.SetProcessAffinity(entry);
 }

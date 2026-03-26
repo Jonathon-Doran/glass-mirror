@@ -23,7 +23,8 @@ public partial class MainWindow : Window
     private readonly SessionRegistry _sessionRegistry = new();
     private readonly HashSet<int> _definedSlots = new();
     private ProfileRepository? _activeProfile;
-    private readonly KeyboardManager _keyboardManager = new KeyboardManager();
+    private readonly KeyboardManager _keyboardManager;
+
     private Machine? _currentMachine;
     private int _activeSessionCount = 0;
 
@@ -33,8 +34,6 @@ public partial class MainWindow : Window
         InitializeComponent();
         SetDatabaseMenuState(false);
         AutoLoadDatabase();
-
-
 
         DebugLog.Initialize(msg => Dispatcher.Invoke(() => Log(msg)));
         if (Database.IsInitialized)
@@ -55,6 +54,7 @@ public partial class MainWindow : Window
         _isxGlassPipeManager.Disconnected += () => Dispatcher.Invoke(() => SetISXGlassStatus(false));
         _isxGlassPipeManager.MessageReceived += msg => Dispatcher.Invoke(() => HandleISXGlassMessage(msg));
         _isxGlassPipeManager.Start();
+        _keyboardManager = new KeyboardManager(msg => _isxGlassPipeManager.Send(msg));
 
         _glassVideoPipeManager = new PipeManager("GlassVideo", "GlassVideo_Cmd", "GlassVideo_Notify");
         _glassVideoPipeManager.Connected += () => Dispatcher.Invoke(() => SetGlassVideoStatus(true));
@@ -251,6 +251,7 @@ public partial class MainWindow : Window
 
         _isxGlassPipeManager.Send("new_profile");
         PushRelayGroupState(repo.GetId());
+        PushCommandState();
 
         // Load slot placements from the first layout for this profile.
         var layoutRepo = new WindowLayoutRepository();
@@ -380,6 +381,64 @@ public partial class MainWindow : Window
         }
 
         DebugLog.Write("MainWindow.PushRelayGroupState: done.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // PushCommandState
+    //
+    // Sends all command definitions to ISXGlass over the pipe.
+    // Sends cmd_define for each command, followed by cmd_step for each step.
+    // Key alias values are resolved to their actual keystroke strings before sending.
+    // Called as part of profile launch after new_profile is sent.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void PushCommandState()
+    {
+        DebugLog.Write("MainWindow.PushCommandState: loading commands.");
+
+        List<Command> commands = new CommandRepository().GetAllCommands();
+        KeyAliasRepository aliasRepo = new KeyAliasRepository();
+
+        DebugLog.Write($"MainWindow.PushCommandState: {commands.Count} commands.");
+
+        foreach (Command command in commands)
+        {
+            Command? full = new CommandRepository().GetCommand(command.Id);
+            if (full == null)
+            {
+                DebugLog.Write($"MainWindow.PushCommandState: commandId={command.Id} not found, skipping.");
+                continue;
+            }
+
+            if (full.Steps.Count == 0)
+            {
+                DebugLog.Write($"MainWindow.PushCommandState: commandId={command.Id} name='{command.Name}' has no steps, skipping.");
+                continue;
+            }
+
+            _isxGlassPipeManager.Send($"cmd_define {full.Id}");
+            DebugLog.Write($"MainWindow.PushCommandState: cmd_define {full.Id} name='{full.Name}'.");
+
+            foreach (CommandStep step in full.Steps.OrderBy(s => s.Sequence))
+            {
+                string value = step.Value;
+
+                if (step.Type == "key")
+                {
+                    string? resolved = aliasRepo.Resolve(value);
+                    if (resolved != null)
+                    {
+                        value = resolved;
+                        DebugLog.Write($"MainWindow.PushCommandState: resolved alias '{step.Value}' -> '{value}'.");
+                    }
+                }
+
+                string message = $"cmd_step {full.Id} {step.Sequence} {step.Type} {step.DelayMs} {value}";
+                DebugLog.Write($"MainWindow.PushCommandState: {message}");
+                _isxGlassPipeManager.Send(message);
+            }
+        }
+
+        DebugLog.Write("MainWindow.PushCommandState: done.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
