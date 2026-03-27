@@ -17,6 +17,10 @@ public class SessionRegistry
 
     private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
+    public event Action? AllSessionsDisconnected;
+
+    private int _sessionCount = 0;
+
     // Represents a single active EverQuest session.
     public class SessionEntry
     {
@@ -33,12 +37,16 @@ public class SessionRegistry
     // OnSessionConnected
     //
     // Adds or updates a session when ISXGlass reports it has connected.
-    // The HWND is not yet known at this point.
+    //
+    // sessionName:    The session name e.g. "is7"
+    // characterName:  The character logged in to this session
+    // pid:            The process ID of the EQ client
+    // hwnd:           The main window handle of the EQ client
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public void OnSessionConnected(string sessionName, string characterName, uint pid)
+
+    public void OnSessionConnected(string sessionName, string characterName, uint pid, IntPtr hwnd)
     {
-        DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.OnSessionConnected: session={sessionName} character={characterName} pid={pid}");
-        lock (_lock)
+       lock (_lock)
         {
             if (!_sessions.TryGetValue(sessionName, out var entry))
             {
@@ -47,11 +55,12 @@ public class SessionRegistry
             }
             entry.CharacterName = characterName;
             entry.Pid = pid;
-            entry.Hwnd = IntPtr.Zero;
+            entry.Hwnd = hwnd;
         }
 
-        // Attempt HWND lookup immediately — it may already exist.
-        TryFindHwnd(sessionName);
+        _sessionCount++;
+        DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.OnSessionConnected: session={sessionName} count={_sessionCount} character={characterName} pid={pid} hwnd={hwnd}");
+
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,64 +72,45 @@ public class SessionRegistry
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void OnSessionDisconnected(string sessionName)
     {
-        DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.OnSessionDisconnected: session={sessionName}");
-        _sessions.Remove(sessionName);
+        DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.OnSessionDisconnected: session={sessionName} count will be={_sessionCount - 1}.");
+
+        lock (_lock)
+        {
+            _sessions.Remove(sessionName);
+        }
+
+        _sessionCount--;
+
+        if (_sessionCount <= 0)
+        {
+            _sessionCount = 0;
+            DebugLog.Write(DebugLog.Log_Sessions, "SessionRegistry.OnSessionDisconnected: all sessions disconnected.");
+            AllSessionsDisconnected?.Invoke();
+        }
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // TryFindHwnd
+    // FindSessionByHwnd
     //
-    // Finds the main window for a session by enumerating top-level windows
-    // and matching on PID.
+    // Returns the session name for the given window handle, or null if not found.
+    //
+    // hwnd:  The window handle to look up
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    private void TryFindHwnd(string sessionName)
+    public string? FindSessionByHwnd(IntPtr hwnd)
     {
-        SessionEntry? entry;
         lock (_lock)
         {
-            if (!_sessions.TryGetValue(sessionName, out entry))
+            foreach (KeyValuePair<string, SessionEntry> pair in _sessions)
             {
-                DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.TryFindHwnd: session={sessionName} not found.");
-                return;
-            }
-            if (entry.Pid == 0)
-            {
-                DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.TryFindHwnd: session={sessionName} has no PID yet.");
-                return;
-            }
-        }
-
-        uint targetPid = entry.Pid;
-        IntPtr found = IntPtr.Zero;
-
-        EnumWindows((hwnd, _) =>
-        {
-            GetWindowThreadProcessId(hwnd, out uint pid);
-            if (pid == targetPid)
-            {
-                var className = new System.Text.StringBuilder(256);
-                GetClassName(hwnd, className, className.Capacity);
-                if (className.ToString() == "_EverQuestwndclass")
+                if (pair.Value.Hwnd == hwnd)
                 {
-                    found = hwnd;
-                    return false;
+                    DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.FindSessionByHwnd: found session={pair.Key}.");
+                    return pair.Key;
                 }
             }
-            return true;
-        }, IntPtr.Zero);
-
-        if (found != IntPtr.Zero)
-        {
-            lock (_lock)
-            {
-                entry.Hwnd = found;
-            }
-            DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.TryFindHwnd: session={sessionName} hwnd={found:X}");
         }
-        else
-        {
-            DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.TryFindHwnd: session={sessionName} no visible window found for pid={targetPid}.");
-        }
+        DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.FindSessionByHwnd: hwnd={hwnd:X} not found.");
+        return null;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -18,17 +18,15 @@ public partial class MainWindow : Window
     [DllImport("user32.dll")]
     static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
 
-    private readonly PipeManager _isxGlassPipeManager;
-    private readonly PipeManager _glassVideoPipeManager;
-    private readonly SessionRegistry _sessionRegistry = new();
     private readonly HashSet<int> _definedSlots = new();
     private ProfileRepository? _activeProfile;
-    private readonly KeyboardManager _keyboardManager;
 
-    private Machine? _currentMachine;
-    private int _activeSessionCount = 0;
 
-    // Constructor — initializes UI, database, pipe manager, and logging.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // MainWindow
+    //
+    // Initializes UI, database, pipe managers, keyboard manager, and logging.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public MainWindow()
     {
         InitializeComponent();
@@ -36,37 +34,39 @@ public partial class MainWindow : Window
         AutoLoadDatabase();
 
         DebugLog.Initialize(msg => Dispatcher.Invoke(() => Log(msg)));
+
         if (Database.IsInitialized)
         {
-            var machineRepo = new MachineRepository();
-
-            _currentMachine = machineRepo.GetOrCreate(Environment.MachineName);
-            DebugLog.Write($"MainWindow: current machine id={_currentMachine.Id} name='{_currentMachine.Name}'.");
-
-            if (_currentMachine.Devices.Count == 0)
+            MachineRepository machineRepo = new MachineRepository();
+            GlassContext.CurrentMachine = machineRepo.GetOrCreate(Environment.MachineName);
+            DebugLog.Write($"MainWindow: current machine id={GlassContext.CurrentMachine.Id} name='{GlassContext.CurrentMachine.Name}'.");
+            if (GlassContext.CurrentMachine.Devices.Count == 0)
             {
                 DebugLog.Write("MainWindow: no devices configured for this machine.");
             }
         }
 
-        _isxGlassPipeManager = new PipeManager("ISXGlass", "ISXGlass_Commands", "ISXGlass_Notify");
-        _isxGlassPipeManager.Connected += () => Dispatcher.Invoke(() => SetISXGlassStatus(true));
-        _isxGlassPipeManager.Disconnected += () => Dispatcher.Invoke(() => SetISXGlassStatus(false));
-        _isxGlassPipeManager.MessageReceived += msg => Dispatcher.Invoke(() => HandleISXGlassMessage(msg));
-        _isxGlassPipeManager.Start();
-        _keyboardManager = new KeyboardManager(msg => _isxGlassPipeManager.Send(msg));
+        GlassContext.SessionRegistry = new SessionRegistry();
+        GlassContext.SessionRegistry.AllSessionsDisconnected += OnAllSessionsDisconnected;
 
-        _glassVideoPipeManager = new PipeManager("GlassVideo", "GlassVideo_Cmd", "GlassVideo_Notify");
-        _glassVideoPipeManager.Connected += () => Dispatcher.Invoke(() => SetGlassVideoStatus(true));
-        _glassVideoPipeManager.Disconnected += () => Dispatcher.Invoke(() =>
+        GlassContext.ISXGlassPipe = new PipeManager("ISXGlass", "ISXGlass_Commands", "ISXGlass_Notify");
+        GlassContext.ISXGlassPipe.Connected += () => Dispatcher.Invoke(() => SetISXGlassStatus(true));
+        GlassContext.ISXGlassPipe.Disconnected += () => Dispatcher.Invoke(() => SetISXGlassStatus(false));
+        GlassContext.ISXGlassPipe.MessageReceived += msg => Dispatcher.Invoke(() => HandleISXGlassMessage(msg));
+        GlassContext.ISXGlassPipe.Start();
+
+        GlassContext.KeyboardManager = new KeyboardManager();
+
+        GlassContext.GlassVideoPipe = new PipeManager("GlassVideo", "GlassVideo_Cmd", "GlassVideo_Notify");
+        GlassContext.GlassVideoPipe.Connected += () => Dispatcher.Invoke(() => SetGlassVideoStatus(true));
+        GlassContext.GlassVideoPipe.Disconnected += () => Dispatcher.Invoke(() =>
         {
             SetGlassVideoStatus(false);
             DebugLog.Write(DebugLog.Log_Sessions, "GlassVideo disconnected.");
         });
-        _glassVideoPipeManager.MessageReceived += msg => Dispatcher.Invoke(() => Log($"GlassVideo: {msg}"));
-        _glassVideoPipeManager.Start();
-
-
+        GlassContext.GlassVideoPipe.MessageReceived += msg => Dispatcher.Invoke(() => Log($"GlassVideo: {msg}"));
+        GlassContext.GlassVideoPipe.Start();
+        GlassContext.FocusTracker = new FocusTracker();
 
         Log("Glass started");
     }
@@ -92,11 +92,12 @@ public partial class MainWindow : Window
     {
         DebugLog.Write("MainWindow.Window_Closing: shutting down.");
         DebugLog.Shutdown();
-        _keyboardManager.UnloadProfile();
-        await _isxGlassPipeManager.StopAsync();
-        _isxGlassPipeManager.Dispose();
-        await _glassVideoPipeManager.StopAsync();
-        _glassVideoPipeManager.Dispose();
+        GlassContext.KeyboardManager.UnloadProfile();
+        await GlassContext.ISXGlassPipe.StopAsync();
+        GlassContext.ISXGlassPipe.Dispose();
+        await GlassContext.GlassVideoPipe.StopAsync();
+        GlassContext.GlassVideoPipe.Dispose();
+        GlassContext.FocusTracker.Stop();
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -248,8 +249,9 @@ public partial class MainWindow : Window
         Log($"Launching profile: {profileName} ({slots.Count} characters)");
         _activeProfile = repo;
         _definedSlots.Clear();
+        GlassContext.FocusTracker.Start();
 
-        _isxGlassPipeManager.Send("new_profile");
+        GlassContext.ISXGlassPipe.Send("new_profile");
         PushRelayGroupState(repo.GetId());
         PushCommandState();
 
@@ -265,13 +267,13 @@ public partial class MainWindow : Window
             {
                 string cmd = $"slot_define {placement.SlotNumber} {placement.X} {placement.Y} {placement.Width} {placement.Height}";
                 DebugLog.Write(DebugLog.Log_Sessions, $"LaunchProfile: sending {cmd}");
-                _glassVideoPipeManager.Send(cmd);
+                GlassContext.GlassVideoPipe.Send(cmd);
                 _definedSlots.Add(placement.SlotNumber);
             }
         }
 
         // Send slot_assign for any already-connected sessions.
-        foreach (var session in _sessionRegistry.GetSessions())
+        foreach (var session in GlassContext.SessionRegistry.GetSessions())
         {
             var assignment = slots.FirstOrDefault(s =>
                 charRepo.GetById(s.CharacterId)?.Name == session.CharacterName);
@@ -280,7 +282,7 @@ public partial class MainWindow : Window
             {
                 string cmd = $"slot_assign {assignment.SlotNumber} {session.SessionName} {session.Hwnd:X}";
                 DebugLog.Write(DebugLog.Log_Sessions, $"LaunchProfile: sending {cmd}");
-                _glassVideoPipeManager.Send(cmd);
+                GlassContext.GlassVideoPipe.Send(cmd);
             }
         }
 
@@ -294,9 +296,9 @@ public partial class MainWindow : Window
                 DebugLog.Write(DebugLog.Log_Sessions, $"LaunchProfile: no character found for id={slot.CharacterId}, skipping.");
                 continue;
             }
-            _keyboardManager.LoadProfile(profileName);
+            GlassContext.KeyboardManager.LoadProfile(profileName);
             Log($"  Launching: {character.Name} accountId={character.AccountId} server={character.Server} id={character.Id}");
-            _isxGlassPipeManager.Send($"launch {character.AccountId} {character.Name} {character.Server} {character.Id}");
+            GlassContext.ISXGlassPipe.Send($"launch {character.AccountId} {character.Name} {character.Server} {character.Id}");
             int delay = rng.Next(4000, 7000);
             await Task.Delay(delay);
         }
@@ -310,7 +312,7 @@ public partial class MainWindow : Window
     private void ToggleG15Osd_Click(object sender, RoutedEventArgs e)
     {
         DebugLog.Write("MainWindow.ToggleG15Osd_Click: toggling G15 OSD.");
-        _keyboardManager.ToggleOsd(new HidDeviceInstance(KeyboardType.G15, 1, string.Empty));
+        GlassContext.KeyboardManager.ToggleOsd(new HidDeviceInstance(KeyboardType.G15, 1, string.Empty));
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -337,7 +339,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            _isxGlassPipeManager.Send(input);
+            GlassContext.ISXGlassPipe.Send(input);
         }
 
         ConsoleInput.Clear();
@@ -377,7 +379,7 @@ public partial class MainWindow : Window
 
             string message = sb.ToString();
             DebugLog.Write($"MainWindow.PushRelayGroupState: sending: {message}");
-            _isxGlassPipeManager.Send(message);
+            GlassContext.ISXGlassPipe.Send(message);
         }
 
         DebugLog.Write("MainWindow.PushRelayGroupState: done.");
@@ -415,7 +417,7 @@ public partial class MainWindow : Window
                 continue;
             }
 
-            _isxGlassPipeManager.Send($"cmd_define {full.Id}");
+            GlassContext.ISXGlassPipe.Send($"cmd_define {full.Id}");
             DebugLog.Write($"MainWindow.PushCommandState: cmd_define {full.Id} name='{full.Name}'.");
 
             foreach (CommandStep step in full.Steps.OrderBy(s => s.Sequence))
@@ -434,7 +436,7 @@ public partial class MainWindow : Window
 
                 string message = $"cmd_step {full.Id} {step.Sequence} {step.Type} {step.DelayMs} {value}";
                 DebugLog.Write($"MainWindow.PushCommandState: {message}");
-                _isxGlassPipeManager.Send(message);
+                GlassContext.ISXGlassPipe.Send(message);
             }
         }
 
@@ -525,11 +527,11 @@ public partial class MainWindow : Window
 
                     if (_activeProfile != null)
                     {
-                        var charRepo = new CharacterRepository();
+                        CharacterRepository charRepo = new CharacterRepository();
 
                         if (uint.TryParse(sessionName.Substring(2), out uint sessionId))
                         {
-                            var assignment = _activeProfile.GetSlots()
+                            SlotAssignment? assignment = _activeProfile.GetSlots()
                                 .FirstOrDefault(s => charRepo.GetById(s.CharacterId)?.AccountId == (int)sessionId);
                             if (assignment != null)
                             {
@@ -538,31 +540,28 @@ public partial class MainWindow : Window
                         }
 
                         DebugLog.Write(DebugLog.Log_Sessions, $"session connected: {sessionName}, pid={pid}, character={characterName}");
-                        _sessionRegistry.OnSessionConnected(sessionName, characterName, pid);
+                        GlassContext.SessionRegistry.OnSessionConnected(sessionName, characterName, pid, hwnd);
 
                         if (hwnd != IntPtr.Zero)
                         {
-                            var assignment = _activeProfile.GetSlots()
+                            SlotAssignment? assignment = _activeProfile.GetSlots()
                                 .FirstOrDefault(s => charRepo.GetById(s.CharacterId)?.Name == characterName);
                             if (assignment != null)
                             {
                                 string cmd = $"slot_assign {assignment.SlotNumber} {sessionName} {hwnd:X}";
                                 DebugLog.Write(DebugLog.Log_Sessions, $"HandleISXGlassMessage: sending {cmd}");
-                                _glassVideoPipeManager.Send(cmd);
+                                GlassContext.GlassVideoPipe.Send(cmd);
                             }
                             else
                             {
                                 DebugLog.Write(DebugLog.Log_Sessions, $"HandleISXGlassMessage: no slot assignment found for character '{characterName}'.");
                             }
                         }
-
-                        _activeSessionCount++;
-                        DebugLog.Write($"session count incremented to {_activeSessionCount}.");
                     }
                     else
                     {
                         DebugLog.Write(DebugLog.Log_Sessions, $"session connected: {sessionName}, pid={pid}, no active profile.");
-                        _sessionRegistry.OnSessionConnected(sessionName, characterName, pid);
+                        GlassContext.SessionRegistry.OnSessionConnected(sessionName, characterName, pid, hwnd);
                     }
 
                     break;
@@ -577,20 +576,9 @@ public partial class MainWindow : Window
                     }
 
                     string sessionName = parts[1];
-                    DebugLog.Write($"HandleISXGlassMessage: sending unassign {sessionName}.");
                     DebugLog.Write(DebugLog.Log_Sessions, $"session_disconnected: {sessionName}");
-                    _sessionRegistry.OnSessionDisconnected(sessionName);
-                    _glassVideoPipeManager.Send($"unassign {sessionName}");
-
-                    _activeSessionCount--;
-                    DebugLog.Write($"session count decremented to {_activeSessionCount}.");
-
-                    if ((_activeSessionCount <= 0) && (_activeProfile != null))
-                    {
-                        DebugLog.Write(DebugLog.Log_Sessions, "MainWindow: all sessions disconnected, clearing active profile.");
-                        _activeSessionCount = 0;
-                        _activeProfile = null;
-                    }
+                    GlassContext.SessionRegistry.OnSessionDisconnected(sessionName);
+                    GlassContext.GlassVideoPipe.Send($"unassign {sessionName}");
 
                     break;
                 }
@@ -599,6 +587,20 @@ public partial class MainWindow : Window
                 Log(msg);
                 break;
         }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // OnAllSessionsDisconnected
+    //
+    // Called when all EQ sessions have disconnected.
+    // Clears the active profile and stops focus tracking.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void OnAllSessionsDisconnected()
+    {
+        DebugLog.Write(DebugLog.Log_Sessions, "MainWindow.OnAllSessionsDisconnected: all sessions disconnected, clearing active profile.");
+        _activeProfile = null;
+        GlassContext.FocusTracker.Stop();
+        GlassContext.FocusTracker.ClearActiveSession();
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -707,7 +709,7 @@ public partial class MainWindow : Window
     // Sends a status request to ISXGlass.
     private void MenuItem_Status_Click(object sender, RoutedEventArgs e)
     {
-        _isxGlassPipeManager.Send("status");
+        GlassContext.ISXGlassPipe.Send("status");
         DebugLog.Write(DebugLog.Log_Input, "Status requested.");
     }
 

@@ -35,16 +35,13 @@ public class KeyboardManager
     // OSD windows keyed by device instance — created on LoadProfile, shown on trigger
     private readonly Dictionary<HidDeviceInstance, KeyboardOsdWindow> _osdWindows = new();
 
-    private readonly Action<string> _pipeSend;
-
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // KeyboardManager
     //
     // pipeSend:  Delegate used to send messages to ISXGlass over the pipe
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public KeyboardManager(Action<string> pipeSend)
+    public KeyboardManager()
     {
-        _pipeSend = pipeSend;
         DebugLog.Write("KeyboardManager: initialized.");
     }
 
@@ -337,7 +334,7 @@ public class KeyboardManager
         {
             string message = $"cmd_execute {command.Id} {target}";
             DebugLog.Write($"KeyboardManager.ExecuteCommand: sending: {message}");
-            _pipeSend(message);
+            // Todo:  Notify someone that a command needs to be executed
         }
         else
         {
