@@ -62,6 +62,12 @@ public:
     // Returns true if a session named is<accountId> is currently active.
     bool IsSessionActive(SessionID sessionId);
 
+    // Sets the active (focused) session.
+    void SetActiveSession(const std::string& sessionName);
+
+    // Returns the active (focused) session name, or empty string if none.
+    const std::string& GetActiveSession() const;
+
     // Creates a job object with affinity locked to the performance core mask
     // and assigns the given process to it. Stores the job handle in the session entry.
     void SetProcessAffinity(SessionEntry* entry);
@@ -81,8 +87,8 @@ private:
     void BuildPerformanceCoreMask();
 
 
-
-    std::map<SessionID, SessionEntry>           _sessions;
+    std::string                               _activeSession;
+    std::map<SessionID, SessionEntry>         _sessions;
     std::map<CharacterID, SessionEntry>       _characterIdToSession;
 };
 

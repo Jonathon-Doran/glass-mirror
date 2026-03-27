@@ -13,7 +13,7 @@ static DWORD_PTR                _performanceCoreMask = 0;
 static void OnSessionConnected(int argc, char* argv[], PLSOBJECT pThis);
 static void OnSessionRenamed(int argc, char* argv[], PLSOBJECT pThis);
 static void OnSessionDisconnected(int argc, char* argv[], PLSOBJECT pThis);
-
+static void OnSessionActivated(int argc, char* argv[], PLSOBJECT pThis);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Initialize
@@ -39,6 +39,7 @@ void SessionManager::Initialize()
     // Register an event handler to be called when a session is disconnected
     unsigned int sessionDisconnectedEventId = pISInterface->RegisterEvent("OnSessionDisconnected");
     pISInterface->AttachEventTarget(sessionDisconnectedEventId, OnSessionDisconnected);
+
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -701,6 +702,31 @@ void SessionManager::SetProcessAffinity(SessionEntry* entry)
 
     Logger::Instance().WriteIf(Logger::Instance().Log_Sessions,
         "SessionManager::SetProcessAffinity: affinity locked. job=%p", job);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SessionManager::SetActiveSession
+//
+// Sets the active (focused) session. Called when Glass notifies ISXGlass
+// that a session has gained focus.
+//
+// sessionName:  The session that gained focus e.g. "is7"
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SessionManager::SetActiveSession(const std::string& sessionName)
+{
+    _activeSession = sessionName;
+    Logger::Instance().Write("SessionManager::SetActiveSession: activeSession='%s'.", sessionName.c_str());
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SessionManager::GetActiveSession
+//
+// Returns the active (focused) session name, or empty string if none.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const std::string& SessionManager::GetActiveSession() const
+{
+    return _activeSession;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

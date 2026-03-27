@@ -469,6 +469,22 @@ static void HandleCmdStep(const std::string& args)
     g_KeyManager.AddCommandStep(commandId, sequence, actionType, delayMs, value);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// HandleActivate
+//
+// Called when Glass notifies ISXGlass that a session has gained focus.
+// Protocol: activate <sessionName>
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static void HandleActivate(const std::string& args)
+{
+    if (args.empty())
+    {
+        Logger::Instance().Write("HandleActivate: missing sessionName.");
+        return;
+    }
+    Logger::Instance().Write("HandleActivate: sessionName='%s'.", args.c_str());
+    g_SessionManager.SetActiveSession(args);
+}
 
 static void HandleStart(const std::string& args)
 {
@@ -582,6 +598,10 @@ void HandleCommand(const std::string& cmd)
     else if (verb == "stop")
     {
         HandleStop(args);
+    }
+    else if (verb == "activate")
+    {
+        HandleActivate(args);
     }
     else if (verb == "new_profile")
     {
