@@ -33,7 +33,7 @@ public class CommandRepository
                 {
                     Id = reader.GetInt32(0),
                     Name = reader.GetString(1),
-                    ShortName = reader.GetString(2)
+                    Label = reader.GetString(2)
                 });
             }
         }
@@ -73,7 +73,7 @@ public class CommandRepository
         {
             Id = reader.GetInt32(0),
             Name = reader.GetString(1),
-            ShortName = reader.GetString(2)
+            Label = reader.GetString(2)
         };
         reader.Close();
 
@@ -103,7 +103,7 @@ public class CommandRepository
             using var cmd = conn.CreateCommand();
             cmd.CommandText = "INSERT INTO Commands (name, short_name) VALUES (@name, @shortName); SELECT last_insert_rowid();";
             cmd.Parameters.AddWithValue("@name", command.Name);
-            cmd.Parameters.AddWithValue("@shortName", command.ShortName);
+            cmd.Parameters.AddWithValue("@shortName", command.Label);
             command.Id = Convert.ToInt32(cmd.ExecuteScalar());
             DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.SaveCommand: inserted. id={command.Id}.");
         }
@@ -112,7 +112,7 @@ public class CommandRepository
             using var cmd = conn.CreateCommand();
             cmd.CommandText = "UPDATE Commands SET name = @name, short_name = @shortName WHERE id = @id";
             cmd.Parameters.AddWithValue("@name", command.Name);
-            cmd.Parameters.AddWithValue("@shortName", command.ShortName);
+            cmd.Parameters.AddWithValue("@shortName", command.Label);
             cmd.Parameters.AddWithValue("@id", command.Id);
             cmd.ExecuteNonQuery();
             DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.SaveCommand: updated. id={command.Id}.");

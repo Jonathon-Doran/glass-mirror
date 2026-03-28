@@ -417,8 +417,8 @@ public partial class ProfileDialog : Window
             Command? cmd = new CommandRepository().GetCommand(selectedCommandId);
             if (cmd != null)
             {
-                LabelTextBox.Text = cmd.ShortName;
-                DebugLog.Write($"ProfileDialog.CommandTypeComboBox_SelectionChanged: populated label='{cmd.ShortName}' for commandId={selectedCommandId}.");
+                LabelTextBox.Text = cmd.Label;
+                DebugLog.Write($"ProfileDialog.CommandTypeComboBox_SelectionChanged: populated label='{cmd.Label}' for commandId={selectedCommandId}.");
             }
         }
 
@@ -1049,7 +1049,7 @@ public partial class ProfileDialog : Window
                 : "(none)";
 
             string label = (b.CommandId.HasValue && commandMap.TryGetValue(b.CommandId.Value, out Command? cmd2))
-                ? cmd2.ShortName
+                ? cmd2.Label
                 : string.Empty;
 
             string targetName = b.Target switch
@@ -1355,7 +1355,7 @@ public partial class ProfileDialog : Window
             else if (binding.Binding.CommandId.HasValue)
             {
                 Command? cmd = new CommandRepository().GetCommand(binding.Binding.CommandId.Value);
-                LabelTextBox.Text = cmd?.ShortName ?? string.Empty;
+                LabelTextBox.Text = cmd?.Label ?? string.Empty;
             }
             else
             {

@@ -104,7 +104,7 @@ public partial class ManageCommandsDialog : Window
         NewRenameButton.Content = "Rename";
         NewRenameButton.IsEnabled = true;
         CommandNameTextBox.Text = command.Name;
-        ShortNameTextBox.Text = command.ShortName;
+        ShortNameTextBox.Text = command.Label;
         ClearStepSelection();
         LoadStepList();
     }
@@ -189,7 +189,7 @@ public partial class ManageCommandsDialog : Window
             return;
         }
 
-        if ((newName == _selectedCommand.Name) && (newShortName == _selectedCommand.ShortName))
+        if ((newName == _selectedCommand.Name) && (newShortName == _selectedCommand.Label))
         {
             DebugLog.Write("ManageCommandsDialog.CommitRename: no changes, skipping save.");
             return;
@@ -207,7 +207,7 @@ public partial class ManageCommandsDialog : Window
         }
 
         _selectedCommand.Name = newName;
-        _selectedCommand.ShortName = newShortName;
+        _selectedCommand.Label = newShortName;
         repo.SaveCommand(_selectedCommand);
 
         DebugLog.Write($"ManageCommandsDialog.CommitRename: saved name='{newName}' shortName='{newShortName}'.");
@@ -309,7 +309,7 @@ public partial class ManageCommandsDialog : Window
                 return;
             }
 
-            var command = new Command { Name = name, ShortName = shortName };
+            var command = new Command { Name = name, Label = shortName };
             repo.SaveCommand(command);
 
             DebugLog.Write($"ManageCommandsDialog.NewRename_Click: created. id={command.Id}.");
