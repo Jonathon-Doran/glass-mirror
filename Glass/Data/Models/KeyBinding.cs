@@ -9,6 +9,13 @@ public class KeyPage
     public List<KeyBinding> KeyBindings { get; set; } = new();
 }
 
+public enum TriggerOn
+{
+    Press = 0,
+    Release = 1,
+    Both = 2
+}
+
 public class KeyBinding
 {
     public int Id { get; set; }
@@ -19,4 +26,5 @@ public class KeyBinding
     public int? RelayGroupId { get; set; }
     public bool RoundRobin { get; set; }
     public string? Label { get; set; }
+    public TriggerOn TriggerOn { get; set; } = TriggerOn.Press;
 }

@@ -259,11 +259,6 @@ public class KeyboardManager
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void OnKeyStateChanged(object? sender, HidKeyEventArgs e)
     {
-        if (!e.IsPressed)
-        {
-            return;
-        }
-
         if (!e.Device.HasValue)
         {
             return;
@@ -283,11 +278,15 @@ public class KeyboardManager
             return;
         }
 
-        KeyBinding? binding = bindings.FirstOrDefault(b => b.Key == e.KeyName);
+        KeyBinding? binding = bindings.FirstOrDefault(b =>
+            b.Key == e.KeyName &&
+            (b.TriggerOn == TriggerOn.Both ||
+            (e.IsPressed && b.TriggerOn == TriggerOn.Press) ||
+            (!e.IsPressed && b.TriggerOn == TriggerOn.Release)));
 
         if (binding == null)
         {
-            DebugLog.Write($"KeyboardManager.OnKeyStateChanged: no binding for key='{e.KeyName}' on page='{activePage.Name}'.");
+            DebugLog.Write($"KeyboardManager.OnKeyStateChanged: no binding for key='{e.KeyName}' pressed={e.IsPressed} on page='{activePage.Name}'.");
             return;
         }
 

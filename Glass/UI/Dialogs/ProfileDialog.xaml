@@ -284,6 +284,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="6"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="70"/>
@@ -293,6 +294,11 @@
 
                         <DockPanel Grid.Row="0" Grid.ColumnSpan="3">
                             <TextBlock DockPanel.Dock="Left" Text="Command:" VerticalAlignment="Center" Width="70"/>
+                            <ComboBox DockPanel.Dock="Right" x:Name="TriggerOnComboBox" Width="140" Margin="28,0,0,0" SelectedIndex="0">
+                                <ComboBoxItem Content="Press" Tag="0"/>
+                                <ComboBoxItem Content="Release" Tag="1"/>
+                                <ComboBoxItem Content="Both" Tag="2"/>
+                            </ComboBox>
                             <ComboBox x:Name="CommandTypeComboBox" Width="500" SelectionChanged="CommandTypeComboBox_SelectionChanged"/>
                         </DockPanel>
                         <DockPanel Grid.Row="2" Grid.ColumnSpan="3">
@@ -301,7 +307,11 @@
                                         Content="Round Robin" VerticalAlignment="Center" Margin="16,0,0,0"/>
                             <ComboBox x:Name="TargetGroupComboBox" Width="500"/>
                         </DockPanel>
-                        <StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal">
+                        <DockPanel Grid.Row="4" Grid.ColumnSpan="3">
+                            <TextBlock DockPanel.Dock="Left" Text="Label:" VerticalAlignment="Center" Width="70"/>
+                            <TextBox x:Name="LabelTextBox" Width="500" HorizontalAlignment="Left"/>
+                        </DockPanel>
+                        <StackPanel Grid.Row="5" Grid.ColumnSpan="3" Orientation="Horizontal">
                             <Button x:Name="SaveBindingButton"  Content="Assign" Width="70" Margin="0,0,8,0"
                                        Click="SaveBinding_Click"/>
                             <Button x:Name="ClearBindingButton" Content="Clear"  Width="70"

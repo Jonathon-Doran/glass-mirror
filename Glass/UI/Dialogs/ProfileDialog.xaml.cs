@@ -4,6 +4,7 @@ using Glass.Data;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
 using Glass.UI.ViewModels;
+using ModernWpf.Controls;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -21,6 +22,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
 using KeyBinding = Glass.Data.Models.KeyBinding;
+using ListView = System.Windows.Controls.ListView;
+using ListViewItem = System.Windows.Controls.ListViewItem;
 
 namespace Glass;
 
@@ -407,6 +410,16 @@ public partial class ProfileDialog : Window
         {
             DebugLog.Write("ProfileDialog.CommandTypeComboBox_SelectionChanged: no items added.");
             return;
+        }
+
+        if (CommandTypeComboBox.SelectedItem is ComboBoxItem selected && selected.Tag is int selectedCommandId)
+        {
+            Command? cmd = new CommandRepository().GetCommand(selectedCommandId);
+            if (cmd != null)
+            {
+                LabelTextBox.Text = cmd.ShortName;
+                DebugLog.Write($"ProfileDialog.CommandTypeComboBox_SelectionChanged: populated label='{cmd.ShortName}' for commandId={selectedCommandId}.");
+            }
         }
 
         if (CommandTypeComboBox.SelectedItem is not ComboBoxItem item ||
@@ -1035,7 +1048,7 @@ public partial class ProfileDialog : Window
                 ? cmd.Name
                 : "(none)";
 
-            string shortName = (b.CommandId.HasValue && commandMap.TryGetValue(b.CommandId.Value, out Command? cmd2))
+            string label = (b.CommandId.HasValue && commandMap.TryGetValue(b.CommandId.Value, out Command? cmd2))
                 ? cmd2.ShortName
                 : string.Empty;
 
@@ -1052,7 +1065,7 @@ public partial class ProfileDialog : Window
             {
                 Binding = b,
                 CommandTargetText = $"{b.Key}: {commandName}: {targetName}",
-                ShortName = shortName
+                Label = b.Label ?? label
             };
         }).ToList();
 
@@ -1213,7 +1226,7 @@ public partial class ProfileDialog : Window
         KeyDisplay keyDisplay = new KeyDisplay
         {
             KeyName = key,
-            Label = binding?.ShortName ?? string.Empty,
+            Label = binding?.Label ?? string.Empty,
             KeyType = KeyType.Momentary,
             IsSelected = (key == selectedKey)
         };
@@ -1334,6 +1347,24 @@ public partial class ProfileDialog : Window
                 .FirstOrDefault(i => i.Tag is int tag && tag == binding.Binding.Target);
 
             RoundRobinCheckBox.IsChecked = binding.Binding.RoundRobin;
+
+            if (!string.IsNullOrEmpty(binding.Binding.Label))
+            {
+                LabelTextBox.Text = binding.Binding.Label;
+            }
+            else if (binding.Binding.CommandId.HasValue)
+            {
+                Command? cmd = new CommandRepository().GetCommand(binding.Binding.CommandId.Value);
+                LabelTextBox.Text = cmd?.ShortName ?? string.Empty;
+            }
+            else
+            {
+                LabelTextBox.Text = string.Empty;
+            }
+
+            TriggerOnComboBox.SelectedItem = TriggerOnComboBox.Items
+                .OfType<ComboBoxItem>()
+                .FirstOrDefault(i => i.Tag is int tag && tag == (int)binding.Binding.TriggerOn);
         }
         else
         {
@@ -1341,6 +1372,8 @@ public partial class ProfileDialog : Window
             CommandTypeComboBox.SelectedIndex = 0;
             TargetGroupComboBox.SelectedIndex = 0;
             RoundRobinCheckBox.IsChecked = false;
+            LabelTextBox.Text = string.Empty;
+            TriggerOnComboBox.SelectedIndex = 0;
         }
     }
 
@@ -1367,6 +1400,13 @@ public partial class ProfileDialog : Window
         string key = SelectedKeyTextBlock.Text;
         int? commandId = (CommandTypeComboBox.SelectedItem as ComboBoxItem)?.Tag is int cid ? cid : null;
         bool roundRobin = RoundRobinCheckBox.IsChecked == true;
+
+        TriggerOn triggerOn = TriggerOn.Press;
+        if (TriggerOnComboBox.SelectedItem is ComboBoxItem triggerItem && triggerItem.Tag is int triggerTag)
+        {
+            triggerOn = (TriggerOn)triggerTag;
+        }
+
         int target = 0;
 
         if (TargetGroupComboBox.SelectedItem is ComboBoxItem targetItem && targetItem.Tag is int tag)
@@ -1374,8 +1414,8 @@ public partial class ProfileDialog : Window
             target = tag;
         }
 
-        DebugLog.Write($"ProfileDialog.SaveBinding_Click: page={page.KeyPageId} key='{key}' commandId={commandId} target={target} roundRobin={roundRobin}.");
-
+        DebugLog.Write($"ProfileDialog.SaveBinding_Click: page={page.KeyPageId} key='{key}' commandId={commandId} target={target} roundRobin={roundRobin} triggerOn={triggerOn}.");
+     
         List<KeyBindingViewModel>? existingItems = BindingListView.ItemsSource as List<KeyBindingViewModel>;
         KeyBindingViewModel? existing = existingItems?.FirstOrDefault(b => b.Binding.Key == key);
 
@@ -1383,6 +1423,8 @@ public partial class ProfileDialog : Window
         binding.CommandId = commandId;
         binding.Target = target;
         binding.RoundRobin = roundRobin;
+        binding.TriggerOn = triggerOn;
+        binding.Label = string.IsNullOrWhiteSpace(LabelTextBox.Text) ? null : LabelTextBox.Text.Trim();
 
         KeyBindingRepository repo = new KeyBindingRepository();
         repo.Save(binding);
@@ -1432,6 +1474,7 @@ public partial class ProfileDialog : Window
         CommandTypeComboBox.SelectedIndex = 0;
         TargetGroupComboBox.SelectedIndex = 0;
         RoundRobinCheckBox.IsChecked = false;
+        TriggerOnComboBox.SelectedIndex = 0;
 
         LoadBindingList(page.KeyPageId);
         RefreshKeyLayout();
@@ -1464,6 +1507,10 @@ public partial class ProfileDialog : Window
             .FirstOrDefault(i => i.Tag is int tag && tag == item.Binding.Target);
 
         RoundRobinCheckBox.IsChecked = item.Binding.RoundRobin;
+
+        TriggerOnComboBox.SelectedItem = TriggerOnComboBox.Items
+            .OfType<ComboBoxItem>()
+            .FirstOrDefault(i => i.Tag is int tag && tag == (int)item.Binding.TriggerOn);
     }
 
 

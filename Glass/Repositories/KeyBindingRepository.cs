@@ -28,10 +28,10 @@ public class KeyBindingRepository
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            SELECT id, key, command_id, target, round_robin
-            FROM KeyBindings
-            WHERE key_page_id = @pageId
-            ORDER BY key";
+                SELECT id, key, command_id, target, round_robin, label, trigger_on
+                FROM KeyBindings
+                WHERE key_page_id = @pageId
+                ORDER BY key";
         cmd.Parameters.AddWithValue("@pageId", keyPageId);
 
         var bindings = new List<KeyBinding>();
@@ -46,6 +46,8 @@ public class KeyBindingRepository
                 CommandId = reader.IsDBNull(2) ? null : reader.GetInt32(2),
                 Target = reader.GetInt32(3),
                 RoundRobin = reader.GetInt32(4) != 0,
+                Label = reader.IsDBNull(5) ? null : reader.GetString(5),
+                TriggerOn = (TriggerOn)reader.GetInt32(6),
             });
         }
 
@@ -72,8 +74,8 @@ public class KeyBindingRepository
         {
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
-                INSERT INTO KeyBindings (key_page_id, key, command_id, target, round_robin)
-                VALUES (@pageId, @key, @commandId, @target, @roundRobin);
+                INSERT INTO KeyBindings (key_page_id, key, command_id, target, round_robin, label, trigger_on)
+                VALUES (@pageId, @key, @commandId, @target, @roundRobin, @label, @triggerOn);
                 SELECT last_insert_rowid();";
             cmd.Parameters.AddWithValue("@pageId", binding.KeyPageId);
             cmd.Parameters.AddWithValue("@key", binding.Key);
@@ -81,6 +83,7 @@ public class KeyBindingRepository
             cmd.Parameters.AddWithValue("@target", binding.Target);
             cmd.Parameters.AddWithValue("@roundRobin", binding.RoundRobin ? 1 : 0);
             cmd.Parameters.AddWithValue("@label", binding.Label != null ? binding.Label : DBNull.Value);
+            cmd.Parameters.AddWithValue("@triggerOn", (int)binding.TriggerOn);
             binding.Id = Convert.ToInt32(cmd.ExecuteScalar());
             DebugLog.Write(DebugLog.Log_Database, $"KeyBindingRepository.Save: inserted. id={binding.Id}.");
         }
@@ -89,14 +92,15 @@ public class KeyBindingRepository
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
                 UPDATE KeyBindings
-                SET key = @key, command_id = @commandId, target = @target, round_robin = @roundRobin
+                SET key = @key, command_id = @commandId, target = @target, round_robin = @roundRobin, label = @label, trigger_on = @triggerOn
                 WHERE id = @id";
             cmd.Parameters.AddWithValue("@key", binding.Key);
             cmd.Parameters.AddWithValue("@commandId", binding.CommandId.HasValue ? binding.CommandId.Value : DBNull.Value);
             cmd.Parameters.AddWithValue("@target", binding.Target);
             cmd.Parameters.AddWithValue("@roundRobin", binding.RoundRobin ? 1 : 0);
-            cmd.Parameters.AddWithValue("@id", binding.Id);
-            cmd.ExecuteNonQuery();
+            cmd.Parameters.AddWithValue("@label", binding.Label != null ? binding.Label : DBNull.Value);
+            cmd.Parameters.AddWithValue("@triggerOn", (int)binding.TriggerOn);
+            cmd.Parameters.AddWithValue("@id", binding.Id); cmd.ExecuteNonQuery();
             DebugLog.Write(DebugLog.Log_Database, $"KeyBindingRepository.Save: updated. id={binding.Id}.");
         }
     }

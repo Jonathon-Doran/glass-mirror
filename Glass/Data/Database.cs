@@ -179,6 +179,10 @@ public class Database
             pragmaOn.CommandText = "PRAGMA foreign_keys = ON";
             pragmaOn.ExecuteNonQuery();
         }
+        if (version < 19)
+        {
+            ApplyMigration(conn, 19, Migration_019);
+        }
     }
 
     private int GetSchemaVersion()
@@ -556,6 +560,11 @@ public class Database
 
     DROP TABLE RelayGroups;
     ALTER TABLE RelayGroups_new RENAME TO RelayGroups;
+";
+
+    private const string Migration_019 = @"
+    ALTER TABLE KeyBindings ADD COLUMN label TEXT;
+    ALTER TABLE KeyBindings ADD COLUMN trigger_on INTEGER NOT NULL DEFAULT 0;
 ";
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
