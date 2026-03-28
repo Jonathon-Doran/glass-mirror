@@ -90,6 +90,12 @@ void KeyManager::ResolvePending(CharacterID characterId, const std::string& sess
     _presentMembers[allGroupId].insert(sessionName);
     _roundRobinIterators[allGroupId] = _presentMembers[allGroupId].begin();
     Logger::Instance().Write("KeyManager::ResolvePending: session=%s added to All group.", sessionName.c_str());
+
+    // Mirror All into Others. Others uses the same membership as All,
+    // but excludes the active session at execution time.
+    GroupID othersGroupId = (GroupID)SpecialTarget::Others;
+    _presentMembers[othersGroupId] = _presentMembers[allGroupId];
+    _roundRobinIterators[othersGroupId] = _presentMembers[othersGroupId].begin();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -324,7 +330,7 @@ void KeyManager::ExecuteCommand(CommandID commandId, GroupID groupId, bool round
         excludeSession = g_SessionManager.GetActiveSession();
     }
 
-    auto groupIt = _presentMembers.find(groupId);
+    auto groupIt = _presentMembers.find((GroupID) SpecialTarget::All);
     if ((groupIt == _presentMembers.end()) || groupIt->second.empty())
     {
         Logger::Instance().Write("KeyManager::ExecuteCommand: groupId=%u not found or empty.", groupId);
