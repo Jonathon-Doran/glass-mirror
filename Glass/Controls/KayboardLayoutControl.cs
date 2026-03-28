@@ -51,15 +51,11 @@ public class KeyboardLayoutControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public override void OnApplyTemplate()
     {
-        DebugLog.Write($"KeyboardLayoutControl.OnApplyTemplate: type='{Device}'.");
-
         base.OnApplyTemplate();
 
         _g13Grid = GetTemplateChild(PartG13Grid) as Grid;
         _g15Grid = GetTemplateChild(PartG15Grid) as Grid;
         _x36Grid = GetTemplateChild(PartX36Grid) as Grid;
-
-        DebugLog.Write($"KeyboardLayoutControl.OnApplyTemplate: g13Grid={_g13Grid != null} g15Grid={_g15Grid != null} x36Grid={_x36Grid != null}.");
 
         RebuildGrid();
     }
@@ -95,7 +91,6 @@ public class KeyboardLayoutControl : Control
     private static void OnKeyboardTypeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var control = (KeyboardLayoutControl)d;
-        DebugLog.Write($"KeyboardLayoutControl.OnKeyboardTypeChanged: type='{e.NewValue}'.");
         control.RebuildGrid();
     }
 
@@ -150,7 +145,6 @@ public class KeyboardLayoutControl : Control
     private static void OnKeysChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var control = (KeyboardLayoutControl)d;
-        DebugLog.Write($"KeyboardLayoutControl.OnKeysChanged.");
         control.UpdateChildShowLabel();
         control.RefreshKeys();
     }
@@ -185,7 +179,6 @@ public class KeyboardLayoutControl : Control
     private static void OnShowLabelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var control = (KeyboardLayoutControl)d;
-        DebugLog.Write($"KeyboardLayoutControl.OnShowLabelChanged: showLabel='{e.NewValue}'.");
         control.UpdateChildShowLabel();
         control.RefreshKeys();
     }
@@ -256,8 +249,6 @@ public class KeyboardLayoutControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void UpdateKey(KeyDisplay keyDisplay)
     {
-        DebugLog.Write($"KeyboardLayoutControl.UpdateKey: key='{keyDisplay.KeyName}'.");
-
         if (Keys == null)
         {
             DebugLog.Write("KeyboardLayoutControl.UpdateKey: Keys dictionary is null, ignoring.");
@@ -339,8 +330,6 @@ public class KeyboardLayoutControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void RebuildGrid()
     {
-        DebugLog.Write($"KeyboardLayoutControl.RebuildGrid: type='{Device}'.");
-
         if ((_g13Grid == null) && (_g15Grid == null) && (_x36Grid == null))
         {
             DebugLog.Write("KeyboardLayoutControl.RebuildGrid: template not yet applied, deferring.");
@@ -362,8 +351,6 @@ public class KeyboardLayoutControl : Control
             _x36Grid.Visibility = (Device == KeyboardType.DominatorX36) ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        DebugLog.Write($"KeyboardLayoutControl.RebuildGrid: complete.");
-
         RefreshKeys();
     }
 
@@ -374,8 +361,6 @@ public class KeyboardLayoutControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void UpdateChildShowLabel()
     {
-        DebugLog.Write($"KeyboardLayoutControl.UpdateChildShowLabel: showLabel={ShowLabel}.");
-
         Grid? activeGrid = GetActiveGrid();
 
         if (activeGrid == null)
@@ -398,8 +383,6 @@ public class KeyboardLayoutControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void RefreshKeys()
     {
-        DebugLog.Write($"KeyboardLayoutControl.RefreshKeys: type='{Device}'.");
-
         Grid? activeGrid = GetActiveGrid();
 
         if (activeGrid == null)
@@ -427,8 +410,6 @@ public class KeyboardLayoutControl : Control
                 child.IsPressed = false;
             }
         }
-
-        DebugLog.Write($"KeyboardLayoutControl.RefreshKeys: complete.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

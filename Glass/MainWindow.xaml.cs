@@ -68,8 +68,6 @@ public partial class MainWindow : Window
         GlassContext.FocusTracker = new FocusTracker();
         GlassContext.SessionRegistry = new SessionRegistry();
         GlassContext.SessionRegistry.AllSessionsDisconnected += OnAllSessionsDisconnected;
-
-        Log("Glass started");
     }
 
 
@@ -81,7 +79,6 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        Log("Window_Loaded");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -359,15 +356,12 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void PushRelayGroupState(int profileId)
     {
-        DebugLog.Write($"MainWindow.PushRelayGroupState: profileId={profileId}.");
-
         List<RelayGroup> groups = new RelayGroupRepository().GetAllGroupsForProfile(profileId);
 
         foreach (RelayGroup group in groups)
         {
             if (group.Characters.Count == 0)
             {
-                DebugLog.Write($"MainWindow.PushRelayGroupState: groupId={group.Id} name='{group.Name}' has no profile members, skipping.");
                 continue;
             }
 
@@ -379,11 +373,8 @@ public partial class MainWindow : Window
             }
 
             string message = sb.ToString();
-            DebugLog.Write($"MainWindow.PushRelayGroupState: sending: {message}");
             GlassContext.ISXGlassPipe.Send(message);
         }
-
-        DebugLog.Write("MainWindow.PushRelayGroupState: done.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -396,12 +387,8 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void PushCommandState()
     {
-        DebugLog.Write("MainWindow.PushCommandState: loading commands.");
-
         List<Command> commands = new CommandRepository().GetAllCommands();
         KeyAliasRepository aliasRepo = new KeyAliasRepository();
-
-        DebugLog.Write($"MainWindow.PushCommandState: {commands.Count} commands.");
 
         foreach (Command command in commands)
         {
@@ -419,7 +406,6 @@ public partial class MainWindow : Window
             }
 
             GlassContext.ISXGlassPipe.Send($"cmd_define {full.Id}");
-            DebugLog.Write($"MainWindow.PushCommandState: cmd_define {full.Id} name='{full.Name}'.");
 
             foreach (CommandStep step in full.Steps.OrderBy(s => s.Sequence))
             {
@@ -431,12 +417,10 @@ public partial class MainWindow : Window
                     if (resolved != null)
                     {
                         value = resolved;
-                        DebugLog.Write($"MainWindow.PushCommandState: resolved alias '{step.Value}' -> '{value}'.");
                     }
                 }
 
                 string message = $"cmd_step {full.Id} {step.Sequence} {step.Type} {step.DelayMs} {value}";
-                DebugLog.Write($"MainWindow.PushCommandState: {message}");
                 GlassContext.ISXGlassPipe.Send(message);
             }
         }
@@ -451,8 +435,6 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void HandleLocalCommand(string cmd)
     {
-        Log($"Local command: {cmd}");
-
         var parts = cmd.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0)
         {
@@ -721,10 +703,8 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void MenuItem_ManageCommands_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("MainWindow.MenuItem_ManageCommands_Click: opening ManageCommandsDialog.");
         var dialog = new ManageCommandsDialog { Owner = this };
         dialog.ShowDialog();
-        DebugLog.Write("MainWindow.MenuItem_ManageCommands_Click: dialog closed.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -734,10 +714,8 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void MenuItem_ManageKeyAliases_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("MainWindow.MenuItem_ManageKeyAliases_Click: opening ManageKeyAliasesDialog.");
         var dialog = new ManageKeyAliasesDialog { Owner = this };
         dialog.ShowDialog();
-        DebugLog.Write("MainWindow.MenuItem_ManageKeyAliases_Click: dialog closed.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -747,7 +725,6 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ManageMachines_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("MainWindow.ManageMachines_Click: opening ManageMachinesDialog.");
         var dialog = new ManageMachinesDialog { Owner = this };
         dialog.ShowDialog();
     }
@@ -759,8 +736,6 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void KeyTest_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("MainWindow.KeyTest_Click: opening KeyTestDialog.");
-
         var dialog = new KeyTestDialog { Owner = this };
         dialog.Show();
     }

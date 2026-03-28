@@ -18,8 +18,6 @@ public class KeyAliasRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<KeyAlias> GetAllAliases()
     {
-        DebugLog.Write(DebugLog.Log_Database, "KeyAliasRepository.GetAllAliases: loading.");
-
         using var conn = Database.Instance.Connect();
         conn.Open();
 
@@ -38,7 +36,6 @@ public class KeyAliasRepository
             });
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"KeyAliasRepository.GetAllAliases: found {aliases.Count} aliases.");
         return aliases;
     }
 
@@ -51,8 +48,6 @@ public class KeyAliasRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public KeyAlias? GetAlias(string name)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"KeyAliasRepository.GetAlias: name='{name}'.");
-
         using var conn = Database.Instance.Connect();
         conn.Open();
 
@@ -85,8 +80,6 @@ public class KeyAliasRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public string? Resolve(string name)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"KeyAliasRepository.Resolve: name='{name}'.");
-
         using var conn = Database.Instance.Connect();
         conn.Open();
 
@@ -103,7 +96,6 @@ public class KeyAliasRepository
         }
 
         string value = result.ToString()!;
-        DebugLog.Write(DebugLog.Log_Database, $"KeyAliasRepository.Resolve: name='{name}' -> value='{value}'.");
         return value;
     }
 

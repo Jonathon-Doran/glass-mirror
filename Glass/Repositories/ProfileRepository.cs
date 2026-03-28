@@ -25,8 +25,6 @@ public class ProfileRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public ProfileRepository(string profileName)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository: opening profile '{profileName}'");
-
         using var conn = Database.Instance.Connect();
         conn.Open();
 
@@ -270,8 +268,6 @@ public class ProfileRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public static List<string> GetAllNames()
     {
-        DebugLog.Write(DebugLog.Log_Database, "ProfileRepository.GetAllNames: loading.");
-
         using var conn = Database.Instance.Connect();
         conn.Open();
 
@@ -284,8 +280,6 @@ public class ProfileRepository
         {
             names.Add(reader.GetString(0));
         }
-
-        DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.GetAllNames: found {names.Count} profiles.");
         return names;
     }
 

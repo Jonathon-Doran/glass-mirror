@@ -188,10 +188,4 @@ void QuadRenderer::Render(ID3D11DeviceContext* context, ID3D11ShaderResourceView
 
     ID3D11ShaderResourceView* nullSrv = nullptr;
     context->PSSetShaderResources(0, 1, &nullSrv);
-
-    static int frameCount = 0;
-    if ((++frameCount % 600) == 0)
-    {
-        Logger::Instance().Write("QuadRenderer: rendered. frame=%d", frameCount);
-    }
 }

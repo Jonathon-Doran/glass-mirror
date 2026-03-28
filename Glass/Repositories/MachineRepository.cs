@@ -40,7 +40,6 @@ public class MachineRepository
             };
             reader.Close();
             machine.Devices = GetDevices(conn, machine.Id);
-            DebugLog.Write(DebugLog.Log_Database, $"MachineRepository.GetOrCreate: found id={machine.Id}.");
             return machine;
         }
 
@@ -63,8 +62,6 @@ public class MachineRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<Machine> GetAll()
     {
-        DebugLog.Write(DebugLog.Log_Database, "MachineRepository.GetAll: loading.");
-
         using var conn = Database.Instance.Connect();
         conn.Open();
 

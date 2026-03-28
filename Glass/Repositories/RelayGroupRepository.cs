@@ -19,8 +19,6 @@ public class RelayGroupRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<RelayGroup> GetAllGroups()
     {
-        DebugLog.Write(DebugLog.Log_Database, "RelayGroupRepository.GetAllGroups: loading.");
-
         using var conn = Database.Instance.Connect();
         conn.Open();
 
@@ -35,8 +33,6 @@ public class RelayGroupRepository
         }
         reader.Close();
 
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetAllGroups: found {ids.Count} groups, loading members.");
-
         var groups = new List<RelayGroup>();
         foreach (int id in ids)
         {
@@ -44,15 +40,9 @@ public class RelayGroupRepository
             if (group != null)
             {
                 groups.Add(group);
-                DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetAllGroups: groupId={id} name='{group.Name}' members={group.Characters.Count}.");
-            }
-            else
-            {
-                DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetAllGroups: groupId={id} not found, skipping.");
             }
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetAllGroups: done. {groups.Count} groups loaded.");
         return groups;
     }
 
@@ -65,8 +55,6 @@ public class RelayGroupRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public RelayGroup? GetGroup(int groupId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetGroup: groupId={groupId}.");
-
         using var conn = Database.Instance.Connect();
         conn.Open();
 
@@ -102,8 +90,6 @@ public class RelayGroupRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<RelayGroup> GetAllGroupsForProfile(int profileId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetAllGroupsForProfile: profileId={profileId}.");
-
         using var conn = Database.Instance.Connect();
         conn.Open();
 
@@ -122,15 +108,11 @@ public class RelayGroupRepository
         }
         reader.Close();
 
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetAllGroupsForProfile: found {groups.Count} groups, loading profile-filtered members.");
-
         foreach (RelayGroup group in groups)
         {
             group.Characters = GetMembersForProfile(group.Id, profileId);
-            DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetAllGroupsForProfile: groupId={group.Id} name='{group.Name}' profileMembers={group.Characters.Count}.");
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetAllGroupsForProfile: done. {groups.Count} groups loaded.");
         return groups;
     }
 
@@ -143,8 +125,6 @@ public class RelayGroupRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<Character> GetMembers(int groupId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetMembers: groupId={groupId}.");
-
         using var conn = Database.Instance.Connect();
         conn.Open();
 
@@ -171,7 +151,6 @@ public class RelayGroupRepository
             });
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetMembers: groupId={groupId} found {members.Count} members.");
         return members;
     }
 
@@ -185,8 +164,6 @@ public class RelayGroupRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<Character> GetMembersForProfile(int groupId, int profileId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetMembersForProfile: groupId={groupId} profileId={profileId}.");
-
         using var conn = Database.Instance.Connect();
         conn.Open();
 
@@ -216,7 +193,6 @@ public class RelayGroupRepository
             });
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetMembersForProfile: groupId={groupId} profileId={profileId} found {members.Count} members.");
         return members;
     }
 

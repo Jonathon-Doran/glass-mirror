@@ -22,8 +22,6 @@ public class CharacterRepository
 
     public CharacterRepository()
     {
-        DebugLog.Write(DebugLog.Log_Database, "CharacterRepository: loading.");
-
         _characters = new List<Character>();
 
         using var conn = Database.Instance.Connect();
@@ -45,8 +43,6 @@ public class CharacterRepository
                 Server = reader.GetString(5)
             });
         }
-
-        DebugLog.Write(DebugLog.Log_Database, $"CharacterRepository: loaded {_characters.Count} characters.");
     }
 
     // Returns all cached characters.

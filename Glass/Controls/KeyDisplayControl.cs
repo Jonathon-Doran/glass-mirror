@@ -38,15 +38,12 @@ public class KeyDisplayControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public override void OnApplyTemplate()
     {
-        DebugLog.Write($"KeyDisplayControl.OnApplyTemplate: keyName='{KeyName}'.");
-
         base.OnApplyTemplate();
 
         if (_border != null)
         {
             _border.MouseLeftButtonDown -= Border_MouseLeftButtonDown;
             _border.MouseLeftButtonUp -= Border_MouseLeftButtonUp;
-            DebugLog.Write($"KeyDisplayControl.OnApplyTemplate: detached handlers from previous border.");
         }
 
         _border = GetTemplateChild(PartBorder) as System.Windows.Controls.Border;
@@ -55,10 +52,7 @@ public class KeyDisplayControl : Control
         {
             _border.MouseLeftButtonDown += Border_MouseLeftButtonDown;
             _border.MouseLeftButtonUp += Border_MouseLeftButtonUp;
-            DebugLog.Write($"KeyDisplayControl.OnApplyTemplate: attached handlers to new border.");
         }
-
-        DebugLog.Write($"KeyDisplayControl.OnApplyTemplate: border={_border != null}.");
 
         UpdateVisualState();
     }
@@ -191,8 +185,6 @@ public class KeyDisplayControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void UpdateVisualState()
     {
-        DebugLog.Write($"KeyDisplayControl.UpdateVisualState: keyName='{KeyName}' isSelected={IsSelected} isPressed={IsPressed}.");
-
         if (IsPressed)
         {
             VisualStateManager.GoToState(this, "Pressed", true);

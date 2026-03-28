@@ -18,8 +18,6 @@ public class CommandRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<Command> GetAllCommands()
     {
-        DebugLog.Write(DebugLog.Log_Database, "CommandRepository.GetAllCommands: loading.");
-
         using SqliteConnection conn = Database.Instance.Connect();
         conn.Open();
 
@@ -45,7 +43,6 @@ public class CommandRepository
             command.Steps = GetSteps(conn, command.Id);
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.GetAllCommands: found {commands.Count} commands.");
         return commands;
     }
 
@@ -58,8 +55,6 @@ public class CommandRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Command? GetCommand(int id)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.GetCommand: id={id}.");
-
         using var conn = Database.Instance.Connect();
         conn.Open();
 
@@ -84,7 +79,6 @@ public class CommandRepository
 
         command.Steps = GetSteps(conn, id);
 
-        DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.GetCommand: id={id} found {command.Steps.Count} steps.");
         return command;
     }
 
@@ -244,8 +238,6 @@ public class CommandRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private List<CommandStep> GetSteps(SqliteConnection conn, int commandId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.GetSteps: commandId={commandId}.");
-
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
             SELECT id, command_id, sequence, type, value, delay_ms

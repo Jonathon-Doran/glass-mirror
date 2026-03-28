@@ -51,7 +51,6 @@ public class SessionRegistry
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void OnSessionActivated(string sessionName)
     {
-        DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.OnSessionActivated: session={sessionName}.");
         GlassContext.ISXGlassPipe.Send($"activate {sessionName}");
     }
 
@@ -126,12 +125,10 @@ public class SessionRegistry
             {
                 if (pair.Value.Hwnd == hwnd)
                 {
-                    DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.FindSessionByHwnd: found session={pair.Key}.");
                     return pair.Key;
                 }
             }
         }
-        DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.FindSessionByHwnd: hwnd={hwnd:X} not found.");
         return null;
     }
 
