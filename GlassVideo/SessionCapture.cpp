@@ -137,6 +137,7 @@ bool SessionCapture::Initialize(ID3D11Device* device, HWND hwnd)
         {
             _session.IsBorderRequired(false);
             Logger::Instance().Write("SessionCapture: border disabled.");
+            _session.IsCursorCaptureEnabled(false);
         }
         catch (...)
         {
