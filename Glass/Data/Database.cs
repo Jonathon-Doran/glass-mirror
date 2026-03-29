@@ -191,6 +191,10 @@ public class Database
         {
             ApplyMigration(conn, 21, Migration_021);
         }
+        if (version < 22)
+        {
+            ApplyMigration(conn, 22, Migration_022);
+        }
     }
 
     private int GetSchemaVersion()
@@ -584,6 +588,30 @@ public class Database
         ALTER TABLE KeyBindings ADD COLUMN key_type INTEGER NOT NULL DEFAULT 0;
         ALTER TABLE KeyBindings ADD COLUMN repeat_interval_ms INTEGER NOT NULL DEFAULT 1000;
     ";
+
+    private const string Migration_022 = @"
+        CREATE TABLE IF NOT EXISTS VideoSources (
+            id      INTEGER PRIMARY KEY,
+            name    TEXT NOT NULL UNIQUE,
+            x       INTEGER NOT NULL,
+            y       INTEGER NOT NULL,
+            width   INTEGER NOT NULL,
+            height  INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS VideoDestinations (
+            id          INTEGER PRIMARY KEY,
+            profile_id  INTEGER NOT NULL REFERENCES Profiles(id) ON DELETE CASCADE,
+            source_id   INTEGER NOT NULL REFERENCES VideoSources(id) ON DELETE CASCADE,
+            x           INTEGER NOT NULL,
+            y           INTEGER NOT NULL,
+            width       INTEGER NOT NULL,
+            height      INTEGER NOT NULL,
+            UNIQUE (profile_id, source_id)
+        );
+    ";
+
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private const string Schema = @"
