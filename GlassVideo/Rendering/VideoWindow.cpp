@@ -131,9 +131,24 @@ void VideoWindow::Render()
         vp.MaxDepth = 1.0f;
         _renderer.GetContext()->RSSetViewports(1, &vp);
 
-        float topCropUV = 100.0f / (float)slot->capture.GetHeight();
-        //float topCropUV = 0.0f;
-        _renderer.GetQuadRenderer().Render(_renderer.GetContext(), srv, topCropUV);
+        float topCropUV = 0.0f;
+        if (slot->hwnd != NULL)
+        {
+            RECT clientRect = {};
+            if (GetClientRect(slot->hwnd, &clientRect))
+            {
+                POINT topLeft = { clientRect.left, clientRect.top };
+                MapWindowPoints(slot->hwnd, NULL, &topLeft, 1);
+                RECT windowRect = {};
+                GetWindowRect(slot->hwnd, &windowRect);
+                int titleBarHeight = topLeft.y - windowRect.top;
+                if ((titleBarHeight > 0) && (slot->capture.GetHeight() > 0))
+                {
+                    topCropUV = (float)titleBarHeight / (float)slot->capture.GetHeight();
+                }
+            }
+        }
+        _renderer.GetQuadRenderer().Render(_renderer.GetContext(), srv, 0.0f, topCropUV, 1.0f, 1.0f);
     }
 
     _renderer.Present();

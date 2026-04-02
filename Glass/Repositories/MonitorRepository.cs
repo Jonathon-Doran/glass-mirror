@@ -93,6 +93,50 @@ public class MonitorRepository
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // GetById
+    //
+    // Returns the monitor with the given ID, or null if not found.
+    //
+    // monitorId: The monitor ID to look up
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public Monitor? GetById(int monitorId)
+    {
+        DebugLog.Write(DebugLog.Log_Database, $"MonitorRepository.GetById: monitorId={monitorId}.");
+
+        using SqliteConnection conn = Database.Instance.Connect();
+        conn.Open();
+
+        using SqliteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+        SELECT id, machine_id, adapter_name, pnp_id, serial, width, height
+        FROM Monitors
+        WHERE id = @id";
+        cmd.Parameters.AddWithValue("@id", monitorId);
+
+        using SqliteDataReader reader = cmd.ExecuteReader();
+
+        if (!reader.Read())
+        {
+            DebugLog.Write(DebugLog.Log_Database, $"MonitorRepository.GetById: monitorId={monitorId} not found.");
+            return null;
+        }
+
+        Monitor monitor = new Monitor
+        {
+            Id = reader.GetInt32(0),
+            MachineId = reader.GetInt32(1),
+            AdapterName = reader.GetString(2),
+            PnpId = reader.GetString(3),
+            Serial = reader.GetString(4),
+            Width = reader.GetInt32(5),
+            Height = reader.GetInt32(6)
+        };
+
+        DebugLog.Write(DebugLog.Log_Database, $"MonitorRepository.GetById: found id={monitor.Id} adapter='{monitor.AdapterName}' pnpId='{monitor.PnpId}' serial='{monitor.Serial}' {monitor.Width}x{monitor.Height}.");
+        return monitor;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // SyncFromHardware
     //
     // Enumerates physical monitors via MonitorInfoHelper and upserts them into

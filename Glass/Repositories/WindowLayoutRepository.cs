@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 using Glass.UI.ViewModels;
 
 namespace Glass.Data.Repositories;
+using Monitor = Glass.Data.Models.Monitor;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // WindowLayoutRepository
@@ -69,6 +70,38 @@ public class WindowLayoutRepository
 
             _layouts.Add(layout);
         }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // GetClientWidth
+    //
+    // Returns the width of the first monitor in the given layout, or 0 if the layout has no monitors.
+    //
+    // layoutId: The layout ID to query
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public int GetClientWidth(int layoutId)
+    {
+        DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.GetClientWidth: layoutId={layoutId}.");
+
+        WindowLayout? layout = GetLayoutById(layoutId);
+        if (layout == null || layout.Monitors == null || layout.Monitors.Count == 0)
+        {
+            DebugLog.Write(DebugLog.Log_Database, "WindowLayoutRepository.GetClientWidth: layout has no monitors.");
+            return 0;
+        }
+
+        int monitorId = layout.Monitors[0].MonitorId;
+        MonitorRepository monitorRepo = new MonitorRepository();
+        Monitor? monitor = monitorRepo.GetById(monitorId);
+
+        if (monitor == null)
+        {
+            DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.GetClientWidth: monitor id {monitorId} not found.");
+            return 0;
+        }
+
+        DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.GetClientWidth: returning width={monitor.Width}.");
+        return monitor.Width;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

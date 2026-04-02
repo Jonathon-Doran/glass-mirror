@@ -13,6 +13,15 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Consumers">
+      <UniqueIdentifier>{28d96c63-c8aa-49d4-89e8-7823e012afb4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Capture">
+      <UniqueIdentifier>{95649652-aa06-4745-a466-e2bf7ade01e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Rendering">
+      <UniqueIdentifier>{bd1d411d-f1d1-4255-8ad8-4c81ff8c8beb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -33,52 +42,61 @@
     <ClInclude Include="PipeManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="QuadRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="D3DRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SessionCapture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VideoWindow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CaptureInterop.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SlotManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Rendering\D3DRenderer.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\QuadRenderer.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\VideoWindow.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Capture\SessionCapture.h">
+      <Filter>Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="Capture\CaptureInterop.h">
+      <Filter>Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="Consumers\ConsumerInterface.h">
+      <Filter>Consumers</Filter>
+    </ClInclude>
+    <ClInclude Include="Consumers\ConsumerManager.h">
+      <Filter>Consumers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="D3DRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Logger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="QuadRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PipeManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SessionCapture.cpp">
+    <ClCompile Include="SlotManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VideoWindow.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Rendering\D3DRenderer.cpp">
+      <Filter>Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="CaptureInterop.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Rendering\QuadRenderer.cpp">
+      <Filter>Rendering</Filter>
     </ClCompile>
-    <ClCompile Include="SlotManager.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Rendering\VideoWindow.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="Capture\SessionCapture.cpp">
+      <Filter>Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="Capture\CaptureInterop.cpp">
+      <Filter>Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="Consumers\ConsumerManager.cpp">
+      <Filter>Consumers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -95,11 +113,11 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="QuadVS.hlsl">
-      <Filter>Source Files</Filter>
+    <FxCompile Include="Rendering\QuadVS.hlsl">
+      <Filter>Rendering</Filter>
     </FxCompile>
-    <FxCompile Include="QuadPS.hlsl">
-      <Filter>Source Files</Filter>
+    <FxCompile Include="Rendering\QuadPS.hlsl">
+      <Filter>Rendering</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

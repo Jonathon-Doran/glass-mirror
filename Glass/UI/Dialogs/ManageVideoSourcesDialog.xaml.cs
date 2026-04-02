@@ -1,11 +1,13 @@
 ﻿using Glass.Core;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
+using Glass.UI.Dialogs;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace Glass;
 
@@ -19,11 +21,11 @@ public partial class ManageVideoSourcesDialog : Window
     private List<VideoSource> _sources = new();
     private VideoSource? _selectedSource = null;
     private UISkin? _selectedSkin = null;
+    private RegionOverlayWindow? _activeOverlay = null;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // ManageVideoSourcesDialog
+    // ManageVideoSourcesDialog constructor
     //
-    // Constructor. Loads all video sources from the database.
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public ManageVideoSourcesDialog()
     {
@@ -308,5 +310,83 @@ public partial class ManageVideoSourcesDialog : Window
     {
         DebugLog.Write("ManageVideoSourcesDialog.Cancel_Click: closing dialog.");
         Close();
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // PositionOverlayButton_Checked
+    //
+    // Opens the region overlay window when the toggle button is checked.
+    // The overlay allows the user to visually position and size a source region.
+    // The overlay is configured with teal colors to match Glass's UI theme.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void PositionOverlayButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_activeOverlay != null)
+        {
+            DebugLog.Write("ManageVideoSourcesDialog.PositionOverlayButton_Checked: overlay already exists, closing it first.");
+            _activeOverlay.Close();
+            _activeOverlay = null;
+        }
+
+        _activeOverlay = new RegionOverlayWindow();
+
+        // Configure colors to match Glass theme
+        _activeOverlay.BorderColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2AFFD7"));
+        _activeOverlay.HandleColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2AFFD7"));
+
+        // Handle overlay closure from X button or other means
+        _activeOverlay.Closed += (s, args) =>
+        {
+            DebugLog.Write("ManageVideoSourcesDialog: overlay closed externally.");
+            _activeOverlay = null;
+            PositionOverlayButton.IsChecked = false;
+        };
+
+        // Show the overlay
+        _activeOverlay.Owner = this;
+        _activeOverlay.Show();
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // PositionOverlayButton_Unchecked
+    //
+    // Closes the overlay window and captures the final coordinates when the toggle button is unchecked.
+    // Converts WPF logical units to physical pixels using the DPI transform.
+    // Updates the coordinate fields with the raw pixel values from the overlay.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void PositionOverlayButton_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DebugLog.Write("ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: closing overlay and capturing coordinates.");
+
+        if (_activeOverlay == null)
+        {
+            DebugLog.Write("ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: no active overlay.");
+            return;
+        }
+
+        PresentationSource source = PresentationSource.FromVisual(_activeOverlay);
+        if (source != null)
+        {
+            Matrix transform = source.CompositionTarget.TransformToDevice;
+
+            Point topLeft = transform.Transform(new Point(_activeOverlay.Left, _activeOverlay.Top));
+            Point sizePoint = transform.Transform(new Point(_activeOverlay.Width, _activeOverlay.Height));
+
+            DebugLog.Write($"ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: captured ({topLeft.X},{topLeft.Y}) {sizePoint.X}x{sizePoint.Y}.");
+
+            XTextBox.Text = ((int)topLeft.X).ToString();
+            YTextBox.Text = ((int)topLeft.Y).ToString();
+            WidthTextBox.Text = ((int)sizePoint.X).ToString();
+            HeightTextBox.Text = ((int)sizePoint.Y).ToString();
+        }
+        else
+        {
+            DebugLog.Write("ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: PresentationSource unavailable, coordinates not captured.");
+        }
+
+        _activeOverlay.Close();
+        _activeOverlay = null;
+
+        DebugLog.Write("ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: overlay closed.");
     }
 }

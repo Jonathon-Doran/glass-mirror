@@ -4,12 +4,14 @@ using Glass.Data;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
 using Glass.Input;
+using ModernWpf.Controls;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
+using static System.Reflection.Metadata.BlobBuilder;
 
 namespace Glass;
 
@@ -243,6 +245,15 @@ public partial class MainWindow : Window
             return;
         }
 
+        int layoutId = repo.GetLayoutId() ?? 0;
+        if (layoutId == 0)
+        {
+            DebugLog.Write("MainWindow.LaunchProfile: no layout assigned to profile, aborting.");
+            MessageBox.Show("This profile has no window layout assigned. Please edit the profile and configure a layout before launching.", "No Layout", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+            return;
+        }
+
         Log($"Launching profile: {profileName} ({slots.Count} characters)");
         _activeProfile = repo;
         _definedSlots.Clear();
@@ -252,45 +263,8 @@ public partial class MainWindow : Window
         PushRelayGroupState(repo.GetId());
         PushCommandState();
 
-        WindowLayoutRepository layoutRepo = new WindowLayoutRepository();
-        int? layoutId = repo.GetLayoutId();
-
-        if (!layoutId.HasValue)
-        {
-            DebugLog.Write("MainWindow.LaunchProfile: no layout assigned to profile, aborting.");
-            MessageBox.Show("This profile has no window layout assigned. Please edit the profile and configure a layout before launching.", "No Layout", MessageBoxButton.OK, MessageBoxImage.Warning);
-            _activeProfile = null;
-            return;
-        }
-
-        IReadOnlyList<SlotPlacement> placements = layoutRepo.GetSlotPlacements(layoutId.Value);
-        DebugLog.Write(DebugLog.Log_Database, $"MainWindow.LaunchProfile: {placements.Count} slot placements loaded for layoutId={layoutId.Value}.");
-
-        // Send any new slot definitions to GlassVideo.
-        foreach (var placement in placements)
-        {
-            if (!_definedSlots.Contains(placement.SlotNumber))
-            {
-                string cmd = $"slot_define {placement.SlotNumber} {placement.X} {placement.Y} {placement.Width} {placement.Height}";
-                DebugLog.Write(DebugLog.Log_Sessions, $"LaunchProfile: sending {cmd}");
-                GlassContext.GlassVideoPipe.Send(cmd);
-                _definedSlots.Add(placement.SlotNumber);
-            }
-        }
-
-        // Send slot_assign for any already-connected sessions.
-        foreach (var session in GlassContext.SessionRegistry.GetSessions())
-        {
-            var assignment = slots.FirstOrDefault(s =>
-                charRepo.GetById(s.CharacterId)?.Name == session.CharacterName);
-
-            if ((assignment != null) && (session.Hwnd != IntPtr.Zero))
-            {
-                string cmd = $"slot_assign {assignment.SlotNumber} {session.SessionName} {session.Hwnd:X}";
-                DebugLog.Write(DebugLog.Log_Sessions, $"LaunchProfile: sending {cmd}");
-                GlassContext.GlassVideoPipe.Send(cmd);
-            }
-        }
+        UpdateToolsMenuState();     // should be safe to activate the menus now
+        SendGlassVideoLayout(layoutId);
 
         // Launch characters with small random delays.
         var rng = new Random();
@@ -308,6 +282,86 @@ public partial class MainWindow : Window
             int delay = rng.Next(4000, 7000);
             await Task.Delay(delay);
         }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // SendGlassVideoLayout
+    //
+    // Sends slot and region definitions to GlassVideo for the active profile.
+    //
+    // layoutId:  The layout to send
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void SendGlassVideoLayout(int layoutId)
+    {
+        if (_activeProfile == null)
+        {
+            DebugLog.Write("MainWindow.SendGlassVideoLayout: no active profile.");
+            return;
+        }
+
+        WindowLayoutRepository layoutRepo = new WindowLayoutRepository();
+        IReadOnlyList<SlotPlacement> placements = layoutRepo.GetSlotPlacements(layoutId);
+        IReadOnlyList<SlotAssignment> slots = _activeProfile.GetSlots();
+        CharacterRepository charRepo = new CharacterRepository();
+
+        // Send slot definitions to GlassVideo
+        foreach (SlotPlacement placement in placements)
+        {
+            if (!_definedSlots.Contains(placement.SlotNumber))
+            {
+                string cmd = $"slot_define {placement.SlotNumber} {placement.X} {placement.Y} {placement.Width} {placement.Height}";
+                DebugLog.Write(DebugLog.Log_Sessions, $"MainWindow.SendGlassVideoLayout: sending {cmd}");
+                GlassContext.GlassVideoPipe.Send(cmd);
+                _definedSlots.Add(placement.SlotNumber);
+            }
+        }
+
+        // Send slot_assign for any already-connected sessions
+        foreach (SessionRegistry.SessionEntry session in GlassContext.SessionRegistry.GetSessions())
+        {
+            SlotAssignment? assignment = slots.FirstOrDefault(s =>
+                charRepo.GetById(s.CharacterId)?.Name == session.CharacterName);
+            if ((assignment != null) && (session.Hwnd != IntPtr.Zero))
+            {
+                string cmd = $"slot_assign {assignment.SlotNumber} {session.SessionName} {session.Hwnd:X}";
+                DebugLog.Write(DebugLog.Log_Sessions, $"MainWindow.SendGlassVideoLayout: sending {cmd}");
+                GlassContext.GlassVideoPipe.Send(cmd);
+            }
+        }
+
+        // Send video source regions (filtered by profile's UI skin)
+        int? uiSkinId = _activeProfile.GetUISkinId();
+        if (uiSkinId.HasValue)
+        {
+            VideoSourceRepository sourceRepo = new VideoSourceRepository();
+            IReadOnlyList<VideoSource> sources = sourceRepo.GetByUISkin(uiSkinId.Value);
+
+            foreach (VideoSource source in sources)
+            {
+                string cmd = $"region_source {source.Name} {source.X} {source.Y} {source.Width} {source.Height}";
+                DebugLog.Write(DebugLog.Log_Sessions, $"MainWindow.SendGlassVideoLayout: sending {cmd}");
+                GlassContext.GlassVideoPipe.Send(cmd);
+            }
+
+            DebugLog.Write(DebugLog.Log_Sessions, $"MainWindow.SendGlassVideoLayout: sent {sources.Count} video sources.");
+        }
+        else
+        {
+            DebugLog.Write(DebugLog.Log_Sessions, "MainWindow.SendGlassVideoLayout: no UI skin assigned, skipping video sources.");
+        }
+
+        // Send video destination regions (all global destinations)
+        VideoDestinationRepository destRepo = new VideoDestinationRepository();
+        IReadOnlyList<VideoDestination> destinations = destRepo.GetAll();
+
+        foreach (VideoDestination dest in destinations)
+        {
+            string cmd = $"region_dest {dest.Name} {dest.X} {dest.Y} {dest.Width} {dest.Height}";
+            DebugLog.Write(DebugLog.Log_Sessions, $"MainWindow.SendGlassVideoLayout: sending {cmd}");
+            GlassContext.GlassVideoPipe.Send(cmd);
+        }
+
+        DebugLog.Write(DebugLog.Log_Sessions, $"MainWindow.SendGlassVideoLayout: sent {destinations.Count} video destinations.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -487,7 +541,23 @@ public partial class MainWindow : Window
                     }
                     break;
                 }
-
+            case "screenshot":
+                {
+                    if (parts.Length < 2)
+                    {
+                        Log("Usage: /screenshot <slotId>");
+                        break;
+                    }
+                    if (!int.TryParse(parts[1], out int slotId))
+                    {
+                        Log("screenshot: invalid slot id.");
+                        break;
+                    }
+                    DebugLog.Write($"HandleLocalCommand: screenshot slotId={slotId}.");
+                    GlassContext.GlassVideoPipe.Send($"screenshot {slotId}");
+                    Log($"Screenshot requested for slot {slotId}.");
+                    break;
+                }
             default:
                 Log($"Unknown command: {parts[0]}");
                 break;
@@ -578,9 +648,8 @@ public partial class MainWindow : Window
 
                     string sessionName = parts[1];
                     DebugLog.Write(DebugLog.Log_Sessions, $"session_disconnected: {sessionName}");
-                    GlassContext.SessionRegistry.OnSessionDisconnected(sessionName);
                     GlassContext.GlassVideoPipe.Send($"unassign {sessionName}");
-
+                    GlassContext.SessionRegistry.OnSessionDisconnected(sessionName);
                     break;
                 }
 
@@ -600,8 +669,10 @@ public partial class MainWindow : Window
     {
         DebugLog.Write(DebugLog.Log_Sessions, "MainWindow.OnAllSessionsDisconnected: all sessions disconnected, clearing active profile.");
         _activeProfile = null;
+        UpdateToolsMenuState();
         GlassContext.FocusTracker.Stop();
         GlassContext.FocusTracker.ClearActiveSession();
+        GlassContext.GlassVideoPipe.Send("clear_all");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -747,15 +818,18 @@ public partial class MainWindow : Window
         dialog.ShowDialog();
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ManageVideoSources_Click
     //
-    // Opens the Manage VideoSources dialog.
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Opens the Manage Video Sources dialog.
+    // Passes a scaling factor if an active profile is loaded, enabling the position overlay feature.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ManageVideoSources_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new ManageVideoSourcesDialog { Owner = this };
+        ManageVideoSourcesDialog dialog = new ManageVideoSourcesDialog() { Owner = this };
         dialog.ShowDialog();
+
+        DebugLog.Write("MainWindow.ManageVideoSources_Click: dialog closed.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -823,5 +897,12 @@ public partial class MainWindow : Window
         }
 
         DebugLog.Write($"MainWindow.MenuItem_GenerateEQUI_Click: done. {characters.Count} characters processed.");
+    }
+
+    private void UpdateToolsMenuState()
+    {
+        bool hasActiveProfile = (_activeProfile != null);
+        ManageVideoSourcesMenuItem.IsEnabled = hasActiveProfile;
+        ManageVideoDestinationsMenuItem.IsEnabled = hasActiveProfile;
     }
 }

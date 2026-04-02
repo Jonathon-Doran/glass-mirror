@@ -38,8 +38,8 @@
                 <MenuItem Header="_Manage Commands..."  Click="MenuItem_ManageCommands_Click"/>
                 <MenuItem Header="_Manage Key Aliases..." Click="MenuItem_ManageKeyAliases_Click"/>
                 <MenuItem Header="Manage Machines..." Click="ManageMachines_Click"/>
-                <MenuItem Header="Manage VideoSources..." Click="ManageVideoSources_Click"/>
-                <MenuItem Header="Manage VideoDestinations..." Click="ManageVideoDestinations_Click"/>
+                <MenuItem x:Name="ManageVideoSourcesMenuItem" Header="Manage VideoSources..." Click="ManageVideoSources_Click"/>
+                <MenuItem x:Name="ManageVideoDestinationsMenuItem" Header="Manage VideoDestinations..." Click="ManageVideoDestinations_Click"/>
                 <MenuItem Header="Toggle G15 OSD" Click="ToggleG15Osd_Click"/>
                 <MenuItem Header="Key Test..." Click="KeyTest_Click"/>
                 <Separator/>

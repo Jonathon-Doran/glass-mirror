@@ -10,8 +10,7 @@
 
 struct QuadConstants
 {
-    float topCropUV;
-    float padding[3];
+    float uvRect[4];  // u0, v0, u1, v1
 };
 
 class QuadRenderer
@@ -23,7 +22,9 @@ public:
     bool Initialize(ID3D11Device* device);
     void Shutdown();
 
-    void Render(ID3D11DeviceContext* context, ID3D11ShaderResourceView* srv, float topCropUV = 0.0f);
+    void Render(ID3D11DeviceContext* context,
+        ID3D11ShaderResourceView* srv,
+        float u0, float v0, float u1, float v1);
 
 private:
     bool LoadShader(const std::string& path, std::vector<char>& bytecode);

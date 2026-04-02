@@ -48,4 +48,6 @@ public class WindowLayout
 
         return $"{machineTag}{Name} {slotLabel}";
     }
+
+
 }

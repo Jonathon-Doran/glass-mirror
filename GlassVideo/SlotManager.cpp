@@ -64,6 +64,19 @@ void SlotManager::Assign(ID3D11Device* device, SlotID slotId, const std::string&
         return;
     }
 
+    // Strip the window border and title bar.
+    LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
+    Logger::Instance().Write("SlotManager::Assign: original style=0x%llX", (unsigned long long)style);
+
+
+    style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU);
+    SetWindowLongPtr(hwnd, GWL_STYLE, style);
+
+    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+
+    Logger::Instance().Write("SlotManager::Assign: new style=0x%llX", (unsigned long long)style);
+
     // For now assign to the first entry. Multiple sessions per slot is a future concern.
     SlotInfo* slot = range.first->second.get();
     slot -> sessionName = sessionName;
@@ -228,4 +241,98 @@ HWND SlotManager::HitTest(int x, int y)
     }
 
     return NULL;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SlotManager::DefineSource
+//
+// Adds or updates a named video source region.
+// Coordinates are absolute pixel coordinates from the live EQ client window.
+//
+// name:    The name identifying this source, matched against a RegionDest of the same name
+// x, y:    Top-left corner of the source region in client window pixels
+// width:   Width of the source region in pixels
+// height:  Height of the source region in pixels
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SlotManager::DefineSource(const std::string& name, int x, int y, int width, int height)
+{
+    Logger::Instance().Write("SlotManager::DefineSource: name=%s x=%d y=%d w=%d h=%d",
+        name.c_str(), x, y, width, height);
+
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    RegionSource& source = _sources[name];
+    source.name = name;
+    source.x = x;
+    source.y = y;
+    source.width = width;
+    source.height = height;
+
+    Logger::Instance().Write("SlotManager::DefineSource: defined. total sources=%zu", _sources.size());
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SlotManager::DefineDestination
+//
+// Adds or updates a named video destination region.
+// Coordinates are relative to the slot origin and may be negative or exceed slot bounds.
+//
+// name:    The name identifying this destination, matched against a RegionSource of the same name
+// x, y:    Top-left corner relative to the slot origin in pixels
+// width:   Width of the destination region in pixels
+// height:  Height of the destination region in pixels
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SlotManager::DefineDestination(const std::string& name, int x, int y, int width, int height)
+{
+    Logger::Instance().Write("SlotManager::DefineDestination: name=%s x=%d y=%d w=%d h=%d",
+        name.c_str(), x, y, width, height);
+
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    RegionDest& dest = _destinations[name];
+    dest.name = name;
+    dest.x = x;
+    dest.y = y;
+    dest.width = width;
+    dest.height = height;
+
+    Logger::Instance().Write("SlotManager::DefineDestination: defined. total destinations=%zu", _destinations.size());
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SlotManager::ClearRegions
+//
+// Clears all source and destination region definitions.
+// Called by clear_all to reset region state alongside slot state.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SlotManager::ClearRegions()
+{
+    Logger::Instance().Write("SlotManager::ClearRegions: clearing all regions.");
+
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    _sources.clear();
+    _destinations.clear();
+
+    Logger::Instance().Write("SlotManager::ClearRegions: cleared.");
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SlotManager::GetSources
+//
+// Returns a read-only reference to the source region map for use by the renderer.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const RegionSourceMap& SlotManager::GetSources() const
+{
+    return _sources;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SlotManager::GetDestinations
+//
+// Returns a read-only reference to the destination region map for use by the renderer.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const RegionDestMap& SlotManager::GetDestinations() const
+{
+    return _destinations;
 }

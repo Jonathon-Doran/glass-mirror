@@ -1,13 +1,19 @@
 ﻿using Glass.Core;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
+using Glass.UI.Dialogs;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Runtime.InteropServices;
+using System.Windows.Interop;
 
 namespace Glass;
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ManageVideoDestinationsDialog
@@ -19,6 +25,19 @@ public partial class ManageVideoDestinationsDialog : Window
 {
     private List<VideoDestination> _destinations = new();
     private VideoDestination? _selectedDestination = null;
+    private RegionOverlayWindow? _activeOverlay = null;
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hwnd, out Win32Rect rect);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Win32Rect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ManageVideoDestinationsDialog
@@ -248,5 +267,89 @@ public partial class ManageVideoDestinationsDialog : Window
     {
         DebugLog.Write("ManageVideoDestinationsDialog.Cancel_Click: closing dialog.");
         Close();
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // PositionOverlayButton_Checked
+    //
+    // Opens the region overlay window when the toggle button is checked.
+    // The overlay allows the user to visually position and size a destination region.
+    // The overlay is configured with teal colors to match Glass's UI theme.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void PositionOverlayButton_Checked(object sender, RoutedEventArgs e)
+    {
+        DebugLog.Write("ManageVideoDestinationsDialog.PositionOverlayButton_Checked: opening overlay window.");
+
+        if (_activeOverlay != null)
+        {
+            DebugLog.Write("ManageVideoDestinationsDialog.PositionOverlayButton_Checked: overlay already exists, closing it first.");
+            _activeOverlay.Close();
+            _activeOverlay = null;
+        }
+
+        _activeOverlay = new RegionOverlayWindow();
+
+        // Configure colors to match Glass theme
+        _activeOverlay.BorderColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2AFFD7"));
+        _activeOverlay.HandleColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2AFFD7"));
+
+        // Handle overlay closure from external means
+        _activeOverlay.Closed += (s, args) =>
+        {
+            DebugLog.Write("ManageVideoDestinationsDialog: overlay closed externally.");
+            _activeOverlay = null;
+            PositionOverlayButton.IsChecked = false;
+        };
+
+        // Show the overlay
+        _activeOverlay.Owner = this;
+        _activeOverlay.Show();
+
+        DebugLog.Write("ManageVideoDestinationsDialog.PositionOverlayButton_Checked: overlay window opened.");
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // PositionOverlayButton_Unchecked
+    //
+    // Closes the overlay window and captures the final coordinates when the toggle button is unchecked.
+    // Converts WPF logical units to physical pixels using the DPI transform.
+    // Updates the coordinate fields with the raw pixel values from the overlay.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void PositionOverlayButton_Unchecked(object sender, RoutedEventArgs e)
+    {
+        DebugLog.Write("ManageVideoDestinationsDialog.PositionOverlayButton_Unchecked: closing overlay and capturing coordinates.");
+
+        if (_activeOverlay == null)
+        {
+            DebugLog.Write("ManageVideoDestinationsDialog.PositionOverlayButton_Unchecked: no active overlay.");
+            return;
+        }
+
+        PresentationSource source = PresentationSource.FromVisual(_activeOverlay);
+        WindowInteropHelper helper = new WindowInteropHelper(_activeOverlay);
+        if (GetWindowRect(helper.Handle, out Win32Rect rect))
+        {
+            int x = rect.Left;
+            int y = rect.Top;
+            int width = rect.Right - rect.Left;
+            int height = rect.Bottom - rect.Top;
+
+            DebugLog.Write($"ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: captured ({x},{y}) {width}x{height}.");
+
+            XTextBox.Text = x.ToString();
+            YTextBox.Text = y.ToString();
+            WidthTextBox.Text = width.ToString();
+            HeightTextBox.Text = height.ToString();
+        }
+        else
+        {
+            DebugLog.Write("ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: GetWindowRect failed.");
+        }
+
+        _activeOverlay.Close();
+        _activeOverlay = null;
+
+        DebugLog.Write("ManageVideoDestinationsDialog.PositionOverlayButton_Unchecked: overlay closed.");
     }
 }

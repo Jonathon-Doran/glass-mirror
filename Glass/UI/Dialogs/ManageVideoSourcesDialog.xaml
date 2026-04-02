@@ -76,16 +76,29 @@
                          TextChanged="NameTextBox_TextChanged"/>
 
                 <TextBlock Text="X:" Margin="0,0,0,4"/>
-                <TextBox x:Name="XTextBox" Margin="0,0,0,12"/>
+                <Grid Margin="0,0,4,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="XTextBox" Grid.Column="0" Width="60" Margin="0,0,4,0"/>
+                    <ToggleButton x:Name="PositionOverlayButton" Grid.Column="1"
+                              Width="32" Height="32" Padding="0" 
+                              HorizontalAlignment="Right"
+                              Checked="PositionOverlayButton_Checked"
+                              Unchecked="PositionOverlayButton_Unchecked">
+                        <Image Source="pack://application:,,,/Resources/target.png" Width="24" Height="24"/>
+                    </ToggleButton>
+                </Grid>
 
                 <TextBlock Text="Y:" Margin="0,0,0,4"/>
-                <TextBox x:Name="YTextBox" Margin="0,0,0,12"/>
+                <TextBox x:Name="YTextBox" Width="60" HorizontalAlignment="Left" Margin="0,0,0,12"/>
 
                 <TextBlock Text="Width:" Margin="0,0,0,4"/>
-                <TextBox x:Name="WidthTextBox" Margin="0,0,0,12"/>
+                <TextBox x:Name="WidthTextBox" Width="60" HorizontalAlignment="Left" Margin="0,0,0,12"/>
 
                 <TextBlock Text="Height:" Margin="0,0,0,4"/>
-                <TextBox x:Name="HeightTextBox" Margin="0,0,0,12"/>
+                <TextBox x:Name="HeightTextBox" Width="60" HorizontalAlignment="Left" Margin="0,0,0,12"/>
             </StackPanel>
         </Border>
 

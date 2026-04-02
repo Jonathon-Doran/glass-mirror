@@ -4,8 +4,8 @@
 #include <string>
 #include <map>
 #include <mutex> 
-#include "QuadRenderer.h"
-#include "SessionCapture.h"
+#include "Rendering\QuadRenderer.h"
+#include "Capture\SessionCapture.h"
 
 typedef unsigned int SlotID;
 
@@ -22,6 +22,49 @@ struct SlotInfo
     int            height = 0;
     SessionCapture capture;
 };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// RegionSource
+//
+// Defines a named source subregion within an EQ client window.
+// Coordinates are absolute pixel coordinates captured from the live client.
+//
+// name:    Name used to match against a RegionDest with the same name
+// x, y:    Top-left corner of the source region in client window pixels
+// width:   Width of the source region in pixels
+// height:  Height of the source region in pixels
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct RegionSource
+{
+    std::string name;
+    int         x;
+    int         y;
+    int         width;
+    int         height;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// RegionDest
+//
+// Defines a named destination region relative to a slot's origin.
+// Coordinates are slot-relative and may be negative or exceed slot bounds.
+//
+// name:    Name used to match against a RegionSource with the same name
+// x, y:    Top-left corner relative to the slot's origin, in pixels
+// width:   Width of the destination region in pixels
+// height:  Height of the destination region in pixels
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct RegionDest
+{
+    std::string name;
+    int         x;
+    int         y;
+    int         width;
+    int         height;
+};
+
+typedef std::map<std::string, RegionSource>  RegionSourceMap;
+typedef std::map<std::string, RegionDest>    RegionDestMap;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SlotManager
@@ -59,7 +102,17 @@ public:
 
     const std::multimap<SlotID, std::unique_ptr<SlotInfo>>& GetSlots() const;
     std::mutex& GetMutex();
+
+    void DefineSource(const std::string& name, int x, int y, int width, int height);
+    void DefineDestination(const std::string& name, int x, int y, int width, int height);
+    void ClearRegions();
+
+    const RegionSourceMap& GetSources() const;
+    const RegionDestMap& GetDestinations() const;
+
 private:
     std::multimap<SlotID, std::unique_ptr<SlotInfo>> _slots;
     std::mutex                                       _mutex;
+    RegionSourceMap                                  _sources;
+    RegionDestMap                                    _destinations;
 };

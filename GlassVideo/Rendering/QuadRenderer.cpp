@@ -145,37 +145,45 @@ void QuadRenderer::Shutdown()
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Render
-// 
-// Renders the given shader resource view to the current render target
-// using a screen-space quad covering the entire NDC space.
+//
+// Renders the given SRV to the current viewport using a screen-space quad.
+// The source UV rect defines which portion of the texture to sample.
+//
+// context:  The D3D11 device context
+// srv:      The shader resource view to sample
+// u0, v0:   Top-left UV coordinate of the source region
+// u1, v1:   Bottom-right UV coordinate of the source region
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void QuadRenderer::Render(ID3D11DeviceContext* context, ID3D11ShaderResourceView* srv, float topCropUV)
+void QuadRenderer::Render(ID3D11DeviceContext* context,
+    ID3D11ShaderResourceView* srv,
+    float u0, float v0, float u1, float v1)
 {
     if ((!_vertexShader) || (!_pixelShader) || (!_samplerState) || (!_constantBuffer))
     {
+        Logger::Instance().Write("QuadRenderer::Render: not initialized, skipping.");
         return;
     }
 
-    if (!srv)
+    if (srv == nullptr)
     {
+        Logger::Instance().Write("QuadRenderer::Render: srv is null, skipping.");
         return;
     }
 
     D3D11_MAPPED_SUBRESOURCE mapped = {};
     HRESULT hr = context->Map(_constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-    if (SUCCEEDED(hr))
-    {
-        QuadConstants* constants = (QuadConstants*)mapped.pData;
-        constants->topCropUV = topCropUV;
-        constants->padding[0] = 0.0f;
-        constants->padding[1] = 0.0f;
-        constants->padding[2] = 0.0f;
-        context->Unmap(_constantBuffer, 0);
-    }
-    else
+    if (FAILED(hr))
     {
         Logger::Instance().Write("QuadRenderer::Render: Map failed: 0x%08X", hr);
+        return;
     }
+
+    QuadConstants* constants = (QuadConstants*)mapped.pData;
+    constants->uvRect[0] = u0;
+    constants->uvRect[1] = v0;
+    constants->uvRect[2] = u1;
+    constants->uvRect[3] = v1;
+    context->Unmap(_constantBuffer, 0);
 
     context->VSSetConstantBuffers(0, 1, &_constantBuffer);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
