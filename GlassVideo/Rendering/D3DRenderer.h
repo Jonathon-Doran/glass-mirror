@@ -35,12 +35,12 @@ private:
     bool CreateRenderTarget();
     void ReleaseRenderTarget();
 
-    ID3D11Device* _device;
-    ID3D11DeviceContext* _context;
-    IDXGISwapChain* _swapChain;
-    ID3D11RenderTargetView* _renderTargetView;
-    QuadRenderer            _quadRenderer;
-    ID3D11ShaderResourceView* _blackSRV;
+    ID3D11Device*                   _device;
+    ID3D11DeviceContext*            _context;
+    IDXGISwapChain*                 _swapChain;
+    ID3D11RenderTargetView*         _renderTargetView;
+    QuadRenderer                    _quadRenderer;
+    ID3D11ShaderResourceView*       _blackSRV;
 
     int _width;
     int _height;

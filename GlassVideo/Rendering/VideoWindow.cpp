@@ -118,9 +118,15 @@ void VideoWindow::Render()
     ID3D11RenderTargetView* rtv = _renderer.GetRenderTargetView();
     _renderer.GetContext()->OMSetRenderTargets(1, &rtv, nullptr);
 
+    _renderer.GetContext()->OMSetRenderTargets(1, &rtv, nullptr);
+
+    float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+    _renderer.GetContext()->ClearRenderTargetView(rtv, clearColor);
+
+
     const std::multimap<SlotID, std::unique_ptr<SlotInfo>>& slots = g_slotManager.GetSlots();
-    const RegionSourceMap& sources = g_slotManager.GetSources();
-    const RegionDestMap& destinations = g_slotManager.GetDestinations();
+    const RegionMap& sources = g_slotManager.GetSources();
+    const RegionMap& destinations = g_slotManager.GetDestinations();
 
     for (const std::pair<const SlotID, std::unique_ptr<SlotInfo>>& pair : slots)
     {
@@ -187,17 +193,17 @@ void VideoWindow::Render()
             continue;
         }
 
-        for (const std::pair<const std::string, RegionDest>& destPair : destinations)
+        for (const std::pair<const std::string, RegionDesc>& destPair : destinations)
         {
-            const RegionDest& dest = destPair.second;
+            const RegionDesc& dest = destPair.second;
 
-            const RegionSourceMap::const_iterator sourceIt = sources.find(dest.name);
+            const RegionMap::const_iterator sourceIt = sources.find(dest.name);
             if (sourceIt == sources.end())
             {
                 continue;
             }
 
-            const RegionSource& source = sourceIt->second;
+            const RegionDesc& source = sourceIt->second;
 
             // Compute UV rect, offsetting v by title bar crop.
             float u0 = (float)source.x / (float)captureWidth;

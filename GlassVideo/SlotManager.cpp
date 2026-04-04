@@ -261,7 +261,7 @@ void SlotManager::DefineSource(const std::string& name, int x, int y, int width,
 
     std::lock_guard<std::mutex> lock(_mutex);
 
-    RegionSource& source = _sources[name];
+    RegionDesc& source = _sources[name];
     source.name = name;
     source.x = x;
     source.y = y;
@@ -289,7 +289,7 @@ void SlotManager::DefineDestination(const std::string& name, int x, int y, int w
 
     std::lock_guard<std::mutex> lock(_mutex);
 
-    RegionDest& dest = _destinations[name];
+    RegionDesc& dest = _destinations[name];
     dest.name = name;
     dest.x = x;
     dest.y = y;
@@ -322,7 +322,7 @@ void SlotManager::ClearRegions()
 //
 // Returns a read-only reference to the source region map for use by the renderer.
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const RegionSourceMap& SlotManager::GetSources() const
+const RegionMap& SlotManager::GetSources() const
 {
     return _sources;
 }
@@ -332,7 +332,29 @@ const RegionSourceMap& SlotManager::GetSources() const
 //
 // Returns a read-only reference to the destination region map for use by the renderer.
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const RegionDestMap& SlotManager::GetDestinations() const
+const RegionMap& SlotManager::GetDestinations() const
 {
     return _destinations;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SlotManager::GetDirtyDestinations
+//
+// Returns a read-only reference to the list of destination rects that have been
+// overwritten and need to be cleared by the renderer before the next frame.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const std::vector<RegionDesc>& SlotManager::GetDirtyDestinations() const
+{
+    return _dirtyDestinations;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// SlotManager::ClearDirtyDestinations
+//
+// Clears the dirty destination list after the renderer has processed it.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void SlotManager::ClearDirtyDestinations()
+{
+    Logger::Instance().Write("SlotManager::ClearDirtyDestinations: clearing %zu dirty rects.", _dirtyDestinations.size());
+    _dirtyDestinations.clear();
 }

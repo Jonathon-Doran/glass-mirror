@@ -24,17 +24,16 @@ struct SlotInfo
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// RegionSource
+// RegionDesc
 //
-// Defines a named source subregion within an EQ client window.
-// Coordinates are absolute pixel coordinates captured from the live client.
+// Describes a named rectangular region, used for both source and destination regions.
 //
-// name:    Name used to match against a RegionDest with the same name
-// x, y:    Top-left corner of the source region in client window pixels
-// width:   Width of the source region in pixels
-// height:  Height of the source region in pixels
+// name:    Name used to match source against destination
+// x, y:    Top-left corner in pixels
+// width:   Width in pixels
+// height:  Height in pixels
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct RegionSource
+struct RegionDesc
 {
     std::string name;
     int         x;
@@ -43,28 +42,7 @@ struct RegionSource
     int         height;
 };
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// RegionDest
-//
-// Defines a named destination region relative to a slot's origin.
-// Coordinates are slot-relative and may be negative or exceed slot bounds.
-//
-// name:    Name used to match against a RegionSource with the same name
-// x, y:    Top-left corner relative to the slot's origin, in pixels
-// width:   Width of the destination region in pixels
-// height:  Height of the destination region in pixels
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct RegionDest
-{
-    std::string name;
-    int         x;
-    int         y;
-    int         width;
-    int         height;
-};
-
-typedef std::map<std::string, RegionSource>  RegionSourceMap;
-typedef std::map<std::string, RegionDest>    RegionDestMap;
+typedef std::map<std::string, RegionDesc> RegionMap;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SlotManager
@@ -107,12 +85,15 @@ public:
     void DefineDestination(const std::string& name, int x, int y, int width, int height);
     void ClearRegions();
 
-    const RegionSourceMap& GetSources() const;
-    const RegionDestMap& GetDestinations() const;
+    const RegionMap& GetSources() const;
+    const RegionMap& GetDestinations() const;
+    const std::vector<RegionDesc>& GetDirtyDestinations() const;
+    void ClearDirtyDestinations();
 
 private:
     std::multimap<SlotID, std::unique_ptr<SlotInfo>> _slots;
     std::mutex                                       _mutex;
-    RegionSourceMap                                  _sources;
-    RegionDestMap                                    _destinations;
+    RegionMap                                        _sources;
+    RegionMap                                        _destinations;
+    std::vector<RegionDesc>                          _dirtyDestinations;
 };
