@@ -1,4 +1,8 @@
-﻿namespace Glass.Core;
+﻿using System;
+using System.IO;
+using System.Reflection;
+
+namespace Glass.Core;
 
 public static class DebugLog
 {
@@ -9,53 +13,99 @@ public static class DebugLog
     public static bool Log_Database = true;
 
     private static volatile Action<string>? _log;
+    private static StreamWriter? _fileWriter;
+    private static readonly object _fileLock = new object();
 
+    // Initializes the debug log, wiring up the console action and opening the log file.
+    // The log file is written alongside the executable and cleared on each startup.
+    // Parameters:
+    //   log - action that writes a message to the UI console
     public static void Initialize(Action<string> log)
     {
         _log = log;
+
+        string exeDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? ".";
+        string logPath = Path.Combine(exeDirectory, "glass.log");
+
+        lock (_fileLock)
+        {
+            _fileWriter = new StreamWriter(logPath, append: false);
+            _fileWriter.AutoFlush = true;
+        }
+
+        Write("DebugLog: log file opened at " + logPath);
     }
 
+    // Shuts down the debug log, flushing and closing the log file.
     public static void Shutdown()
     {
+        Write("DebugLog: shutting down, closing log file.");
+
         _log = null;
+
+        lock (_fileLock)
+        {
+            if (_fileWriter != null)
+            {
+                _fileWriter.Flush();
+                _fileWriter.Close();
+                _fileWriter = null;
+            }
+        }
     }
 
     // Writes a message unconditionally — for high priority messages that always log.
+    // Parameters:
+    //   message - the message to write
     public static void Write(string message)
     {
         _log?.Invoke(message);
+
+        lock (_fileLock)
+        {
+            if (_fileWriter != null)
+            {
+                _fileWriter.WriteLine(message);
+            }
+        }
     }
 
     // Writes a message only if the specified feature flag is enabled.
+    // Parameters:
+    //   flag    - feature flag; message is suppressed if false
+    //   message - the message to write
     public static void Write(bool flag, string message)
     {
         if (flag)
         {
-            _log?.Invoke(message);
+            Write(message);
         }
     }
 
     // Sets a feature flag by name. Returns false if the feature name is not recognized.
+    // Parameters:
+    //   feature - name of the feature flag (case-insensitive)
+    //   enabled - the value to set
     public static bool SetFlag(string feature, bool enabled)
     {
         switch (feature.ToLower())
         {
-            case "pipes": 
-                Log_Pipes = enabled; 
+            case "pipes":
+                Log_Pipes = enabled;
                 return true;
-            case "video": 
-                Log_Video = enabled; 
+            case "video":
+                Log_Video = enabled;
                 return true;
-            case "sessions": 
-                Log_Sessions = enabled; 
+            case "sessions":
+                Log_Sessions = enabled;
                 return true;
-            case "input": 
-                Log_Input = enabled; 
+            case "input":
+                Log_Input = enabled;
                 return true;
             case "database":
                 Log_Database = enabled;
                 return true;
-            default: 
+            default:
                 return false;
         }
     }

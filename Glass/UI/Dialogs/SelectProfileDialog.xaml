@@ -16,9 +16,14 @@
             <Button Content="Cancel" Width="80" Click="Cancel_Click"/>
         </StackPanel>
 
-        <ListBox x:Name="ProfileList" 
-                 SelectionChanged="ProfileList_SelectionChanged"
-                 DisplayMemberPath="Name"/>
-
+        <ListView x:Name="ProfileList"
+          SelectionChanged="ProfileList_SelectionChanged">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Profile" Width="340"
+                            DisplayMemberBinding="{Binding}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
     </DockPanel>
 </Window>
