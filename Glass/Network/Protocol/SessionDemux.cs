@@ -105,8 +105,14 @@ public class SessionDemux
             client = new EqClient(localPort, _arqSeqGiveUp);
             _clientsByLocalPort[localPort] = client;
 
+            client.GetStream(SoeConstants.StreamClient2Zone).OnAppPacket
+                = OpcodeDispatch.Instance.HandlePacket;
+            client.GetStream(SoeConstants.StreamZone2Client).OnAppPacket
+                = OpcodeDispatch.Instance.HandlePacket;
+
             DebugLog.Write("SessionDemux.RoutePacket: new client on local port "
-                + localPort + ", total clients=" + _clientsByLocalPort.Count);
+                + localPort + ", total clients=" + _clientsByLocalPort.Count
+                + ", zone streams wired to OpcodeDispatch");
         }
 
         // Route to the stream
