@@ -97,6 +97,19 @@ public class OpcodeDispatch
             + _handlers.Count + " handlers registered");
     }
 
+    // =============================================================================
+    // IsOpcodeHandled
+    //
+    // Returns true if a handler is registered for the given opcode.
+    //
+    // Parameters:
+    //   opcode - the application-level opcode to check
+    // =============================================================================
+    public bool IsOpcodeHandled(ushort opcode)
+    {
+        return _handlers.ContainsKey(opcode);
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // HandlePacket
     //

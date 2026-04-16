@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers.Binary;
+using System.Security.RightsManagement;
 using Glass.Core;
 using Glass.Network.Protocol;
 
@@ -80,6 +81,7 @@ public class HandleClientUpdate : IHandleOpcodes
     {
         DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length);
 
+        ushort sequence = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0));
         uint playerId = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
         // skip 2 bytes
         float deltaY = BinaryPrimitives.ReadSingleBigEndian(data.Slice(6));
@@ -89,10 +91,11 @@ public class HandleClientUpdate : IHandleOpcodes
         float yPos = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(18));
         float zPos = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(34));
 
+        UInt32 lastword = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(38));
+        uint heading = (uint)data[39] | ((uint)data[40] << 8) | ((uint)data[41] << 16);
+
         DebugLog.Write("Player " + playerId + " (0x" + playerId.ToString("x4") + ")");
         DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + " Position:  (" + xPos.ToString("F2") + "," + yPos.ToString("F2") + "," + zPos.ToString("F2") + ")");
-
-
-        // x looks possible at byte 13
+        DebugLog.Write("Heading? is " + heading.ToString() + " 0x(" + heading.ToString("x8") + ") = " + heading/8148.0*360.0 + " degrees");
     }
 }

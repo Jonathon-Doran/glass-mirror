@@ -14,7 +14,7 @@ namespace Glass.Network.Handlers;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 public class HandleZoneEntry : IHandleOpcodes
 {
-    private ushort _opcode = 0xe4b3;
+    private ushort _opcode = 0xf19a;
     private readonly string _opcodeName = "OP_ZoneEntry";
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,7 +48,7 @@ public class HandleZoneEntry : IHandleOpcodes
     {
         if (direction == SoeConstants.DirectionServerToClient)
         {
-            HandleServerToClient(data, length);
+            HandleServerToClient(data, length, metadata);
         }
         else if (direction == SoeConstants.DirectionClientToServer)
         {
@@ -68,7 +68,7 @@ public class HandleZoneEntry : IHandleOpcodes
     // data:    The application payload
     // length:  Length of the application payload
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    private void HandleServerToClient(ReadOnlySpan<byte> data, int length)
+    private void HandleServerToClient(ReadOnlySpan<byte> data, int length, PacketMetadata metadata)
     {
         if (length < 4)
         {
@@ -100,7 +100,7 @@ public class HandleZoneEntry : IHandleOpcodes
         uint spawnId = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(nullPos+1));
         uint level = data[nullPos + 5];
 
-        DebugLog.Write(_opcodeName);
+        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length);
         DebugLog.Write("name=\"" + name + "\"  id=(0x" + spawnId.ToString("x4")+")");
         DebugLog.Write("SpawnId=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
         DebugLog.Write("Level=" + level + " (0x" + level.ToString("x4") + ")");

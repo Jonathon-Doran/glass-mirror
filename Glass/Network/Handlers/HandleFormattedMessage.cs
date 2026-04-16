@@ -1,19 +1,20 @@
-﻿using System;
-using System.Buffers.Binary;
-using Glass.Core;
+﻿using Glass.Core;
 using Glass.Network.Protocol;
+using System;
+using System.Buffers.Binary;
+using System.Text;
 
 namespace Glass.Network.Handlers;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-// HandleNpcMove
+// HandleFormattedMessage
 //
-// Handles OP_NpcMove packets.  
+// Handles OP_FormattedMessage packets.  
 ///////////////////////////////////////////////////////////////////////////////////////////////
-public class HandleNpcMove : IHandleOpcodes
+public class HandleFormattedMessage : IHandleOpcodes
 {
-    private ushort _opcode = 0x7c8c;
-    private readonly string _opcodeName = "OP_NpcMoveUpdate";
+    private ushort _opcode = 0x359f;
+    private readonly string _opcodeName = "OP_HandleFormattedMessage";
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Opcode
@@ -46,7 +47,7 @@ public class HandleNpcMove : IHandleOpcodes
     {
         if (direction == SoeConstants.DirectionServerToClient)
         {
-            HandleServerToClient(data, length);
+            HandleServerToClient(data, length, metadata);
         }
     }
 
@@ -58,19 +59,16 @@ public class HandleNpcMove : IHandleOpcodes
     // data:    The application payload
     // length:  Length of the application payload
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    private void HandleServerToClient(ReadOnlySpan<byte> data, int length)
+    private void HandleServerToClient(ReadOnlySpan<byte> data, int length, PacketMetadata metadata)
     {
-        if (length < 4)
-        {
-            DebugLog.Write(_opcodeName + " too short, length=" + length);
-            return;
-        }
+        uint msgLength = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(13));
+        string msgText = Encoding.ASCII.GetString(data.Slice(17, (int) msgLength));
 
-        uint spawnId = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0));
+        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
+            + _opcodeName + " length=" + length);
+        DebugLog.Write("Message: " + msgText);
 
-
-        DebugLog.Write(_opcodeName);
-        DebugLog.Write("SpawnId=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
     }
 
 }
+

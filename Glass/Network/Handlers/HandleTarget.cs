@@ -12,7 +12,7 @@ namespace Glass.Network.Handlers;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 public class HandleTarget : IHandleOpcodes
 {
-    private ushort _opcode = 0x956a;
+    private ushort _opcode = 0x9c30;
     private readonly string _opcodeName = "OP_TargetMouse";
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -44,21 +44,21 @@ public class HandleTarget : IHandleOpcodes
     public void HandlePacket(ReadOnlySpan<byte> data, int length,
                               byte direction, ushort opcode, PacketMetadata metadata)
     {
-        if (direction == SoeConstants.DirectionServerToClient)
+        if (direction == SoeConstants.DirectionClientToServer)
         {
-            HandleServerToClient(data, length);
+            HandleClientToServer(data, length, metadata);
         }
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    // HandleServerToClient
+    // HandleClientToServer
     //
-    // Processes zone-to-client traffic
+    // Processes client-to-zone traffic
     //
     // data:    The application payload
     // length:  Length of the application payload
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    private void HandleServerToClient(ReadOnlySpan<byte> data, int length)
+    private void HandleClientToServer(ReadOnlySpan<byte> data, int length, PacketMetadata metadata)
     {
         if (length != 4)
         {
@@ -69,7 +69,7 @@ public class HandleTarget : IHandleOpcodes
         uint spawnId = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0));
 
 
-        DebugLog.Write(_opcodeName);
+        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length);
         DebugLog.Write("Target=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
     }
 

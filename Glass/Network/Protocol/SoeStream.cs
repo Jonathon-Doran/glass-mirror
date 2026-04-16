@@ -476,9 +476,6 @@ public class SoeStream : IDisposable
             DebugLog.Write(DebugLog.Log_Network,
                 "          Sub-packet #" + subNum + " (" + subpacketLength + " bytes)"
                 + " opcode=0x" + subOpCode.ToString("x4"));
-            DebugLog.Write(DebugLog.Log_Network,
-                "          Data: " + BitConverter.ToString(
-                    payload.Slice(pos, subpacketLength).ToArray()).Replace("-", " ").ToLower());
 
             if (subOpCode == 0)
             {
@@ -574,9 +571,6 @@ public class SoeStream : IDisposable
                 DebugLog.Write(DebugLog.Log_Network,
                     "          Sub-packet #" + subNum + " (" + subpacketLength + " bytes)"
                     + " opcode=0x" + subOpCode.ToString("x4"));
-                DebugLog.Write(DebugLog.Log_Network,
-                    "          Data: " + BitConverter.ToString(
-                        payload.Slice(pos, subpacketLength).ToArray()).Replace("-", " ").ToLower());
 
                 DispatchAppPacket(payload.Slice(dataPos + 2, actualLen - 2),
                                   actualLen - 2, subOpCode, metadata);
@@ -632,9 +626,7 @@ public class SoeStream : IDisposable
                 DebugLog.Write(DebugLog.Log_Network,
                     "           Sub-packet #" + subNum + " (" + longLength + " bytes, long form)"
                     + " opcode=0x" + subOpCode.ToString("x4"));
-                DebugLog.Write(DebugLog.Log_Network,
-                    "          Data: " + BitConverter.ToString(
-                        payload.Slice(pos, longLength).ToArray()).Replace("-", " ").ToLower());
+
 
                 DispatchAppPacket(payload.Slice(dataPos + 2, actualLen - 2),
                                   actualLen - 2, subOpCode, metadata);

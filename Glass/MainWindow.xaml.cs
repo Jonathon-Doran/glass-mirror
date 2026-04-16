@@ -888,8 +888,6 @@ public partial class MainWindow : Window
 
         string filePath = dialog.FileName;
 
-        DebugLog.Write("Pcap_Click: selected file '" + filePath + "'");
-
         string localIp = "10.146.79.19";
 
         SessionDemux router = new SessionDemux(localIp);
@@ -897,7 +895,7 @@ public partial class MainWindow : Window
 
         int routed = reader.ProcessFile(filePath);
 
-        DebugLog.Write("Pcap_Click: " + routed + " packets routed");
+        DebugLog.Write(routed + " packets routed");
 
         foreach (KeyValuePair<int, EqClient> kvp in router.GetAllClients())
         {
@@ -915,7 +913,9 @@ public partial class MainWindow : Window
 
                     foreach (KeyValuePair<ushort, int> op in sorted)
                     {
-                        DebugLog.Write("  0x" + op.Key.ToString("x4")
+                        string handled = OpcodeDispatch.Instance.IsOpcodeHandled(op.Key)
+                            ? "+" : " ";
+                        DebugLog.Write("  " + handled + " 0x" + op.Key.ToString("x4")
                             + ": " + op.Value + " times");
                     }
                 }

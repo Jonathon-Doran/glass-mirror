@@ -80,6 +80,19 @@ public static class DebugLog
         }
     }
 
+    // =============================================================================
+    // Write (format + args)
+    // Writes a formatted message to the debug log using string.Format.
+    //
+    // Parameters:
+    //   format - composite format string
+    //   args   - arguments to substitute into the format string
+    // =============================================================================
+    public static void Write(string format, params object[] args)
+    {
+        Write(string.Format(format, args));
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Write
     //

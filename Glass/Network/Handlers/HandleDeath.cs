@@ -12,7 +12,7 @@ namespace Glass.Network.Handlers;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 public class HandleDeath : IHandleOpcodes
 {
-    private ushort _opcode = 0xcf7b;
+    private ushort _opcode = 0xc7c6;
     private readonly string _opcodeName = "OP_Death";
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ public class HandleDeath : IHandleOpcodes
     {
         if (direction == SoeConstants.DirectionServerToClient)
         {
-            HandleServerToClient(data, length);
+            HandleServerToClient(data, length, metadata);
         }
     }
 
@@ -58,7 +58,7 @@ public class HandleDeath : IHandleOpcodes
     // data:    The application payload
     // length:  Length of the application payload
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    private void HandleServerToClient(ReadOnlySpan<byte> data, int length)
+    private void HandleServerToClient(ReadOnlySpan<byte> data, int length, PacketMetadata metadata)
     {
         if (length < 4)
         {
@@ -74,7 +74,8 @@ public class HandleDeath : IHandleOpcodes
         uint unk4 = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(20));
         uint unk5 = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(24));
 
-        DebugLog.Write(_opcodeName);
+        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
+            + _opcodeName + " length=" + length);
         DebugLog.Write("Dead=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
         DebugLog.Write("Killer=" + killerId + " (0x" + killerId.ToString("x4") + ")");
         DebugLog.Write("Unk1=" + unk1 + " (0x" + unk1.ToString("x8") + ")");
