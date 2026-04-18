@@ -913,9 +913,14 @@ public partial class MainWindow : Window
 
                     foreach (KeyValuePair<ushort, int> op in sorted)
                     {
+                        string? name = OpcodeDispatch.Instance.GetOpcodeName(op.Key);
+                        if (name == null)
+                        {
+                            name = "unknown";
+                        }
                         string handled = OpcodeDispatch.Instance.IsOpcodeHandled(op.Key)
                             ? "+" : " ";
-                        DebugLog.Write("  " + handled + " 0x" + op.Key.ToString("x4")
+                        DebugLog.Write("  " + handled + " 0x" + op.Key.ToString("x4") + " (" + name + ")"
                             + ": " + op.Value + " times");
                     }
                 }

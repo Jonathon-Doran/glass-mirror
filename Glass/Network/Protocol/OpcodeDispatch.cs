@@ -19,6 +19,7 @@ public class OpcodeDispatch
 {
     private static OpcodeDispatch? _instance = null;
     private readonly Dictionary<ushort, IHandleOpcodes> _handlers;
+    private readonly Dictionary<ushort, string> _names;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Instance
@@ -48,6 +49,7 @@ public class OpcodeDispatch
     private OpcodeDispatch()
     {
         _handlers = new Dictionary<ushort, IHandleOpcodes>();
+        _names = new Dictionary<ushort, string>();
 
         DebugLog.Write("OpcodeDispatch: scanning assembly for IHandleOpcodes implementations");
 
@@ -88,6 +90,7 @@ public class OpcodeDispatch
             }
 
             _handlers[opcode] = handler;
+            _names[opcode] = handler.OpcodeName;
 
             DebugLog.Write("OpcodeDispatch: registered " + type.Name
                 + " for opcode 0x" + opcode.ToString("x4"));
@@ -110,6 +113,16 @@ public class OpcodeDispatch
         return _handlers.ContainsKey(opcode);
     }
 
+    public string? GetOpcodeName(ushort opcode)
+    {
+        if (_names.ContainsKey(opcode))
+        {
+            return _names[opcode];
+        }
+
+        return null;
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // HandlePacket
     //
@@ -124,6 +137,9 @@ public class OpcodeDispatch
     public void HandlePacket(ReadOnlySpan<byte> data, int length,
                               byte direction, ushort opcode, PacketMetadata metadata)
     {
+        DebugLog.Write($"[SEARCH] dir=0x{direction:X2} opCode=0x{opcode:X4} len={length} hex={BitConverter.ToString(data.Slice(0, length).ToArray()).Replace("-", " ").ToLowerInvariant()}");
+
+
         if (_handlers.TryGetValue(opcode, out IHandleOpcodes? handler))
         {
             handler.HandlePacket(data, length, direction, opcode, metadata);
