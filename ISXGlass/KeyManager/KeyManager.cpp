@@ -331,7 +331,7 @@ void KeyManager::ExecuteCommand(CommandID commandId, GroupID groupId, bool round
         excludeSession = g_SessionManager.GetActiveSession();
     }
 
-    auto groupIt = _presentMembers.find((GroupID) SpecialTarget::All);
+    auto groupIt = _presentMembers.find(groupId);
     if ((groupIt == _presentMembers.end()) || groupIt->second.empty())
     {
         Logger::Instance().Write("KeyManager::ExecuteCommand: groupId=%u not found or empty.", groupId);

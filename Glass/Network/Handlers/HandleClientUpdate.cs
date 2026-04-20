@@ -84,18 +84,18 @@ public class HandleClientUpdate : IHandleOpcodes
         ushort sequence = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0));
         uint playerId = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
         // skip 2 bytes
-        float deltaY = BinaryPrimitives.ReadSingleBigEndian(data.Slice(6));
-        float xPos = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(10));
-        int deltaHeading = BinaryPrimitives.ReadInt32BigEndian(data.Slice(14));
-        deltaHeading >>= 22;
+        float deltaY = BinaryPrimitives.ReadSingleBigEndian(data.Slice(30));
+        float xPos = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(38));
         float yPos = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(18));
-        float zPos = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(34));
+        float zPos = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(14));
 
         UInt32 lastword = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(38));
-        uint heading = (uint)data[39] | ((uint)data[40] << 8) | ((uint)data[41] << 16);
+        uint heading = ((uint)data[27] | ((uint)data[28] << 8)) & 0x1FFFu;
+
+        // Note on heading:  measured as 160-degrees per second to within 0.2%.  One degree is 6.25ms of keypress.  
 
         DebugLog.Write("Player " + playerId + " (0x" + playerId.ToString("x4") + ")");
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + " Position:  (" + xPos.ToString("F2") + "," + yPos.ToString("F2") + "," + zPos.ToString("F2") + ")");
-        DebugLog.Write("Heading? is " + heading.ToString() + " 0x(" + heading.ToString("x8") + ") = " + heading/8148.0*360.0 + " degrees");
+        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + " ID: " + playerId.ToString("x4") + " Position:  (" + xPos.ToString("F2") + "," + yPos.ToString("F2") + "," + zPos.ToString("F2") + ")");
+        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + " Heading is " + heading.ToString() + " 0x(" + heading.ToString("x8") + ") = " + heading/8148.0*360.0 + " degrees");
     }
 }

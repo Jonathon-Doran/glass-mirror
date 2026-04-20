@@ -169,7 +169,6 @@ public class FocusTracker
         }
 
         ActiveSession = session;
-        DebugLog.Write($"FocusTracker.OnWinEvent: active session changed to '{session}'.");
 
         SessionActivated?.Invoke(session);
     }

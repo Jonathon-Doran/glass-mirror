@@ -312,7 +312,7 @@ public class PipeManager : IDisposable
                 await _commandPipe.WriteAsync(length, linkedCts.Token);
                 await _commandPipe.WriteAsync(bytes, linkedCts.Token);
                 await _commandPipe.FlushAsync(linkedCts.Token);
-                Log($"sent: {message}");
+                // Log($"sent: {message}");
             }
             catch (OperationCanceledException)
             {

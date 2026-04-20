@@ -566,6 +566,14 @@ public partial class MainWindow : Window
                 GlassContext.GlassVideoPipe.Send($"debugnextframe");
                 break;
 
+            case "start":
+                StartMovementExperiment();
+                break;
+
+            case "stop":
+                StopMovementExperiment();
+                break;
+
             default:
                 Log($"Unknown command: {parts[0]}");
                 Log("flags:  show the debug log flags");
@@ -979,4 +987,233 @@ public partial class MainWindow : Window
         ManageVideoSourcesMenuItem.IsEnabled = hasActiveProfile;
         ManageVideoDestinationsMenuItem.IsEnabled = hasActiveProfile;
     }
+
+
+
+    // =====================================================================
+    // Movement experiment test harness
+    //
+    // Drives the leader character through randomized chord-based movement
+    // for the purpose of recording human following behavior against it.
+    //
+    // Public interface:
+    //   StartMovementExperiment() - spawns a background thread running the loop
+    //   StopMovementExperiment()  - signals the thread to stop and waits for it
+    //
+    // Target group: 9 (hardcoded for test purposes)
+    // Command IDs:
+    //   35 = start running forward (hold)
+    //   36 = stop running forward (release)
+    //   37 = start turning left (hold)
+    //   38 = stop turning left (release)
+    //   39 = start turning right (hold)
+    //   40 = stop turning right (release)
+    //
+    // All key holds are at least 100ms per the ISXGlass minimum.
+    // =====================================================================
+
+    private Thread? _movementExperimentThread;
+    private ManualResetEventSlim? _movementExperimentStopSignal;
+    private readonly object _movementExperimentLock = new object();
+
+    private const int MovementTargetGroup = 21;
+
+    private const int CommandStartRunning = 35;
+    private const int CommandStopRunning = 36;
+    private const int CommandStartTurnLeft = 37;
+    private const int CommandStopTurnLeft = 38;
+    private const int CommandStartTurnRight = 39;
+    private const int CommandStopTurnRight = 40;
+
+
+    // ---------------------------------------------------------------------
+    // StartMovementExperiment
+    //
+    // Spawns a background thread that runs the movement loop.
+    // Safe to call when the experiment is already running - second call
+    // is ignored.
+    // ---------------------------------------------------------------------
+    public void StartMovementExperiment()
+    {
+        lock (_movementExperimentLock)
+        {
+            if (_movementExperimentThread != null)
+            {
+                DebugLog.Write("Movement experiment already running, ignoring start request");
+                return;
+            }
+
+            _movementExperimentStopSignal = new ManualResetEventSlim(false);
+
+            ManualResetEventSlim stopSignal = _movementExperimentStopSignal;
+
+            _movementExperimentThread = new Thread(() => RunMovementLoop(stopSignal));
+            _movementExperimentThread.IsBackground = true;
+            _movementExperimentThread.Name = "MovementExperiment";
+
+            DebugLog.Write("Movement experiment starting");
+
+            _movementExperimentThread.Start();
+        }
+    }
+
+
+    // ---------------------------------------------------------------------
+    // StopMovementExperiment
+    //
+    // Signals the movement loop to stop, waits for the thread to exit,
+    // and guarantees all movement keys are released.
+    // Safe to call when no experiment is running.
+    // ---------------------------------------------------------------------
+    public void StopMovementExperiment()
+    {
+        Thread? threadToJoin = null;
+        ManualResetEventSlim? signalToSet = null;
+
+        lock (_movementExperimentLock)
+        {
+            if (_movementExperimentThread == null)
+            {
+                DebugLog.Write("Movement experiment not running, ignoring stop request");
+                return;
+            }
+
+            threadToJoin = _movementExperimentThread;
+            signalToSet = _movementExperimentStopSignal;
+
+            _movementExperimentThread = null;
+            _movementExperimentStopSignal = null;
+        }
+
+        DebugLog.Write("Movement experiment stop requested");
+
+        signalToSet?.Set();
+
+        bool joined = threadToJoin.Join(TimeSpan.FromSeconds(5));
+
+        if (!joined)
+        {
+            DebugLog.Write("Movement experiment thread did not exit within 5 seconds");
+        }
+
+        // Defensive release in case the thread didn't get a chance
+        ReleaseAllMovementKeys();
+
+        signalToSet?.Dispose();
+
+        DebugLog.Write("Movement experiment stopped");
+    }
+
+
+    // ---------------------------------------------------------------------
+    // RunMovementLoop
+    //
+    // Runs on a dedicated background thread. Holds forward continuously,
+    // periodically chords left/right or briefly stops. Exits when the stop
+    // signal is set.
+    // ---------------------------------------------------------------------
+    private void RunMovementLoop(ManualResetEventSlim stopSignal)
+    {
+        Random rng = new Random();
+
+        try
+        {
+            // Start running forward
+            SendCommand(CommandStartRunning);
+
+            if (stopSignal.Wait(150))
+            {
+                return;
+            }
+
+            while (!stopSignal.IsSet)
+            {
+                // Quiet period between actions (jittered 4-8 seconds)
+                int quietMs = rng.Next(4000, 8001);
+
+                if (stopSignal.Wait(quietMs))
+                {
+                    break;
+                }
+
+                // Pick an action
+                int actionRoll = rng.Next(0, 100);
+
+                if (actionRoll < 40)
+                {
+                    // Chord left
+                    int durationMs = rng.Next(300, 1001);
+                    SendCommand(CommandStartTurnLeft);
+
+                    if (stopSignal.Wait(durationMs))
+                    {
+                        SendCommand(CommandStopTurnLeft);
+                        break;
+                    }
+
+                    SendCommand(CommandStopTurnLeft);
+                }
+                else if (actionRoll < 80)
+                {
+                    // Chord right
+                    int durationMs = rng.Next(300, 1001);
+                    SendCommand(CommandStartTurnRight);
+
+                    if (stopSignal.Wait(durationMs))
+                    {
+                        SendCommand(CommandStopTurnRight);
+                        break;
+                    }
+
+                    SendCommand(CommandStopTurnRight);
+                }
+                else
+                {
+                    // Brief stop, then resume
+                    SendCommand(CommandStopRunning);
+
+                    int stopDurationMs = rng.Next(500, 5001);
+
+                    if (stopSignal.Wait(stopDurationMs))
+                    {
+                        break;
+                    }
+
+                    SendCommand(CommandStartRunning);
+                }
+            }
+        }
+        finally
+        {
+            ReleaseAllMovementKeys();
+        }
+    }
+
+
+    // ---------------------------------------------------------------------
+    // ReleaseAllMovementKeys
+    //
+    // Sends release commands for forward, left, and right to ensure no key
+    // is stuck down when the experiment ends.
+    // ---------------------------------------------------------------------
+    private void ReleaseAllMovementKeys()
+    {
+        SendCommand(CommandStopRunning);
+        SendCommand(CommandStopTurnLeft);
+        SendCommand(CommandStopTurnRight);
+    }
+
+
+    // ---------------------------------------------------------------------
+    // SendCommand
+    //
+    // Sends a cmd_execute message to ISXGlass targeting the configured
+    // movement group. Roundrobin is disabled.
+    // ---------------------------------------------------------------------
+    private void SendCommand(int commandId)
+    {
+        string message = $"cmd_execute {commandId} {MovementTargetGroup} 0";
+        GlassContext.ISXGlassPipe.Send(message);
+    }
+
 }
