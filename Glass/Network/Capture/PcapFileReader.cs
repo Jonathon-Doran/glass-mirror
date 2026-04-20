@@ -76,6 +76,12 @@ public class PcapFileReader
         {
             DebugLog.Write("PcapFileReader.ProcessFile: error reading '"
                 + filePath + "': " + ex.Message);
+            DebugLog.Write("PcapFileReader.ProcessFile: stack trace: "
+                 + ex.StackTrace);
+        }
+        finally
+        {
+            DebugLog.SuppressUI = false;
         }
 
         DebugLog.Write("PcapFileReader.ProcessFile: finished, "

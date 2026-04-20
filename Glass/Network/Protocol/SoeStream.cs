@@ -149,7 +149,7 @@ public class SoeStream : IDisposable
         _packetCount = 0;
         _opcodeCount = new Dictionary<ushort, int>();
 
-        DebugLog.Write(DebugLog.Log_Network,
+        DebugLog.Write(
             "SoeStream: created stream '" + name + "' id=" + streamId
             + " direction=" + direction);
     }
@@ -161,7 +161,7 @@ public class SoeStream : IDisposable
     ///////////////////////////////////////////////////////////////////////////////////////////////
     public void Reset()
     {
-        DebugLog.Write(DebugLog.Log_Network,
+        DebugLog.Write(
             "SoeStream.Reset: resetting stream '" + _name + "'");
 
         _arqCache.Clear();
@@ -194,7 +194,7 @@ public class SoeStream : IDisposable
         _arqCache.Clear();
         _fragmentBuffer = null;
 
-        DebugLog.Write(DebugLog.Log_Network,
+        DebugLog.Write(
             "SoeStream.Dispose: disposed stream '" + _name + "'");
     }
 
@@ -215,7 +215,7 @@ public class SoeStream : IDisposable
 
         if (length < 2)
         {
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(
                 "SoeStream.HandlePacket: packet too short ("
                 + length + " bytes), dropping");
             return;
@@ -224,9 +224,9 @@ public class SoeStream : IDisposable
         SoePacket packet = new SoePacket(rawData, length, false);
 
         // Diagnostic output — mirrors Python handlePacket
-        DebugLog.Write(DebugLog.Log_Network,
+        DebugLog.Write(
             "========================================================================");
-        DebugLog.Write(DebugLog.Log_Network,
+        DebugLog.Write(
             "Frame " + metadata.FrameNumber + " Packet #" + _packetCount
             + " on stream " + SoeConstants.StreamNames[_streamId]);
         DebugLog.Write(DebugLog.Log_Network,
@@ -741,8 +741,7 @@ public class SoeStream : IDisposable
                 // First fragment — read the total length
                 if (payload.Length < 4)
                 {
-                    DebugLog.Write(DebugLog.Log_Network,
-                        "WARNING: Oversized first fragment too short for total length");
+                    DebugLog.Write("WARNING: Oversized first fragment too short for total length");
                     return;
                 }
 
@@ -755,8 +754,7 @@ public class SoeStream : IDisposable
                     {
                         fragOp = (ushort)(payload[4] | (payload[5] << 8));
                     }
-                    DebugLog.Write(DebugLog.Log_Network,
-                        "WARNING: Oversized packet fragment requested buffer of size 0"
+                    DebugLog.Write("WARNING: Oversized packet fragment requested buffer of size 0"
                         + " on stream " + _streamId
                         + " OpCode " + fragOp.ToString("x4")
                         + " seq " + arqSeq.ToString("x4"));
@@ -765,9 +763,17 @@ public class SoeStream : IDisposable
 
                 if (_fragmentTotalLength > 2 * 1024 * 1024)
                 {
-                    DebugLog.Write(DebugLog.Log_Network,
-                        "WARNING: Unusually large fragment total: "
+                    DebugLog.Write("WARNING: Unusually large fragment total: "
                         + _fragmentTotalLength + " bytes");
+                }
+
+                int fragDataLen = payload.Length - 4;
+                if (_fragmentTotalLength < fragDataLen)
+                {
+                    DebugLog.Write("WARNING: Oversized first fragment declares total=" + _fragmentTotalLength
+                        + " but payload contains " + fragDataLen + " bytes. Treating as invalid, resetting.");
+                    FragmentReset();
+                    return;
                 }
 
                 _fragmentBuffer = new byte[_fragmentTotalLength];
@@ -777,7 +783,7 @@ public class SoeStream : IDisposable
                 fragData.CopyTo(new Span<byte>(_fragmentBuffer, 0, fragLen));
                 _fragmentDataSize = fragLen;
 
-                DebugLog.Write(DebugLog.Log_Network,
+                DebugLog.Write(
                     "          Fragment: seq=" + arqSeq.ToString("x4")
                     + " size=" + payload.Length + " "
                     + _fragmentDataSize + "/" + _fragmentTotalLength + " bytes");
@@ -789,8 +795,8 @@ public class SoeStream : IDisposable
 
                 if (_fragmentDataSize + fragLen > _fragmentTotalLength)
                 {
-                    DebugLog.Write(DebugLog.Log_Network,
-                        "FATAL: EQPacketFragmentSequence::addFragment(): buffer overflow"
+                    DebugLog.Write(
+                        "FATAL: ProcessOversized: buffer overflow"
                         + " seq " + arqSeq.ToString("x4")
                         + " stream " + _streamId
                         + ". Buffer is size " + _fragmentTotalLength
@@ -800,10 +806,18 @@ public class SoeStream : IDisposable
                     return;
                 }
 
+                DebugLog.Write(
+                    "ProcessOversized subsequent: _fragmentBuffer="
+                    + (_fragmentBuffer == null ? "NULL" : "len=" + _fragmentBuffer.Length)
+                    + " _fragmentDataSize=" + _fragmentDataSize
+                    + " _fragmentTotalLength=" + _fragmentTotalLength
+                    + " fragLen=" + fragLen
+                    + " arqSeq=" + arqSeq.ToString("x4"));
+
                 payload.CopyTo(new Span<byte>(_fragmentBuffer, _fragmentDataSize, fragLen));
                 _fragmentDataSize += fragLen;
 
-                DebugLog.Write(DebugLog.Log_Network,
+                DebugLog.Write(
                     "          Fragment: seq=" + arqSeq.ToString("x4")
                     + " size=" + payload.Length + " "
                     + _fragmentDataSize + "/" + _fragmentTotalLength + " bytes");
@@ -817,7 +831,7 @@ public class SoeStream : IDisposable
 
                 if (fragPayload.Length < 2)
                 {
-                    DebugLog.Write(DebugLog.Log_Network,
+                    DebugLog.Write(
                         "WARNING: Fragment complete but data too short for opcode");
                     FragmentReset();
                     return;
@@ -825,7 +839,7 @@ public class SoeStream : IDisposable
 
                 ushort fragOpCode = (ushort)(fragPayload[0] | (fragPayload[1] << 8));
 
-                DebugLog.Write(DebugLog.Log_Network,
+                DebugLog.Write(
                     "          Fragment COMPLETE: " + _fragmentDataSize + " bytes"
                     + " opcode=0x" + fragOpCode.ToString("x4"));
 
@@ -833,14 +847,14 @@ public class SoeStream : IDisposable
                 {
                     if (fragPayload.Length < 3)
                     {
-                        DebugLog.Write(DebugLog.Log_Network,
+                        DebugLog.Write(
                             "WARNING: Fragment complete but data too short"
                             + " for extended opcode");
                         FragmentReset();
                         return;
                     }
                     fragOpCode = (ushort)(fragPayload[1] | (fragPayload[2] << 8));
-                    DebugLog.Write(DebugLog.Log_Network,
+                    DebugLog.Write(
                         "dispatching complete fragment with new fragOpCode "
                         + fragOpCode.ToString("x4"));
                     DispatchAppPacket(fragPayload.Slice(3),
@@ -848,13 +862,13 @@ public class SoeStream : IDisposable
                 }
                 else if (SoeConstants.IsNetOpcode(fragOpCode))
                 {
-                    DebugLog.Write(DebugLog.Log_Network,
+                    DebugLog.Write(
                         "dispatching complete fragment via processPacket");
                     ProcessSubpacket(fragPayload, metadata);
                 }
                 else
                 {
-                    DebugLog.Write(DebugLog.Log_Network,
+                    DebugLog.Write(
                         "dispatching complete fragment with fragOpcode "
                         + fragOpCode.ToString("x4") + " via dispatchPacket");
                     DispatchAppPacket(fragPayload.Slice(2),
@@ -866,7 +880,7 @@ public class SoeStream : IDisposable
         }
         else if (IsSequenceFuture(arqSeq))
         {
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(
                 "  Fragment: seq=" + arqSeq.ToString("x4")
                 + " out of order (expecting " + _arqSeqExpected.ToString("x4")
                 + "), caching");
@@ -874,7 +888,7 @@ public class SoeStream : IDisposable
         }
         else
         {
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(
                 "          Fragment: seq=" + arqSeq.ToString("x4")
                 + " in the past (expecting " + _arqSeqExpected.ToString("x4")
                 + "), dropping");
@@ -895,7 +909,7 @@ public class SoeStream : IDisposable
     {
         if (data.Length < 2)
         {
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(
                 "  Subpacket: too short");
             return;
         }
@@ -933,13 +947,13 @@ public class SoeStream : IDisposable
             if (_arqCache.Count > _arqCacheHighWater)
             {
                 _arqCacheHighWater = _arqCache.Count;
-                DebugLog.Write(DebugLog.Log_Network,
+                DebugLog.Write(
                     "  Cache: new high water mark: " + _arqCacheHighWater);
             }
         }
         else
         {
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(
                 "  Cache: seq=0x" + arqSeq.ToString("x4")
                 + " already cached, ignoring duplicate");
         }
@@ -959,34 +973,27 @@ public class SoeStream : IDisposable
         {
             while (!_arqCache.ContainsKey(_arqSeqExpected))
             {
-                DebugLog.Write(DebugLog.Log_Network,
+                DebugLog.Write(
                     "SEQ: Giving up on finding arq "
                     + _arqSeqExpected.ToString("x4") + " in stream "
                     + SoeConstants.StreamNames[_streamId] + " cache, skipping!");
                 _arqSeqExpected = (ushort)((_arqSeqExpected + 1) & 0xFFFF);
             }
         }
-
         while (_arqCache.TryGetValue(_arqSeqExpected, out CachedPacket cached))
         {
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(
                 "  Cache: processing arq " + _arqSeqExpected.ToString("x4")
                 + " on stream " + SoeConstants.StreamNames[_streamId]);
-
             _arqCache.Remove(_arqSeqExpected);
-
-            ushort seq = _arqSeqExpected;
-            _arqSeqExpected = (ushort)((_arqSeqExpected + 1) & 0xFFFF);
-
             ReadOnlySpan<byte> payload = new ReadOnlySpan<byte>(cached.Payload);
-
             if (cached.NetOpcode == SoeConstants.OP_Oversized)
             {
-                ProcessOversized(payload, seq, cached.Metadata);
+                ProcessOversized(payload, _arqSeqExpected, cached.Metadata);
             }
             else
             {
-                ProcessSequenced(payload, seq, cached.Metadata);
+                ProcessSequenced(payload, _arqSeqExpected, cached.Metadata);
             }
         }
     }
@@ -1035,12 +1042,12 @@ public class SoeStream : IDisposable
         {
             _fragmentBuffer = null;
 
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(
                 "  Fragment: world stream, buffer released");
         }
         else
         {
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(
                 "  Fragment: zone stream, buffer retained");
         }
     }
@@ -1058,7 +1065,7 @@ public class SoeStream : IDisposable
     {
         if (payload.Length != SoeConstants.SizeOfSessionRequest)
         {
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(
                 "EQPacket: SessionRequest packet with invalid size "
                 + payload.Length);
             return;
@@ -1067,7 +1074,7 @@ public class SoeStream : IDisposable
         _sessionId = SoeByteOrder.ReadUInt32(payload, 4);
         _maxLength = SoeByteOrder.ReadUInt32(payload, 8);
 
-        DebugLog.Write(DebugLog.Log_Network,
+        DebugLog.Write(
             "EQPacket: SessionRequest found, stream "
             + SoeConstants.StreamNames[_streamId] + " (" + _streamId + "), "
             + "sessionId " + _sessionId.ToString("x8")
@@ -1097,7 +1104,7 @@ public class SoeStream : IDisposable
     {
         if (payload.Length != SoeConstants.SizeOfSessionResponse)
         {
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(
                 "EQPacket: SessionResponse packet with invalid size "
                 + payload.Length);
             return;
@@ -1107,7 +1114,7 @@ public class SoeStream : IDisposable
         _sessionKey = SoeByteOrder.ReadUInt32(payload, 4);
         _maxLength = SoeByteOrder.ReadUInt32(payload, 11);
 
-        DebugLog.Write(DebugLog.Log_Network,
+        DebugLog.Write(
             "EQPacket: SessionResponse found, stream "
             + SoeConstants.StreamNames[_streamId] + " (" + _streamId + "), "
             + "sessionId " + _sessionId.ToString("x8")
@@ -1162,7 +1169,7 @@ public class SoeStream : IDisposable
 
                 if (_sessionId != disconnectedSessionId)
                 {
-                    DebugLog.Write(DebugLog.Log_Network,
+                    DebugLog.Write(
                         "EQPacket: SessionDisconnect for session "
                         + disconnectedSessionId.ToString("x8")
                         + " does not match our session "
@@ -1172,7 +1179,7 @@ public class SoeStream : IDisposable
             }
         }
 
-        DebugLog.Write(DebugLog.Log_Network,
+        DebugLog.Write(
             "EQPacket: SessionDisconnect found, stream "
             + SoeConstants.StreamNames[_streamId] + " (" + _streamId + ")");
 
@@ -1209,7 +1216,7 @@ public class SoeStream : IDisposable
         {
             _sessionKey = sessionKey;
 
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(
                 "EQPacket: Received key " + sessionKey.ToString("x8")
                 + " for session " + _sessionId
                 + " on stream " + SoeConstants.StreamNames[_streamId]
@@ -1233,7 +1240,7 @@ public class SoeStream : IDisposable
     {
         if (sessionId == _sessionId)
         {
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(
                 "SoeStream.Close [" + _name + "]: closing for session 0x"
                 + sessionId.ToString("x8"));
 
