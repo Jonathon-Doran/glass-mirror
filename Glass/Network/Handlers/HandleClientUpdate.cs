@@ -90,7 +90,7 @@ public class HandleClientUpdate : IHandleOpcodes
         float zPos = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(14));
 
         UInt32 lastword = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(38));
-        uint heading = ((uint)data[27] | ((uint)data[28] << 8)) & 0x1FFFu;
+        uint heading = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(27)) & 0x1FFFu;
 
         // Note on heading:  measured as 160-degrees per second to within 0.2%.  One degree is 6.25ms of keypress.  
 
