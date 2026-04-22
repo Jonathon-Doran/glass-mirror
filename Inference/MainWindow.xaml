@@ -1,0 +1,126 @@
+﻿<Window x:Class="Inference.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Closing="Window_Closing"
+        Title="Inference" Height="800" Width="1200">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New Patch Level" Click="MenuItem_NewPatchLevel_Click"/>
+                <MenuItem x:Name="MenuLaunchProfile" Header="_Launch Profile"
+                          Click="MenuItem_LaunchProfile_Click" IsEnabled="False"/>
+                <Separator/>
+                <MenuItem x:Name="MenuSave" Header="_Save"
+                          Click="MenuItem_Save_Click" IsEnabled="False"/>
+                <Separator/>
+                <MenuItem Header="E_xit" Click="MenuItem_Exit_Click"/>
+            </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem x:Name="MenuUndo" Header="_Undo"
+                          Click="MenuItem_Undo_Click" IsEnabled="False"/>
+            </MenuItem>
+        </Menu>
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusPatchLevel" Text="No patch level"/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock x:Name="StatusCapture" Text="Capture: Idle"/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock x:Name="StatusIsx" Text="ISX: Disconnected"/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock x:Name="StatusGlassVideo" Text="GlassVideo: Not Running"/>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock x:Name="StatusSession" Text="Session: 00:00:00"/>
+            </StatusBarItem>
+        </StatusBar>
+        <TabControl>
+            <TabItem Header="Opcodes">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
+                        <Button x:Name="ButtonAnalyze" Content="Analyze"
+                                Click="Button_Analyze_Click" Padding="8,4" IsEnabled="False"/>
+                    </StackPanel>
+                    <DataGrid x:Name="OpcodeGrid"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              SelectionMode="Single"
+                              HeadersVisibility="Column"
+                              SelectionChanged="OpcodeGrid_SelectionChanged">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Opcode" Width="80" Binding="{Binding Opcode}"/>
+                            <DataGridTextColumn Header="Name" Width="200" Binding="{Binding Name}"/>
+                            <DataGridTextColumn Header="Direction" Width="100" Binding="{Binding Direction}"/>
+                            <DataGridTextColumn Header="Count" Width="80" Binding="{Binding Count}"/>
+                            <DataGridTextColumn Header="Min Size" Width="80" Binding="{Binding MinSize}"/>
+                            <DataGridTextColumn Header="Max Size" Width="80" Binding="{Binding MaxSize}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="Analysis">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
+                        <ToggleButton x:Name="ToggleAccept" Content="Accept"
+                                      Click="ToggleButton_AcceptCandidate_Click" Padding="8,4"
+                                      IsEnabled="False"/>
+                    </StackPanel>
+                    <DataGrid x:Name="CandidateGrid"
+                              DockPanel.Dock="Top"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              SelectionMode="Single"
+                              HeadersVisibility="Column"
+                              MaxHeight="200"
+                              SelectionChanged="CandidateGrid_SelectionChanged">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Name" Width="200" Binding="{Binding Name}"/>
+                            <DataGridTextColumn Header="Confidence" Width="100" Binding="{Binding Confidence}"/>
+                            <DataGridTextColumn Header="Evidence" Width="*" Binding="{Binding Evidence}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <RichTextBox x:Name="HexDumpDisplay"
+                                 IsReadOnly="True"
+                                 FontFamily="Consolas"
+                                 FontSize="12"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Background="{DynamicResource SystemControlPageBackgroundChromeLowBrush}"
+                                 Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                        <FlowDocument/>
+                    </RichTextBox>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="Inference Log">
+                <DockPanel>
+                    <Border DockPanel.Dock="Bottom" Padding="4" MinHeight="60"
+                            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Text="Next Actions"
+                                       FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="NextActionsText"
+                                       TextWrapping="Wrap"
+                                       Text="No actions pending."/>
+                        </DockPanel>
+                    </Border>
+                    <ListBox x:Name="InferenceLogList"
+                             FontFamily="Consolas"
+                             FontSize="12"/>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="Debug Log">
+                <ListBox x:Name="DebugLogList"
+                         FontFamily="Consolas"
+                         FontSize="12"/>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

@@ -1,0 +1,75 @@
+﻿using System;
+using System.Windows;
+using Inference.Core;
+
+namespace Inference.Dialogs;
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// NewPatchLevelDialog
+//
+// Modal dialog for creating a new patch level. Collects server type (test/live)
+// and the date of the patch from the operator.
+///////////////////////////////////////////////////////////////////////////////////////////////
+public partial class NewPatchLevelDialog : Window
+{
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // ServerType
+    //
+    // The selected server type. Valid after the dialog closes with OK.
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    public string ServerType { get; private set; } = "Test";
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // PatchDate
+    //
+    // The selected patch date. Valid after the dialog closes with OK.
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    public DateTime PatchDate { get; private set; } = DateTime.Today;
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // NewPatchLevelDialog
+    //
+    // Constructs the dialog and initializes the XAML-defined components.
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    public NewPatchLevelDialog()
+    {
+        InitializeComponent();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // Button_OK_Click
+    //
+    // Handles the OK button click. Reads the selected values and closes the dialog
+    // with a positive result.
+    //
+    // sender:  The button that raised the event.
+    // e:       Event arguments.
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    private void Button_OK_Click(object sender, RoutedEventArgs e)
+    {
+        ServerType = RadioTest.IsChecked == true ? "Test" : "Live";
+        PatchDate = PatchDatePicker.SelectedDate ?? DateTime.Today;
+
+        InferenceDebugLog.Write("NewPatchLevelDialog: OK ServerType=" + ServerType
+            + " PatchDate=" + PatchDate.ToString("yyyy-MM-dd"));
+
+        DialogResult = true;
+        Close();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // Button_Cancel_Click
+    //
+    // Handles the Cancel button click. Closes the dialog with a negative result.
+    //
+    // sender:  The button that raised the event.
+    // e:       Event arguments.
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    private void Button_Cancel_Click(object sender, RoutedEventArgs e)
+    {
+        InferenceDebugLog.Write("NewPatchLevelDialog: cancelled");
+
+        DialogResult = false;
+        Close();
+    }
+}
