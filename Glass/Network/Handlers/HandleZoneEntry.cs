@@ -97,7 +97,7 @@ public class HandleZoneEntry : IHandleOpcodes
 
         string name = System.Text.Encoding.ASCII.GetString(data.Slice(0, nullPos));
 
-        uint spawnId = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(nullPos+1));
+        uint spawnId = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(nullPos+1));
         uint level = data[nullPos + 5];
 
         DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length);

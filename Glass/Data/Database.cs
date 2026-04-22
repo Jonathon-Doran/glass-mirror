@@ -315,6 +315,10 @@ public class Database
             pragmaOn.CommandText = "PRAGMA foreign_keys = ON";
             pragmaOn.ExecuteNonQuery();
         }
+        if (version < 35)
+        {
+            ApplyMigration(conn, 35, Migration_035);
+        }
     }
 
     private int GetSchemaVersion()
@@ -941,6 +945,50 @@ public class Database
     private const string Migration_034 = @"
         ALTER TABLE Commands RENAME COLUMN short_name TO label;
     ";
+
+    private const string Migration_035 = @"
+        CREATE TABLE PatchOpcode (
+            id              INTEGER PRIMARY KEY,
+            patch_date      TEXT NOT NULL,
+            server_type     TEXT NOT NULL,
+            opcode_value    INTEGER NOT NULL,
+            opcode_name     TEXT NOT NULL,
+            direction       INTEGER NOT NULL,
+            byte_length     INTEGER,
+            UNIQUE (patch_date, server_type, opcode_value, direction)
+        );
+
+        CREATE TABLE PacketField (
+            id              INTEGER PRIMARY KEY,
+            patch_opcode_id INTEGER NOT NULL REFERENCES PatchOpcode(id),
+            field_name      TEXT NOT NULL,
+            bit_offset      INTEGER NOT NULL,
+            bit_length      INTEGER NOT NULL,
+            encoding        TEXT NOT NULL,
+            UNIQUE (patch_opcode_id, field_name)
+        );
+
+        CREATE TABLE PacketOptionalGroup (
+            id                  INTEGER PRIMARY KEY,
+            patch_opcode_id     INTEGER NOT NULL REFERENCES PatchOpcode(id),
+            bit_offset          INTEGER NOT NULL,
+            flags_bit_length    INTEGER NOT NULL,
+            UNIQUE (patch_opcode_id, bit_offset)
+        );
+
+        CREATE TABLE PacketOptionalField (
+            id              INTEGER PRIMARY KEY,
+            group_id        INTEGER NOT NULL REFERENCES PacketOptionalGroup(id),
+            flag_mask       INTEGER NOT NULL,
+            sequence_order  INTEGER NOT NULL,
+            field_name      TEXT NOT NULL,
+            bit_length      INTEGER NOT NULL,
+            encoding        TEXT NOT NULL,
+            UNIQUE (group_id, sequence_order)
+        );
+    ";
+
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private const string Schema = @"

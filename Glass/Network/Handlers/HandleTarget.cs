@@ -66,7 +66,7 @@ public class HandleTarget : IHandleOpcodes
             return;
         }
 
-        uint spawnId = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0));
+        uint spawnId = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(0));
 
 
         DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length);

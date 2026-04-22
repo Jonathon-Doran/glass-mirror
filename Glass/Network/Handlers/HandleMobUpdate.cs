@@ -62,7 +62,7 @@ public class HandleMobUpdate : IHandleOpcodes
     ///////////////////////////////////////////////////////////////////////////////////////////////
     private void HandleServerToClient(ReadOnlySpan<byte> data, int length, PacketMetadata metadata)
     {
-        ushort spawnId = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0));
+        ushort spawnId = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(0));
         ushort unknown02 = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(2));
         ulong packed = BinaryPrimitives.ReadUInt64LittleEndian(data.Slice(4));
         short headingRaw = BinaryPrimitives.ReadInt16LittleEndian(data.Slice(12));

@@ -69,7 +69,7 @@ public class HandleManaUpdate : IHandleOpcodes
             return;
         }
 
-        int playerId = BinaryPrimitives.ReadInt16BigEndian(data.Slice(0));
+        int playerId = BinaryPrimitives.ReadInt16LittleEndian(data.Slice(0));
         int currentMana = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(2));
         int maxMana = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(6));
 

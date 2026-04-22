@@ -183,8 +183,8 @@ public class HandleTrackingUpdate : IHandleOpcodes
         ReadOnlySpan<byte> entry = data.Slice(offset);
 
         ushort countField = BinaryPrimitives.ReadUInt16LittleEndian(entry.Slice(0));
-        ushort spawnId = BinaryPrimitives.ReadUInt16BigEndian(entry.Slice(2));
-        int unknown2 = BinaryPrimitives.ReadInt32BigEndian(entry.Slice(4));
+        ushort spawnId = BinaryPrimitives.ReadUInt16LittleEndian(entry.Slice(2));
+        int unknown2 = BinaryPrimitives.ReadInt32LittleEndian(entry.Slice(4));
         byte unknownByte8 = entry[8];
         byte unknownByte9 = entry[9];
         byte level = entry[10];

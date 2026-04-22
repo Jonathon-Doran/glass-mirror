@@ -66,13 +66,13 @@ public class HandleDeath : IHandleOpcodes
             return;
         }
 
-        uint spawnId = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0));
-        uint killerId = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4));
-        uint unk1 = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(8));
-        uint unk2 = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(12));
-        uint unk3 = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(16));
-        uint unk4 = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(20));
-        uint unk5 = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(24));
+        uint spawnId = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(0));
+        uint killerId = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(4));
+        uint unk1 = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(8));
+        uint unk2 = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(12));
+        uint unk3 = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(16));
+        uint unk4 = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(20));
+        uint unk5 = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(24));
 
         DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
             + _opcodeName + " length=" + length);

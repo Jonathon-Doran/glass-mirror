@@ -69,7 +69,7 @@ public class HandleHpUpdate : IHandleOpcodes
             return;
         }
 
-        int playerId = BinaryPrimitives.ReadInt16BigEndian(data.Slice(0));
+        int playerId = BinaryPrimitives.ReadInt16LittleEndian(data.Slice(0));
         int currentHP = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(2));
         int maxHP = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(10));
 

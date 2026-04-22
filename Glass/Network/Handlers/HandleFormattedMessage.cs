@@ -14,7 +14,7 @@ namespace Glass.Network.Handlers;
 public class HandleFormattedMessage : IHandleOpcodes
 {
     private ushort _opcode = 0x359f;
-    private readonly string _opcodeName = "OP_HandleFormattedMessage";
+    private readonly string _opcodeName = "OP_FormattedMessage";
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Opcode

@@ -574,8 +574,8 @@ public partial class MainWindow : Window
                 StopMovementExperiment();
                 break;
 
-            case "bitreader":
-                TestBitReader();
+            case "test_extract":
+                TestExtract();
                 break;
 
             default:
@@ -1220,37 +1220,47 @@ public partial class MainWindow : Window
         GlassContext.ISXGlassPipe.Send(message);
     }
 
-    private void TestBitReader()
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // TestExtract
+    //
+    // Tests the PacketFieldExtractor against a known OP_ClientUpdate packet
+    // with verified values.  Logs the extracted fields and compares against
+    // expected values from the existing handler output.
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private void TestExtract()
     {
-        byte[] packet = new byte[] {
-            0x49, 0x85, 0x00, 0x00, 0x72, 0x2b, 0x29, 0x42,
-            0xb5, 0xc8, 0x00, 0x7a, 0xea, 0xc1, 0x38, 0x0a,
-            0xe0, 0x32
+        DebugLog.Write("TestExtract: begin");
+
+        byte[] payload = new byte[]
+        {
+            0x00, 0x00, 0x89, 0x54, 0x00, 0x00, 0x00, 0x30,
+            0x36, 0x5d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x42, 0x41, 0x00, 0xc0, 0x11, 0xc3, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0xb0, 0x51, 0x20, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0xf7, 0x7f, 0x00, 0xb0,
+            0x78, 0x44
         };
-        BitReader reader = new BitReader(packet);
 
-        uint spawnId = reader.ReadUInt(16);
-        uint unknown16 = reader.ReadUInt(16);
-        uint flags = reader.ReadUInt(6);
-        int val1 = reader.ReadInt(19);
-        int val2 = reader.ReadInt(19);
-        int val3 = reader.ReadInt(19);
-        int heading = reader.ReadInt(12);
+        DebugLog.Write("TestExtract: payload length=" + payload.Length);
 
-        DebugLog.Write("NpcMoveUpdate decode:");
-        DebugLog.Write("  spawn_id = 0x" + spawnId.ToString("x"));
-        DebugLog.Write("  unknown16 = 0x" + unknown16.ToString("x"));
-        DebugLog.Write("  flags = 0x" + flags.ToString("x"));
-        DebugLog.Write("  val1 = " + val1);
-        DebugLog.Write("  val2 = " + val2);
-        DebugLog.Write("  val3 = " + val3);
-        DebugLog.Write("  heading = " + heading);
+        PacketFieldExtractor extractor = new PacketFieldExtractor();
+        Dictionary<string, object> results = extractor.Extract("2026-04-15", "live",
+            "OP_ClientUpdate", 0, payload);
 
-        if ((flags & 0x01) != 0) { int vp = reader.ReadInt(12); DebugLog.Write("  vp = " + vp); }
-        if ((flags & 0x02) != 0) { int fh = reader.ReadInt(10); DebugLog.Write("  fh = " + fh); }
-        if ((flags & 0x04) != 0) { int v = reader.ReadInt(10); DebugLog.Write("  v = " + v); }
-        if ((flags & 0x08) != 0) { int vy = reader.ReadInt(13); DebugLog.Write("  vy = " + vy); }
-        if ((flags & 0x10) != 0) { int vx = reader.ReadInt(13); DebugLog.Write("  vx = " + vx); }
-        if ((flags & 0x20) != 0) { int vz = reader.ReadInt(13); DebugLog.Write("  vz = " + vz); }
+        DebugLog.Write("TestExtract: extracted " + results.Count + " fields");
+
+        foreach (KeyValuePair<string, object> kvp in results)
+        {
+            DebugLog.Write("TestExtract: " + kvp.Key + " = " + kvp.Value);
+        }
+
+        DebugLog.Write("TestExtract: expected values from handler:");
+        DebugLog.Write("TestExtract:   player_id = 35156 (0x8954)");
+        DebugLog.Write("TestExtract:   x_pos = 994.75");
+        DebugLog.Write("TestExtract:   y_pos = -145.75");
+        DebugLog.Write("TestExtract:   z_pos = 12.12");
+        DebugLog.Write("TestExtract:   heading = 4528");
+
+        DebugLog.Write("TestExtract: end");
     }
 }

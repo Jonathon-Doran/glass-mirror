@@ -82,14 +82,14 @@ public class HandleClientUpdate : IHandleOpcodes
         DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length);
 
         ushort sequence = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0));
-        uint playerId = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2));
+        uint playerId = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(2));
         // skip 2 bytes
         float deltaY = BinaryPrimitives.ReadSingleBigEndian(data.Slice(30));
         float xPos = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(38));
         float yPos = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(18));
         float zPos = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(14));
 
-        UInt32 lastword = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(38));
+        UInt32 lastword = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(38));
         uint heading = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(27)) & 0x1FFFu;
 
         // Note on heading:  measured as 160-degrees per second to within 0.2%.  One degree is 6.25ms of keypress.  
