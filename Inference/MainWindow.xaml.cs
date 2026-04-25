@@ -8,6 +8,7 @@ using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -25,8 +26,6 @@ namespace Inference;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 public partial class MainWindow : Window
 {
-    private const int MaxDisplayBytes = 256;
-
     private struct HexDumpByte
     {
         public byte Value;
@@ -56,6 +55,13 @@ public partial class MainWindow : Window
     private readonly List<CapturedPacket> _capturedPackets = new List<CapturedPacket>();
     private readonly object _payloadLock;
 
+    // analysis packet filtering fields
+    private SoeConstants.StreamId? _analysisFilterChannel;
+    private int? _analysisFilterSessionId;
+    private int _analysisMaxPackets = 20;
+    private int _analysisMaxHexBytes = 256;
+
+
     ///////////////////////////////////////////////////////////////////////////////////////////
     // MainWindow
     //
@@ -69,6 +75,7 @@ public partial class MainWindow : Window
 
         InferenceDebugLog.Initialize(WriteToDebugLog);
         InferenceLog.Initialize(WriteToInferenceLog);
+        // DebugLog.Initialize(msg => InferenceDebugLog.Write(msg));
 
         InferenceDebugLog.Write("Inference application started");
         InferenceLog.Write("Inference log initialized");
@@ -82,12 +89,37 @@ public partial class MainWindow : Window
         _patchOpcodes = new Dictionary<uint, string>();
         _payloadLock = new object();
 
-
+        InitializeAnalysisFilters();
+        AddDummyCandidates();
         InitializePipes();
         OpenDatabase();
         BuildRecentPatchesMenu();
         RestoreLastPatchLevel();
         UpdateControlStates();
+    }
+
+    private void AddDummyCandidates()
+    {
+        // ----- Dummy candidates for UI review (remove when real analysis is wired) -----
+        ObservableCollection<AnalysisCandidate> dummyCandidates
+            = new ObservableCollection<AnalysisCandidate>();
+
+        dummyCandidates.Add(new AnalysisCandidate
+        {
+            Name = "OP_PlayerProfile",
+            Confidence = "High",
+            Evidence = "Size 23471, seen once per zone-in, contains character name at offset 904"
+        });
+
+        dummyCandidates.Add(new AnalysisCandidate
+        {
+            Name = "OP_ZoneEntry",
+            Confidence = "Medium",
+            Evidence = "Size 1204, seen once per zone-in, direction Z2C, precedes spawn burst"
+        });
+
+        CandidateGrid.ItemsSource = dummyCandidates;
+        InferenceDebugLog.Write("MainWindow: loaded 2 dummy candidates for UI review");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -137,7 +169,7 @@ public partial class MainWindow : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private void InitializePipes()
     {
-        DebugLog.Initialize(msg => InferenceDebugLog.Write(msg));
+
 
         GlassContext.ISXGlassPipe = new PipeManager("ISXGlass", "ISXGlass_Commands", "ISXGlass_Notify");
         GlassContext.ISXGlassPipe.Connected += () => Dispatcher.Invoke(() =>
@@ -177,6 +209,45 @@ public partial class MainWindow : Window
 
 
         InferenceDebugLog.Write("InitializePipes: session registry and focus tracker initialized");
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // InitializeAnalysisFilters
+    //
+    // Populates the Session and Channel filter dropdowns on the Analysis tab
+    // with initial values.  Session is populated dynamically as clients connect.
+    // Channel is populated with the four stream types plus an "All" option.
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    private void InitializeAnalysisFilters()
+    {
+        ComboBoxItem allChannels = new ComboBoxItem();
+        allChannels.Content = "All";
+        allChannels.Tag = null;
+        AnalysisChannelFilter.Items.Add(allChannels);
+
+        ComboBoxItem c2w = new ComboBoxItem();
+        c2w.Content = "Client -> World";
+        c2w.Tag = SoeConstants.StreamId.StreamClientToWorld;
+        AnalysisChannelFilter.Items.Add(c2w);
+
+        ComboBoxItem w2c = new ComboBoxItem();
+        w2c.Content = "World -> Client";
+        w2c.Tag = SoeConstants.StreamId.StreamWorldToClient;
+        AnalysisChannelFilter.Items.Add(w2c);
+
+        ComboBoxItem c2z = new ComboBoxItem();
+        c2z.Content = "Client -> Zone";
+        c2z.Tag = SoeConstants.StreamId.StreamClientToZone;
+        AnalysisChannelFilter.Items.Add(c2z);
+
+        ComboBoxItem z2c = new ComboBoxItem();
+        z2c.Content = "Zone -> Client";
+        z2c.Tag = SoeConstants.StreamId.StreamZoneToClient;
+        AnalysisChannelFilter.Items.Add(z2c);
+
+        AnalysisChannelFilter.SelectedIndex = 0;
+
+        InferenceDebugLog.Write("InitializeAnalysisFilters: channel filter populated with 5 entries");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -471,6 +542,46 @@ public partial class MainWindow : Window
         return entry.Substring(openParen + 1, closeParen - openParen - 1);
     }
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // RefreshAnalysis
+    //
+    // Re-runs the analysis for the currently selected opcode using the current
+    // filter settings.  Called by Button_Analyze_Click and by the filter
+    // selection changed handlers.  Does nothing if no opcode is selected.
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    private void RefreshAnalysis()
+    {
+        if (OpcodeGrid.SelectedItem == null)
+        {
+            InferenceDebugLog.Write("RefreshAnalysis: no opcode selected, skipping");
+            return;
+        }
+
+        OpcodeEntry selected = (OpcodeEntry)OpcodeGrid.SelectedItem;
+
+        List<CapturedPacket> packets = GetFilteredPackets(
+            selected.RawOpcode, _analysisFilterChannel, _analysisFilterSessionId,
+            _analysisMaxPackets, _analysisMaxHexBytes);
+
+        if (packets.Count == 0)
+        {
+            InferenceDebugLog.Write("RefreshAnalysis: no packets for "
+                + selected.Opcode + " with current filters");
+            return;
+        }
+
+        InferenceDebugLog.Write("RefreshAnalysis: analyzing " + selected.Opcode
+            + " packets=" + packets.Count
+            + " channel=" + (_analysisFilterChannel?.ToString() ?? "All")
+            + " session=" + (_analysisFilterSessionId?.ToString() ?? "All")
+            + " maxHex=" + _analysisMaxHexBytes);
+
+        Thread analysisThread = new Thread(() => AnalyzeOpcode(packets));
+        analysisThread.IsBackground = true;
+        analysisThread.Name = "AnalysisThread";
+        analysisThread.Start();
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////
     // OpcodeGrid_SelectionChanged
     //
@@ -690,27 +801,179 @@ public partial class MainWindow : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private void Button_Analyze_Click(object sender, RoutedEventArgs e)
     {
-        if (OpcodeGrid.SelectedItem == null)
-        {
-            InferenceDebugLog.Write("Button_Analyze_Click: no opcode selected");
-            return;
-        }
-        OpcodeEntry selected = (OpcodeEntry)OpcodeGrid.SelectedItem;
-        List<CapturedPacket> packets = GetFilteredPackets(
-            selected.RawOpcode, null, null, 20, 256);
-        if (packets.Count == 0)
-        {
-            InferenceDebugLog.Write("Button_Analyze_Click: no packets for "
-                + selected.Opcode);
-            return;
-        }
-        InferenceDebugLog.Write("Button_Analyze_Click: starting analysis for "
-            + selected.Opcode + " packets=" + packets.Count);
-        Thread analysisThread = new Thread(() => AnalyzeOpcode(packets));
-        analysisThread.IsBackground = true;
-        analysisThread.Name = "AnalysisThread";
-        analysisThread.Start();
+        RefreshAnalysis();
     }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // AnalysisSessionFilter_SelectionChanged
+    //
+    // Handles selection changes in the Session filter dropdown on the Analysis tab.
+    // Sets _analysisFilterSessionId to the selected client's local port, or null for "All".
+    //
+    // sender:  The ComboBox that raised the event.
+    // e:       Event arguments.
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    private void AnalysisSessionFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        ComboBoxItem? selected = AnalysisSessionFilter.SelectedItem as ComboBoxItem;
+
+        if (selected == null)
+        {
+            _analysisFilterSessionId = null;
+            InferenceDebugLog.Write("AnalysisSessionFilter_SelectionChanged: no selection, filter cleared");
+            RefreshAnalysis();
+            return;
+        }
+
+        if (selected.Tag is int sessionId)
+        {
+            _analysisFilterSessionId = sessionId;
+            InferenceDebugLog.Write("AnalysisSessionFilter_SelectionChanged: filter set to session " + sessionId);
+        }
+        else
+        {
+            _analysisFilterSessionId = null;
+            InferenceDebugLog.Write("AnalysisSessionFilter_SelectionChanged: filter cleared (All)");
+        }
+
+        RefreshAnalysis();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // AnalysisChannelFilter_SelectionChanged
+    //
+    // Handles selection changes in the Channel filter dropdown on the Analysis tab.
+    // Sets _analysisFilterChannel to the selected stream type, or null for "All".
+    //
+    // sender:  The ComboBox that raised the event.
+    // e:       Event arguments.
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    private void AnalysisChannelFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        ComboBoxItem? selected = AnalysisChannelFilter.SelectedItem as ComboBoxItem;
+
+        if (selected == null)
+        {
+            _analysisFilterChannel = null;
+            InferenceDebugLog.Write("AnalysisChannelFilter_SelectionChanged: no selection, filter cleared");
+            RefreshAnalysis();
+            return;
+        }
+
+        string value = selected.Content as string ?? "";
+
+        if (selected.Tag is SoeConstants.StreamId streamId)
+        {
+            _analysisFilterChannel = streamId;
+            InferenceDebugLog.Write("AnalysisChannelFilter_SelectionChanged: filter set to " + streamId);
+        }
+        else
+        {
+            _analysisFilterChannel = null;
+            InferenceDebugLog.Write("AnalysisChannelFilter_SelectionChanged: filter cleared (All)");
+        }
+        RefreshAnalysis();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // AnalysisPacketCount_SelectionChanged
+    //
+    // Handles selection changes in the Packets filter dropdown on the Analysis tab.
+    // Sets _analysisMaxPackets to the selected value.  "All" sets int.MaxValue.
+    //
+    // sender:  The ComboBox that raised the event.
+    // e:       Event arguments.
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    private void AnalysisPacketCount_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        ComboBoxItem? selected = AnalysisPacketCount.SelectedItem as ComboBoxItem;
+
+        if (selected == null)
+        {
+            InferenceDebugLog.Write("AnalysisPacketCount_SelectionChanged: no selection");
+            return;
+        }
+
+        string value = selected.Content as string ?? "";
+
+        if (value == "All")
+        {
+            _analysisMaxPackets = int.MaxValue;
+            InferenceDebugLog.Write("AnalysisPacketCount_SelectionChanged: set to All");
+        }
+        else if (int.TryParse(value, out int count))
+        {
+            _analysisMaxPackets = count;
+            InferenceDebugLog.Write("AnalysisPacketCount_SelectionChanged: set to " + count);
+        }
+        else
+        {
+            InferenceDebugLog.Write("AnalysisPacketCount_SelectionChanged: unexpected value '" + value + "'");
+        }
+        RefreshAnalysis();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // AnalysisHexLength_SelectionChanged
+    //
+    // Handles selection changes in the Hex bytes filter dropdown on the Analysis tab.
+    // Sets _analysisMaxHexBytes to the selected value.  "Full" sets int.MaxValue.
+    //
+    // sender:  The ComboBox that raised the event.
+    // e:       Event arguments.
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    private void AnalysisHexLength_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        ComboBoxItem? selected = AnalysisHexLength.SelectedItem as ComboBoxItem;
+
+        if (selected == null)
+        {
+            InferenceDebugLog.Write("AnalysisHexLength_SelectionChanged: no selection");
+            return;
+        }
+
+        string value = selected.Content as string ?? "";
+
+        if (value == "Full")
+        {
+            _analysisMaxHexBytes = int.MaxValue;
+            InferenceDebugLog.Write("AnalysisHexLength_SelectionChanged: set to Full");
+        }
+        else if (int.TryParse(value, out int bytes))
+        {
+            _analysisMaxHexBytes = bytes;
+            InferenceDebugLog.Write("AnalysisHexLength_SelectionChanged: set to " + bytes);
+        }
+        else
+        {
+            InferenceDebugLog.Write("AnalysisHexLength_SelectionChanged: unexpected value '" + value + "'");
+        }
+        RefreshAnalysis();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // ToggleButton_AcceptCandidate_Click
+    //
+    // Handles the Accept toggle button click on the Analysis tab.
+    // Toggles acceptance of the selected candidate identification. When toggled on,
+    // the candidate's logical name is applied to the opcode. When toggled off,
+    // the identification is reverted.
+    //
+    // sender:  The toggle button that raised the event.
+    // e:       Event arguments.
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    private void ToggleButton_AcceptCandidate_Click(object sender, RoutedEventArgs e)
+    {
+        if (CandidateGrid.SelectedItem == null)
+        {
+            InferenceDebugLog.Write("ToggleButton_AcceptCandidate_Click: no candidate selected");
+            return;
+        }
+        System.Windows.Controls.Primitives.ToggleButton toggle = (System.Windows.Controls.Primitives.ToggleButton)sender;
+        bool isAccepted = toggle.IsChecked == true;
+        InferenceDebugLog.Write("ToggleButton_AcceptCandidate_Click: accepted=" + isAccepted);
+    }
+
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     // AnalyzeOpcode
@@ -730,15 +993,23 @@ public partial class MainWindow : Window
         for (int packetIndex = 0; packetIndex < packets.Count; packetIndex++)
         {
             CapturedPacket packet = packets[packetIndex];
-            int displayLength = Math.Min(packet.Payload.Length, MaxDisplayBytes);
-            bool truncated = packet.Payload.Length > MaxDisplayBytes;
+            int displayLength = Math.Min(packet.Payload.Length, _analysisMaxHexBytes);
+            bool truncated = packet.Payload.Length > _analysisMaxHexBytes;
             HexDumpSample dumpSample = new HexDumpSample();
             dumpSample.Header = "--- Packet " + (packetIndex + 1)
                 + "  " + packet.Metadata.Timestamp.ToString("HH:mm:ss.fff")
                 + "  (" + packet.Payload.Length + " bytes)"
-                + (truncated ? "  [showing first " + MaxDisplayBytes + "]" : "")
-                + " ---";
+                + (truncated ? "  [showing first " + _analysisMaxHexBytes + "]" : "")
+                + " ---" + Environment.NewLine;
+            dumpSample.Header += packet.Metadata.SourceIp + ":" + packet.Metadata.SourcePort + " -> " +
+                packet.Metadata.DestIp + ":" + packet.Metadata.DestPort + Environment.NewLine;
+            dumpSample.Header += "Session " + packet.Metadata.SessionId + ", Channel " + StreamAbbrev[packet.Metadata.Channel];
+
             dumpSample.Lines = new List<HexDumpLine>();
+
+            InferenceLog.Write("logging packet " + (packetIndex + 1) + " at " + packet.Payload.Length + " vs limit of " +
+                _analysisMaxHexBytes);
+
             int offset = 0;
             while (offset < displayLength)
             {
@@ -791,53 +1062,45 @@ public partial class MainWindow : Window
             for (int lineIndex = 0; lineIndex < dumpSample.Lines.Count; lineIndex++)
             {
                 HexDumpLine line = dumpSample.Lines[lineIndex];
-
-                Paragraph para = new Paragraph();
-                para.Margin = new Thickness(0);
-
-                para.Inlines.Add(new Run(line.Offset + "  ")
-                {
-                    Foreground = normalBrush
-                });
+                StringBuilder sb = new StringBuilder(80);
+                sb.Append(line.Offset);
+                sb.Append("  ");
 
                 for (int i = 0; i < 16; i++)
                 {
                     if (i == 8)
                     {
-                        para.Inlines.Add(new Run(" ") { Foreground = normalBrush });
+                        sb.Append(' ');
                     }
 
                     if (i < line.Bytes.Length)
                     {
-                        SolidColorBrush brush = line.Bytes[i].IsConstant
-                            ? constantBrush : normalBrush;
-
-                        para.Inlines.Add(new Run(line.Bytes[i].Value.ToString("x2") + " ")
-                        {
-                            Foreground = brush
-                        });
+                        sb.Append(line.Bytes[i].Value.ToString("x2"));
+                        sb.Append(' ');
                     }
                     else
                     {
-                        para.Inlines.Add(new Run("   ") { Foreground = normalBrush });
+                        sb.Append("   ");
                     }
                 }
 
-                para.Inlines.Add(new Run(" |") { Foreground = normalBrush });
+                sb.Append(" |");
 
                 for (int i = 0; i < line.Bytes.Length; i++)
                 {
                     byte b = line.Bytes[i].Value;
                     char c = (b >= 0x20 && b <= 0x7e) ? (char)b : '.';
-
-                    SolidColorBrush brush = line.Bytes[i].IsConstant
-                        ? constantBrush : normalBrush;
-
-                    para.Inlines.Add(new Run(c.ToString()) { Foreground = brush });
+                    sb.Append(c);
                 }
 
-                para.Inlines.Add(new Run("|") { Foreground = normalBrush });
+                sb.Append('|');
 
+                Paragraph para = new Paragraph();
+                para.Margin = new Thickness(0);
+                para.Inlines.Add(new Run(sb.ToString())
+                {
+                    Foreground = normalBrush
+                });
                 HexDumpDisplay.Document.Blocks.Add(para);
             }
         }
@@ -899,29 +1162,6 @@ public partial class MainWindow : Window
             isConstant[byteIndex] = allSame;
         }
         return isConstant;
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    // ToggleButton_AcceptCandidate_Click
-    //
-    // Handles the Accept toggle button click on the Analysis tab.
-    // Toggles acceptance of the selected candidate identification. When toggled on,
-    // the candidate's logical name is applied to the opcode. When toggled off,
-    // the identification is reverted.
-    //
-    // sender:  The toggle button that raised the event.
-    // e:       Event arguments.
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    private void ToggleButton_AcceptCandidate_Click(object sender, RoutedEventArgs e)
-    {
-        if (CandidateGrid.SelectedItem == null)
-        {
-            InferenceDebugLog.Write("ToggleButton_AcceptCandidate_Click: no candidate selected");
-            return;
-        }
-        System.Windows.Controls.Primitives.ToggleButton toggle = (System.Windows.Controls.Primitives.ToggleButton)sender;
-        bool isAccepted = toggle.IsChecked == true;
-        InferenceDebugLog.Write("ToggleButton_AcceptCandidate_Click: accepted=" + isAccepted);
     }
 
     private void HandleISXGlassMessage(string msg)

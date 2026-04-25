@@ -62,7 +62,7 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Opcode" Width="80" Binding="{Binding Opcode}"/>
                             <DataGridTextColumn Header="Name" Width="200" Binding="{Binding Name}"/>
-                            <DataGridTextColumn Header="Direction" Width="100" Binding="{Binding ChannelAbbrev}"/>
+                            <DataGridTextColumn Header="Channel" Width="100" Binding="{Binding ChannelAbbrev}"/>
                             <DataGridTextColumn Header="Count" Width="80" Binding="{Binding Count}"/>
                             <DataGridTextColumn Header="Min Size" Width="80" Binding="{Binding MinSize}"/>
                             <DataGridTextColumn Header="Max Size" Width="80" Binding="{Binding MaxSize}"/>
@@ -73,18 +73,45 @@
             <TabItem Header="Analysis">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
-                        <ToggleButton x:Name="ToggleAccept" Content="Accept"
-                                      Click="ToggleButton_AcceptCandidate_Click" Padding="8,4"
-                                      IsEnabled="False"/>
+                        <ToggleButton x:Name="ToggleAccept" Content="Accept" Margin="4,0,8,0"
+                             Click="ToggleButton_AcceptCandidate_Click" Padding="8,4"
+                             IsEnabled="False"/>
+                        <TextBlock Text="Session:" VerticalAlignment="Center" Margin="4,0,4,0"/>
+                        <ComboBox x:Name="AnalysisSessionFilter" Width="160" Margin="0,0,12,0"
+                              SelectionChanged="AnalysisSessionFilter_SelectionChanged"/>
+                        <TextBlock Text="Channel:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <ComboBox x:Name="AnalysisChannelFilter" Width="140" Margin="0,0,12,0"
+                              SelectionChanged="AnalysisChannelFilter_SelectionChanged"/>
+                        <TextBlock Text="Packets:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <ComboBox x:Name="AnalysisPacketCount" Width="70" Margin="0,0,12,0"
+                              SelectedIndex="2"
+                              SelectionChanged="AnalysisPacketCount_SelectionChanged">
+                            <ComboBoxItem Content="5"/>
+                            <ComboBoxItem Content="10"/>
+                            <ComboBoxItem Content="20"/>
+                            <ComboBoxItem Content="50"/>
+                            <ComboBoxItem Content="All"/>
+                        </ComboBox>
+                        <TextBlock Text="Hex bytes:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <ComboBox x:Name="AnalysisHexLength" Width="70" Margin="0,0,12,0"
+                              SelectedIndex="2"
+                              SelectionChanged="AnalysisHexLength_SelectionChanged">
+                            <ComboBoxItem Content="64"/>
+                            <ComboBoxItem Content="128"/>
+                            <ComboBoxItem Content="256"/>
+                            <ComboBoxItem Content="512"/>
+                            <ComboBoxItem Content="Full"/>
+                        </ComboBox>
+
                     </StackPanel>
                     <DataGrid x:Name="CandidateGrid"
-                              DockPanel.Dock="Top"
-                              AutoGenerateColumns="False"
-                              IsReadOnly="True"
-                              SelectionMode="Single"
-                              HeadersVisibility="Column"
-                              MaxHeight="200"
-                              SelectionChanged="CandidateGrid_SelectionChanged">
+                  DockPanel.Dock="Top"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  HeadersVisibility="Column"
+                  MaxHeight="200"
+                  SelectionChanged="CandidateGrid_SelectionChanged">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Name" Width="200" Binding="{Binding Name}"/>
                             <DataGridTextColumn Header="Confidence" Width="100" Binding="{Binding Confidence}"/>
@@ -92,12 +119,12 @@
                         </DataGrid.Columns>
                     </DataGrid>
                     <RichTextBox x:Name="HexDumpDisplay"
-                                 IsReadOnly="True"
-                                 FontFamily="Consolas"
-                                 FontSize="12"
-                                 VerticalScrollBarVisibility="Auto"
-                                 Background="{DynamicResource SystemControlPageBackgroundChromeLowBrush}"
-                                 Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}">
+                     IsReadOnly="True"
+                     FontFamily="Consolas"
+                     FontSize="12"
+                     VerticalScrollBarVisibility="Auto"
+                     Background="{DynamicResource SystemControlPageBackgroundChromeLowBrush}"
+                     Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}">
                         <FlowDocument/>
                     </RichTextBox>
                 </DockPanel>
