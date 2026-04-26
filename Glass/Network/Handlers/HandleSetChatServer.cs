@@ -100,6 +100,14 @@ public class HandleSetChatServer : IHandleOpcodes
             + " chatServer=" + chatServer
             + " chatPort=" + chatPort
             + " port=" + metadata.SourcePort + "->" + metadata.DestPort);
+
+        // SetChatServer is the first time when we see the character name on the network
+        if (metadata.SessionId == -1)
+        {
+            GlassContext.SessionRegistry.IdentifyConnection(characterName, metadata);
+            DebugLog.Write("identifying port " + metadata.DestPort + " as " +
+                characterName);
+        }
     }
 
 }

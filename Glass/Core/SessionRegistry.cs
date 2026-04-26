@@ -28,6 +28,7 @@ public class SessionRegistry
     private readonly SoeStream.AppPacketHandler _appPacketHandler;
     private readonly int _arqSeqGiveUp = 512;
     private readonly string? _localIp;
+    private int _nextSessionId = 0;
     private readonly object _lock = new();
 
     // Represents a single active EverQuest session.
@@ -139,7 +140,7 @@ public class SessionRegistry
         }
 
         _sessionCount++;
-        DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.OnSessionConnected: session={sessionName} count={_sessionCount} character={characterName} pid={pid} hwnd={hwnd}");
+        DebugLog.Write($"SessionRegistry.OnSessionConnected: session={sessionName} count={_sessionCount} character={characterName} pid={pid} hwnd={hwnd}");
 
     }
 
@@ -251,15 +252,15 @@ public class SessionRegistry
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    // GetStream
+    // GetConnection
     //
-    // Returns the SoeStream for the given packet metadata.  Determines the
-    // channel, looks up or creates the Connection, and returns the
-    // appropriate stream.  Thread-safe.
+    // Returns the Connection for the given packet metadata.  Determines the
+    // channel, looks up or creates the Connection.  Thread-safe
     //
     // metadata:  The packet metadata containing source/dest IP, ports, etc.
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    public SoeStream GetStream(PacketMetadata metadata)
+
+    public Connection GetConnection(PacketMetadata metadata)
     {
         bool isFromClient = (metadata.SourceIp == _localIp);
         int localPort = isFromClient ? metadata.SourcePort : metadata.DestPort;
@@ -272,11 +273,90 @@ public class SessionRegistry
                 _connectionsByPort[localPort] = connection;
 
                 DebugLog.Write(DebugLog.Log_Sessions,
-                    "SessionRegistry.GetStream: new connection on port " + localPort
+                    "SessionRegistry.GetConnection: new connection on port " + localPort
                     + ", connections=" + _connectionsByPort.Count);
             }
 
-            return connection.GetStream(metadata.Channel);
+            return connection;
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // GetStream
+    //
+    // Returns the SoeStream for the given packet metadata.  Determines the
+    // channel, looks up or creates the Connection, and returns the
+    // appropriate stream.  Thread-safe.
+    //
+    // metadata:  The packet metadata containing source/dest IP, ports, etc.
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    public SoeStream GetStream(PacketMetadata metadata)
+    {
+        Connection connection = GetConnection(metadata);
+        return connection.GetStream(metadata.Channel);
+    }
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // IdentifyConnection
+    //
+    // Associates a network connection with a known character.  Called by packet
+    // handlers when they decode a character name from network traffic.
+    // Finds the connection by local port (from metadata) and searches existing
+    // SessionEntries for a matching character name.  If found, links the
+    // connection's port to the SessionEntry and assigns the next connection ID.
+    //
+    // characterName:  The character name decoded from packet data.
+    // metadata:       The packet metadata identifying the connection.
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    public void IdentifyConnection(string characterName, PacketMetadata metadata)
+    {
+        bool isFromClient = (metadata.SourceIp == _localIp);
+        int localPort = isFromClient ? metadata.SourcePort : metadata.DestPort;
+
+        lock (_lock)
+        {
+            if (!_connectionsByPort.TryGetValue(localPort, out Connection? connection))
+            {
+                DebugLog.Write(DebugLog.Log_Sessions,
+                    "SessionRegistry.IdentifyConnection: no connection for port " + localPort
+                    + ", character=" + characterName);
+                return;
+            }
+
+            if (connection.ConnectionId >= 0)
+            {
+                DebugLog.Write(DebugLog.Log_Sessions,
+                    "SessionRegistry.IdentifyConnection: port " + localPort
+                    + " already identified as connectionId=" + connection.ConnectionId
+                    + ", character=" + characterName);
+                return;
+            }
+
+            DebugLog.Write("Identify:  look for port " + localPort);
+            
+            foreach (KeyValuePair<string, SessionEntry> pair in _sessions)
+            {
+                DebugLog.Write("check " + pair.Value.CharacterName + " on key " +
+                    pair.Key + " port " + pair.Value.LocalPort);
+
+                if (pair.Value.LocalPort == localPort)
+                {
+                    connection.ConnectionId = _nextSessionId;
+                    _nextSessionId++;
+                    pair.Value.CharacterName = characterName;
+
+                    DebugLog.Write(DebugLog.Log_Sessions,
+                        "SessionRegistry.IdentifyConnection: port " + localPort
+                        + " identified as character=" + characterName
+                        + " session=" + pair.Value.SessionName
+                        + " connectionId=" + connection.ConnectionId);
+                    return;
+                }
+            }
+
+            DebugLog.Write(DebugLog.Log_Sessions,
+                "SessionRegistry.IdentifyConnection: no SessionEntry for character="
+                + characterName + " on port " + localPort
+                + ", connection remains unidentified");
         }
     }
 }

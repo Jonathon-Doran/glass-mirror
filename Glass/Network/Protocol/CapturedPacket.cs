@@ -10,4 +10,5 @@ public struct CapturedPacket
     public PacketMetadata Metadata;
     public byte[] Payload;
     public uint OpcodeValue;
+    public int OriginalLength;
 }

@@ -992,11 +992,11 @@ public partial class MainWindow : Window
         {
             CapturedPacket packet = packets[packetIndex];
             int displayLength = Math.Min(packet.Payload.Length, _analysisMaxHexBytes);
-            bool truncated = packet.Payload.Length > _analysisMaxHexBytes;
+            bool truncated = packet.OriginalLength > _analysisMaxHexBytes;
             HexDumpSample dumpSample = new HexDumpSample();
             dumpSample.Header = "--- Packet " + (packetIndex + 1)
                 + "  " + packet.Metadata.Timestamp.ToString("HH:mm:ss.fff")
-                + "  (" + packet.Payload.Length + " bytes)"
+                + "  (" + packet.OriginalLength + " bytes)"
                 + (truncated ? "  [showing first " + _analysisMaxHexBytes + "]" : "")
                 + " ---" + Environment.NewLine;
             dumpSample.Header += packet.Metadata.SourceIp + ":" + packet.Metadata.SourcePort + " -> " +
@@ -1263,6 +1263,7 @@ public partial class MainWindow : Window
         packet.Metadata = metadata;
         packet.Payload = copy;
         packet.OpcodeValue = opcode;
+        packet.OriginalLength = length;
 
         lock (_payloadLock)
         {
@@ -1299,6 +1300,8 @@ public partial class MainWindow : Window
                 _opcodeLookup[opcode] = entry;
             }
         });
+
+        OpcodeDispatch.Instance.HandlePacket(data, length, direction, opcode, metadata);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -1341,6 +1344,7 @@ public partial class MainWindow : Window
                 CapturedPacket truncated;
                 truncated.Metadata = packet.Metadata;
                 truncated.OpcodeValue = packet.OpcodeValue;
+                truncated.OriginalLength = packet.OriginalLength;
                 if (packet.Payload.Length > maxPayloadBytes)
                 {
                     truncated.Payload = new byte[maxPayloadBytes];

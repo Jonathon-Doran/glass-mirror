@@ -20,6 +20,7 @@ public class Connection : IDisposable
     private readonly int _localPort;
     private readonly Dictionary<StreamId, SoeStream> _streams;
     private bool _disposed;
+    private int _connectionId = -1;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Connection (constructor)
@@ -71,6 +72,12 @@ public class Connection : IDisposable
         }
 
         DebugLog.Write("Connection: created for local port " + _localPort);
+    }
+
+    public int ConnectionId
+    {
+        get { return _connectionId; }
+        set { _connectionId = value; }
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

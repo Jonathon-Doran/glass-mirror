@@ -86,9 +86,11 @@ public class SessionDemux
 
         metadata.Channel = GlassContext.SessionRegistry.GetChannel(metadata);
 
-        // Route to the stream
-        SoeStream stream = GlassContext.SessionRegistry.GetStream(metadata);
+        Connection connection = GlassContext.SessionRegistry.GetConnection(metadata);
+        metadata.SessionId = connection.ConnectionId;
 
+        // Route to the stream
+        SoeStream stream = connection.GetStream(metadata.Channel);
 
         stream.HandlePacket(rawData, length, metadata);
     }
