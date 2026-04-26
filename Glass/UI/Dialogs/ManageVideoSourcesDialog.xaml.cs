@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
 using Glass.UI.Dialogs;
@@ -40,7 +41,7 @@ public partial class ManageVideoSourcesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadUISkins()
     {
-        DebugLog.Write("ManageVideoSourcesDialog.LoadUISkins: loading skins.");
+        DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.LoadUISkins: loading skins.");
 
         UISkinRepository skinRepo = new UISkinRepository();
         List<UISkin> skins = skinRepo.GetAll();
@@ -52,7 +53,7 @@ public partial class ManageVideoSourcesDialog : Window
             UISkinComboBox.SelectedIndex = 0;
         }
 
-        DebugLog.Write($"ManageVideoSourcesDialog.LoadUISkins: loaded {skins.Count} skins.");
+        DebugLog.Write(LogChannel.General, $"ManageVideoSourcesDialog.LoadUISkins: loaded {skins.Count} skins.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,14 +65,14 @@ public partial class ManageVideoSourcesDialog : Window
     {
         if (UISkinComboBox.SelectedItem is not UISkin skin)
         {
-            DebugLog.Write("ManageVideoSourcesDialog.UISkinComboBox_SelectionChanged: no skin selected.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.UISkinComboBox_SelectionChanged: no skin selected.");
             _selectedSkin = null;
             _sources.Clear();
             SourceListView.ItemsSource = null;
             return;
         }
 
-        DebugLog.Write($"ManageVideoSourcesDialog.UISkinComboBox_SelectionChanged: selected '{skin.Name}'.");
+        DebugLog.Write(LogChannel.General, $"ManageVideoSourcesDialog.UISkinComboBox_SelectionChanged: selected '{skin.Name}'.");
         _selectedSkin = skin;
         LoadSources();
     }
@@ -85,13 +86,13 @@ public partial class ManageVideoSourcesDialog : Window
     {
         if (_selectedSkin == null)
         {
-            DebugLog.Write("ManageVideoSourcesDialog.LoadSources: no skin selected.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.LoadSources: no skin selected.");
             _sources.Clear();
             SourceListView.ItemsSource = null;
             return;
         }
 
-        DebugLog.Write($"ManageVideoSourcesDialog.LoadSources: loading sources for skin '{_selectedSkin.Name}'.");
+        DebugLog.Write(LogChannel.General, $"ManageVideoSourcesDialog.LoadSources: loading sources for skin '{_selectedSkin.Name}'.");
 
         VideoSourceRepository repo = new VideoSourceRepository();
         _sources = repo.GetByUISkin(_selectedSkin.Id).ToList();
@@ -99,7 +100,7 @@ public partial class ManageVideoSourcesDialog : Window
         SourceListView.ItemsSource = null;
         SourceListView.ItemsSource = _sources;
 
-        DebugLog.Write($"ManageVideoSourcesDialog.LoadSources: loaded {_sources.Count} sources.");
+        DebugLog.Write(LogChannel.General, $"ManageVideoSourcesDialog.LoadSources: loaded {_sources.Count} sources.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -111,7 +112,7 @@ public partial class ManageVideoSourcesDialog : Window
     {
         if (e.Key == Key.Escape)
         {
-            DebugLog.Write("ManageVideoSourcesDialog.SourceListView_KeyDown: ESC pressed, clearing selection.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.SourceListView_KeyDown: ESC pressed, clearing selection.");
             ClearSelection();
             e.Handled = true;
         }
@@ -126,12 +127,12 @@ public partial class ManageVideoSourcesDialog : Window
     {
         if (SourceListView.SelectedItem is not VideoSource source)
         {
-            DebugLog.Write("ManageVideoSourcesDialog.SourceListView_SelectionChanged: no source selected.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.SourceListView_SelectionChanged: no source selected.");
             ClearSelection();
             return;
         }
 
-        DebugLog.Write($"ManageVideoSourcesDialog.SourceListView_SelectionChanged: source='{source.Name}'.");
+        DebugLog.Write(LogChannel.General, $"ManageVideoSourcesDialog.SourceListView_SelectionChanged: source='{source.Name}'.");
 
         _selectedSource = source;
         NameTextBox.Text = source.Name;
@@ -152,7 +153,7 @@ public partial class ManageVideoSourcesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ClearSelection()
     {
-        DebugLog.Write("ManageVideoSourcesDialog.ClearSelection: clearing selection.");
+        DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.ClearSelection: clearing selection.");
 
         _selectedSource = null;
         SourceListView.SelectedItem = null;
@@ -187,7 +188,7 @@ public partial class ManageVideoSourcesDialog : Window
     {
         if (_selectedSkin == null)
         {
-            DebugLog.Write("ManageVideoSourcesDialog.NewUpdateButton_Click: no skin selected.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.NewUpdateButton_Click: no skin selected.");
             MessageBox.Show("Please select a UI skin first.", "No Skin Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -195,35 +196,35 @@ public partial class ManageVideoSourcesDialog : Window
         string name = NameTextBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(name))
         {
-            DebugLog.Write("ManageVideoSourcesDialog.NewUpdateButton_Click: name is empty.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.NewUpdateButton_Click: name is empty.");
             MessageBox.Show("Please enter a name.", "Name Required", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         if (!int.TryParse(XTextBox.Text, out int x))
         {
-            DebugLog.Write("ManageVideoSourcesDialog.NewUpdateButton_Click: invalid X value.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.NewUpdateButton_Click: invalid X value.");
             MessageBox.Show("Please enter a valid X coordinate.", "Invalid X", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         if (!int.TryParse(YTextBox.Text, out int y))
         {
-            DebugLog.Write("ManageVideoSourcesDialog.NewUpdateButton_Click: invalid Y value.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.NewUpdateButton_Click: invalid Y value.");
             MessageBox.Show("Please enter a valid Y coordinate.", "Invalid Y", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         if (!int.TryParse(WidthTextBox.Text, out int width))
         {
-            DebugLog.Write("ManageVideoSourcesDialog.NewUpdateButton_Click: invalid Width value.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.NewUpdateButton_Click: invalid Width value.");
             MessageBox.Show("Please enter a valid width.", "Invalid Width", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         if (!int.TryParse(HeightTextBox.Text, out int height))
         {
-            DebugLog.Write("ManageVideoSourcesDialog.NewUpdateButton_Click: invalid Height value.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.NewUpdateButton_Click: invalid Height value.");
             MessageBox.Show("Please enter a valid height.", "Invalid Height", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -232,7 +233,7 @@ public partial class ManageVideoSourcesDialog : Window
 
         if (_selectedSource != null)
         {
-            DebugLog.Write($"ManageVideoSourcesDialog.NewUpdateButton_Click: updating source id={_selectedSource.Id}.");
+            DebugLog.Write(LogChannel.General, $"ManageVideoSourcesDialog.NewUpdateButton_Click: updating source id={_selectedSource.Id}.");
             _selectedSource.Name = name;
             _selectedSource.UISkinId = _selectedSkin.Id;
             _selectedSource.X = x;
@@ -240,11 +241,11 @@ public partial class ManageVideoSourcesDialog : Window
             _selectedSource.Width = width;
             _selectedSource.Height = height;
             repo.Save(_selectedSource);
-            DebugLog.Write($"ManageVideoSourcesDialog.NewUpdateButton_Click: saved source id={_selectedSource.Id}.");
+            DebugLog.Write(LogChannel.General, $"ManageVideoSourcesDialog.NewUpdateButton_Click: saved source id={_selectedSource.Id}.");
         }
         else
         {
-            DebugLog.Write("ManageVideoSourcesDialog.NewUpdateButton_Click: creating new source.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.NewUpdateButton_Click: creating new source.");
             VideoSource newSource = new VideoSource
             {
                 Name = name,
@@ -255,7 +256,7 @@ public partial class ManageVideoSourcesDialog : Window
                 Height = height
             };
             repo.Save(newSource);
-            DebugLog.Write($"ManageVideoSourcesDialog.NewUpdateButton_Click: saved new source id={newSource.Id}.");
+            DebugLog.Write(LogChannel.General, $"ManageVideoSourcesDialog.NewUpdateButton_Click: saved new source id={newSource.Id}.");
             _sources.Add(newSource);
         }
 
@@ -272,11 +273,11 @@ public partial class ManageVideoSourcesDialog : Window
     {
         if (_selectedSource == null)
         {
-            DebugLog.Write("ManageVideoSourcesDialog.DeleteButton_Click: no source selected.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.DeleteButton_Click: no source selected.");
             return;
         }
 
-        DebugLog.Write($"ManageVideoSourcesDialog.DeleteButton_Click: confirming delete of '{_selectedSource.Name}'.");
+        DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.DeleteButton_Click: confirming delete of '{_selectedSource.Name}'.");
 
         MessageBoxResult result = MessageBox.Show(
             $"Delete video source '{_selectedSource.Name}'?",
@@ -286,7 +287,7 @@ public partial class ManageVideoSourcesDialog : Window
 
         if (result == MessageBoxResult.Yes)
         {
-            DebugLog.Write($"ManageVideoSourcesDialog.DeleteButton_Click: deleting source id={_selectedSource.Id}.");
+            DebugLog.Write(LogChannel.General, $"ManageVideoSourcesDialog.DeleteButton_Click: deleting source id={_selectedSource.Id}.");
 
             VideoSourceRepository repo = new VideoSourceRepository();
             repo.Delete(_selectedSource.Id);
@@ -297,7 +298,7 @@ public partial class ManageVideoSourcesDialog : Window
         }
         else
         {
-            DebugLog.Write("ManageVideoSourcesDialog.DeleteButton_Click: delete cancelled.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.DeleteButton_Click: delete cancelled.");
         }
     }
 
@@ -308,7 +309,7 @@ public partial class ManageVideoSourcesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ManageVideoSourcesDialog.Cancel_Click: closing dialog.");
+        DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.Cancel_Click: closing dialog.");
         Close();
     }
 
@@ -323,7 +324,7 @@ public partial class ManageVideoSourcesDialog : Window
     {
         if (_activeOverlay != null)
         {
-            DebugLog.Write("ManageVideoSourcesDialog.PositionOverlayButton_Checked: overlay already exists, closing it first.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.PositionOverlayButton_Checked: overlay already exists, closing it first.");
             _activeOverlay.Close();
             _activeOverlay = null;
         }
@@ -337,7 +338,7 @@ public partial class ManageVideoSourcesDialog : Window
         // Handle overlay closure from X button or other means
         _activeOverlay.Closed += (s, args) =>
         {
-            DebugLog.Write("ManageVideoSourcesDialog: overlay closed externally.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog: overlay closed externally.");
             _activeOverlay = null;
             PositionOverlayButton.IsChecked = false;
         };
@@ -356,11 +357,11 @@ public partial class ManageVideoSourcesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void PositionOverlayButton_Unchecked(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: closing overlay and capturing coordinates.");
+        DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: closing overlay and capturing coordinates.");
 
         if (_activeOverlay == null)
         {
-            DebugLog.Write("ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: no active overlay.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: no active overlay.");
             return;
         }
 
@@ -372,7 +373,7 @@ public partial class ManageVideoSourcesDialog : Window
             Point topLeft = transform.Transform(new Point(_activeOverlay.Left, _activeOverlay.Top));
             Point sizePoint = transform.Transform(new Point(_activeOverlay.Width, _activeOverlay.Height));
 
-            DebugLog.Write($"ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: captured ({topLeft.X},{topLeft.Y}) {sizePoint.X}x{sizePoint.Y}.");
+            DebugLog.Write(LogChannel.General, $"ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: captured ({topLeft.X},{topLeft.Y}) {sizePoint.X}x{sizePoint.Y}.");
 
             XTextBox.Text = ((int)topLeft.X).ToString();
             YTextBox.Text = ((int)topLeft.Y).ToString();
@@ -381,12 +382,12 @@ public partial class ManageVideoSourcesDialog : Window
         }
         else
         {
-            DebugLog.Write("ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: PresentationSource unavailable, coordinates not captured.");
+            DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: PresentationSource unavailable, coordinates not captured.");
         }
 
         _activeOverlay.Close();
         _activeOverlay = null;
 
-        DebugLog.Write("ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: overlay closed.");
+        DebugLog.Write(LogChannel.General, "ManageVideoSourcesDialog.PositionOverlayButton_Unchecked: overlay closed.");
     }
 }

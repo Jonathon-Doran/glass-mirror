@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -65,12 +66,12 @@ public class KeyDisplayControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Border_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        DebugLog.Write($"KeyDisplayControl.Border_MouseLeftButtonDown: keyName='{KeyName}'.");
+        DebugLog.Write(LogChannel.Input, $"KeyDisplayControl.Border_MouseLeftButtonDown: keyName='{KeyName}'.");
 
         if (KeyType == KeyType.Toggle)
         {
             IsPressed = !IsPressed;
-            DebugLog.Write($"KeyDisplayControl.Border_MouseLeftButtonDown: toggle keyName='{KeyName}' isPressed={IsPressed}.");
+            DebugLog.Write(LogChannel.Input, $"KeyDisplayControl.Border_MouseLeftButtonDown: toggle keyName='{KeyName}' isPressed={IsPressed}.");
             RaiseEvent(new LayoutEventArgs(KeyboardLayoutControl.KeyPressedEvent, KeyName, IsPressed));
         }
         else
@@ -91,7 +92,7 @@ public class KeyDisplayControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Border_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        DebugLog.Write($"KeyDisplayControl.Border_MouseLeftButtonUp: keyName='{KeyName}'.");
+        DebugLog.Write(LogChannel.Input, $"KeyDisplayControl.Border_MouseLeftButtonUp: keyName='{KeyName}'.");
 
         if (KeyType == KeyType.Momentary)
         {
@@ -217,7 +218,7 @@ public class KeyDisplayControl : Control
     private static void OnIsSelectedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var control = (KeyDisplayControl)d;
-        DebugLog.Write($"KeyDisplayControl.OnIsSelectedChanged: keyName='{control.KeyName}' isSelected='{e.NewValue}'.");
+        DebugLog.Write(LogChannel.Input, $"KeyDisplayControl.OnIsSelectedChanged: keyName='{control.KeyName}' isSelected='{e.NewValue}'.");
         control.UpdateVisualState();
     }
 
@@ -246,7 +247,7 @@ public class KeyDisplayControl : Control
     private static void OnIsPressedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var control = (KeyDisplayControl)d;
-        DebugLog.Write($"KeyDisplayControl.OnIsPressedChanged: keyName='{control.KeyName}' isPressed='{e.NewValue}'.");
+        DebugLog.Write(LogChannel.Input, $"KeyDisplayControl.OnIsPressedChanged: keyName='{control.KeyName}' isPressed='{e.NewValue}'.");
         control.UpdateVisualState();
     }
 

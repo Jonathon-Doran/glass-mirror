@@ -1,5 +1,6 @@
 ﻿using Glass.Controls;
 using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using System.Collections.Generic;
 using System.Windows;
@@ -25,7 +26,7 @@ public partial class KeyboardOsdWindow : Window
     {
         InitializeComponent();
         KeyLayoutControl.Device = keyboardType;
-        DebugLog.Write($"KeyboardOsdWindow: created for {keyboardType}.");
+        DebugLog.Write(LogChannel.Input, $"KeyboardOsdWindow: created for {keyboardType}.");
 
         KeyDown += (s, e) =>
         {
@@ -46,7 +47,7 @@ public partial class KeyboardOsdWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void SetPage(string pageName, Dictionary<string, KeyDisplay> keys)
     {
-        DebugLog.Write($"KeyboardOsdWindow.SetPage: page='{pageName}'.");
+        DebugLog.Write(LogChannel.Input, $"KeyboardOsdWindow.SetPage: page='{pageName}'.");
 
         Dispatcher.Invoke(() =>
         {
@@ -64,7 +65,7 @@ public partial class KeyboardOsdWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void UpdateKey(KeyDisplay keyDisplay)
     {
-        DebugLog.Write($"KeyboardOsdWindow.UpdateKey: key='{keyDisplay.KeyName}'.");
+        DebugLog.Write(LogChannel.Input, $"KeyboardOsdWindow.UpdateKey: key='{keyDisplay.KeyName}'.");
         Dispatcher.Invoke(() =>
         {
             KeyLayoutControl.UpdateKey(keyDisplay);

@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Microsoft.Data.Sqlite;
 
@@ -58,7 +59,7 @@ public class KeyAliasRepository
         using var reader = cmd.ExecuteReader();
         if (!reader.Read())
         {
-            DebugLog.Write(DebugLog.Log_Database, $"KeyAliasRepository.GetAlias: name='{name}' not found.");
+            DebugLog.Write(LogChannel.Database, $"KeyAliasRepository.GetAlias: name='{name}' not found.");
             return null;
         }
 
@@ -91,7 +92,7 @@ public class KeyAliasRepository
 
         if (result == null)
         {
-            DebugLog.Write(DebugLog.Log_Database, $"KeyAliasRepository.Resolve: name='{name}' not found.");
+            DebugLog.Write(LogChannel.Database, $"KeyAliasRepository.Resolve: name='{name}' not found.");
             return null;
         }
 
@@ -109,7 +110,7 @@ public class KeyAliasRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Save(KeyAlias alias)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"KeyAliasRepository.Save: name='{alias.Name}' value='{alias.Value}'.");
+        DebugLog.Write(LogChannel.Database, $"KeyAliasRepository.Save: name='{alias.Name}' value='{alias.Value}'.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -121,7 +122,7 @@ public class KeyAliasRepository
             cmd.Parameters.AddWithValue("@name", alias.Name);
             cmd.Parameters.AddWithValue("@value", alias.Value);
             alias.Id = Convert.ToInt32(cmd.ExecuteScalar());
-            DebugLog.Write(DebugLog.Log_Database, $"KeyAliasRepository.Save: inserted. id={alias.Id}.");
+            DebugLog.Write(LogChannel.Database, $"KeyAliasRepository.Save: inserted. id={alias.Id}.");
         }
         else
         {
@@ -131,7 +132,7 @@ public class KeyAliasRepository
             cmd.Parameters.AddWithValue("@value", alias.Value);
             cmd.Parameters.AddWithValue("@id", alias.Id);
             cmd.ExecuteNonQuery();
-            DebugLog.Write(DebugLog.Log_Database, $"KeyAliasRepository.Save: updated. id={alias.Id}.");
+            DebugLog.Write(LogChannel.Database, $"KeyAliasRepository.Save: updated. id={alias.Id}.");
         }
     }
 
@@ -144,7 +145,7 @@ public class KeyAliasRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Delete(int id)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"KeyAliasRepository.Delete: id={id}.");
+        DebugLog.Write(LogChannel.Database, $"KeyAliasRepository.Delete: id={id}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -154,6 +155,6 @@ public class KeyAliasRepository
         cmd.Parameters.AddWithValue("@id", id);
         cmd.ExecuteNonQuery();
 
-        DebugLog.Write(DebugLog.Log_Database, $"KeyAliasRepository.Delete: deleted.");
+        DebugLog.Write(LogChannel.Database, $"KeyAliasRepository.Delete: deleted.");
     }
 }

@@ -4,6 +4,7 @@
 // Handles OP_ZoneSpawns packets.  
 ///////////////////////////////////////////////////////////////////////////////////////////////
 using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
 using System.Buffers.Binary;
 
@@ -77,12 +78,12 @@ public class HandleTrackingUpdate : IHandleOpcodes
     ///////////////////////////////////////////////////////////////////////////////////////////////
     private void HandleServerToClient(ReadOnlySpan<byte> data, int length, PacketMetadata metadata)
     {
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
             + _opcodeName + " length=" + length + " zone->client");
 
         if (length < 4)
         {
-            DebugLog.Write(_opcodeName + " too short for magic check, length=" + length);
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " too short for magic check, length=" + length);
             return;
         }
 
@@ -93,22 +94,22 @@ public class HandleTrackingUpdate : IHandleOpcodes
         // carrying an array of spawn records.
         if (magic == 0x4f348bff)
         {
-            DebugLog.Write("magic=0x" + magic.ToString("x8"));
+            DebugLog.Write(LogChannel.Opcodes, "magic=0x" + magic.ToString("x8"));
 
             if (length < 8)
             {
-                DebugLog.Write(_opcodeName + " cooldown packet too short, length=" + length);
+                DebugLog.Write(LogChannel.Opcodes, _opcodeName + " cooldown packet too short, length=" + length);
                 return;
             }
 
             float cooldown = BinaryPrimitives.ReadSingleLittleEndian(data.Slice(4));
-            DebugLog.Write("cooldown=" + cooldown.ToString());
+            DebugLog.Write(LogChannel.Opcodes, "cooldown=" + cooldown.ToString());
             return;
         }
 
         if (length < 2)
         {
-            DebugLog.Write(_opcodeName + " too short for count, length=" + length);
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " too short for count, length=" + length);
             return;
         }
 
@@ -119,7 +120,7 @@ public class HandleTrackingUpdate : IHandleOpcodes
 
         if (count == 0)
         {
-            DebugLog.Write(_opcodeName + " count is zero, nothing to parse");
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " count is zero, nothing to parse");
             return;
         }
 
@@ -131,7 +132,7 @@ public class HandleTrackingUpdate : IHandleOpcodes
             int consumed = ParseSpawnEntry(data, offset, length, i);
             if (consumed <= 0)
             {
-                DebugLog.Write(_opcodeName + " failed to parse entry " + i
+                DebugLog.Write(LogChannel.Opcodes, _opcodeName + " failed to parse entry " + i
                     + " at offset " + offset + ", stopping");
                 break;
             }
@@ -141,7 +142,7 @@ public class HandleTrackingUpdate : IHandleOpcodes
 
             if (offset > length)
             {
-                DebugLog.Write(_opcodeName + " offset " + offset
+                DebugLog.Write(LogChannel.Opcodes, _opcodeName + " offset " + offset
                     + " exceeds length " + length + " after entry " + i);
                 break;
             }
@@ -175,7 +176,7 @@ public class HandleTrackingUpdate : IHandleOpcodes
 
         if (offset + HeaderSize > totalLength)
         {
-            DebugLog.Write("ParseSpawnEntry: entry " + index + " header runs past end, offset="
+            DebugLog.Write(LogChannel.Opcodes, "ParseSpawnEntry: entry " + index + " header runs past end, offset="
                 + offset + ", need " + HeaderSize + ", have " + (totalLength - offset));
             return -1;
         }
@@ -192,20 +193,20 @@ public class HandleTrackingUpdate : IHandleOpcodes
 
         if (!brief)
         {
-            DebugLog.Write("spawn=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
-            DebugLog.Write("countField=" + countField + " (0x" + countField.ToString("x4") + ")");
-            DebugLog.Write("unknown2=" + unknown2 + " (0x" + unknown2.ToString("x8") + ")");
+            DebugLog.Write(LogChannel.Opcodes, "spawn=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
+            DebugLog.Write(LogChannel.Opcodes, "countField=" + countField + " (0x" + countField.ToString("x4") + ")");
+            DebugLog.Write(LogChannel.Opcodes, "unknown2=" + unknown2 + " (0x" + unknown2.ToString("x8") + ")");
 
-            DebugLog.Write("unknownByte8=" + unknownByte8 + " (0x" + unknownByte8.ToString("x2") + ")");
-            DebugLog.Write("unknownByte9=" + unknownByte9 + " (0x" + unknownByte9.ToString("x2") + ")");
-            DebugLog.Write("level=" + level + " (0x" + level.ToString("x2") + ")");
-            DebugLog.Write("flag=" + flag11 + " (0x" + flag11.ToString("x2") + ")");
+            DebugLog.Write(LogChannel.Opcodes, "unknownByte8=" + unknownByte8 + " (0x" + unknownByte8.ToString("x2") + ")");
+            DebugLog.Write(LogChannel.Opcodes, "unknownByte9=" + unknownByte9 + " (0x" + unknownByte9.ToString("x2") + ")");
+            DebugLog.Write(LogChannel.Opcodes, "level=" + level + " (0x" + level.ToString("x2") + ")");
+            DebugLog.Write(LogChannel.Opcodes, "flag=" + flag11 + " (0x" + flag11.ToString("x2") + ")");
         }
 
         int nameRegionLength = totalLength - offset - HeaderSize;
         if (nameRegionLength <= 0)
         {
-            DebugLog.Write("ParseSpawnEntry: entry " + index
+            DebugLog.Write(LogChannel.Opcodes, "ParseSpawnEntry: entry " + index
                 + " no bytes available for name, nameRegionLength=" + nameRegionLength);
             return -1;
         }
@@ -213,14 +214,14 @@ public class HandleTrackingUpdate : IHandleOpcodes
         int terminator = FindNullTerminator(entry.Slice(HeaderSize), nameRegionLength);
         if (terminator == -1)
         {
-            DebugLog.Write("ParseSpawnEntry: entry " + index
+            DebugLog.Write(LogChannel.Opcodes, "ParseSpawnEntry: entry " + index
                 + " no null terminator after name, nameRegionLength=" + nameRegionLength);
             return -1;
         }
 
         string name = System.Text.Encoding.ASCII.GetString(entry.Slice(HeaderSize, terminator));
-        DebugLog.Write("spawn " + spawnId.ToString("x4") + " \"" + name + "\"");
-        DebugLog.Write("");
+        DebugLog.Write(LogChannel.Opcodes, "spawn " + spawnId.ToString("x4") + " \"" + name + "\"");
+        DebugLog.Write(LogChannel.Opcodes, "");
 
         // Total entry size = 12-byte header + name bytes + 1 null terminator
         return HeaderSize + terminator + 1;
@@ -238,10 +239,10 @@ public class HandleTrackingUpdate : IHandleOpcodes
     ///////////////////////////////////////////////////////////////////////////////////////////////
     private void HandleClientToServer(ReadOnlySpan<byte> data, int length, PacketMetadata metadata)
     {
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length + " client->zone");
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length + " client->zone");
         if (length == 0)
         {
-            DebugLog.Write("Request tracking data");
+            DebugLog.Write(LogChannel.Opcodes, "Request tracking data");
         }
     }
 
@@ -260,7 +261,7 @@ public class HandleTrackingUpdate : IHandleOpcodes
 
         if (nullPos < 0)
         {
-            DebugLog.Write("HandleZoneEntry.HandleServerToClient: "
+            DebugLog.Write(LogChannel.Opcodes, "HandleTracking.HandleServerToClient: "
                 + _opcodeName + " no null terminator found, length=" + length);
             return -1;
         }

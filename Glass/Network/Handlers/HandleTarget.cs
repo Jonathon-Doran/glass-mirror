@@ -1,7 +1,8 @@
-﻿using System;
-using System.Buffers.Binary;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
+using System;
+using System.Buffers.Binary;
 
 namespace Glass.Network.Handlers;
 
@@ -62,15 +63,15 @@ public class HandleTarget : IHandleOpcodes
     {
         if (length != 4)
         {
-            DebugLog.Write(_opcodeName + " wrong size, should be 4, length=" + length);
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " wrong size, should be 4, length=" + length);
             return;
         }
 
         uint spawnId = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(0));
 
 
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length);
-        DebugLog.Write("Target=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length);
+        DebugLog.Write(LogChannel.Opcodes, "Target=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
     }
 
 }

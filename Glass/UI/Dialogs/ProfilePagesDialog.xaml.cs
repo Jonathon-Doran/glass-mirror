@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
 using Glass.UI.ViewModels;
@@ -40,7 +41,7 @@ public partial class ProfilePagesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadPages()
     {
-        DebugLog.Write($"ProfilePagesDialog.LoadPages: characterSetId={_characterSetId}.");
+        DebugLog.Write(LogChannel.Database, $"ProfilePagesDialog.LoadPages: characterSetId={_characterSetId}.");
 
         var pageRepo = new KeyPageRepository();
         var profilePageRepo = new ProfilePageRepository();
@@ -68,7 +69,7 @@ public partial class ProfilePagesDialog : Window
 
         PageListView.ItemsSource = _items;
 
-        DebugLog.Write($"ProfilePagesDialog.LoadPages: loaded {_items.Count} pages.");
+        DebugLog.Write(LogChannel.Database, $"ProfilePagesDialog.LoadPages: loaded {_items.Count} pages.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,13 +85,13 @@ public partial class ProfilePagesDialog : Window
             return;
         }
 
-        DebugLog.Write($"ProfilePagesDialog.PageListView_MouseLeftButtonUp: page='{item.PageName}' device='{item.Device}' setStartPageMode={_setStartPageMode}.");
+        DebugLog.Write(LogChannel.Input, $"ProfilePagesDialog.PageListView_MouseLeftButtonUp: page='{item.PageName}' device='{item.Device}' setStartPageMode={_setStartPageMode}.");
 
         if (_setStartPageMode)
         {
             if (!item.InProfile)
             {
-                DebugLog.Write($"ProfilePagesDialog.PageListView_MouseLeftButtonUp: page not in profile, cannot set as start page.");
+                DebugLog.Write(LogChannel.Input, $"ProfilePagesDialog.PageListView_MouseLeftButtonUp: page not in profile, cannot set as start page.");
                 return;
             }
 
@@ -99,13 +100,13 @@ public partial class ProfilePagesDialog : Window
             {
                 if ((other.Device == item.Device) && other.IsStartPage)
                 {
-                    DebugLog.Write($"ProfilePagesDialog.PageListView_MouseLeftButtonUp: demoting '{other.PageName}'.");
+                    DebugLog.Write(LogChannel.Input, $"ProfilePagesDialog.PageListView_MouseLeftButtonUp: demoting '{other.PageName}'.");
                     other.IsStartPage = false;
                 }
             }
 
             item.IsStartPage = true;
-            DebugLog.Write($"ProfilePagesDialog.PageListView_MouseLeftButtonUp: promoted '{item.PageName}' to start page.");
+            DebugLog.Write(LogChannel.Input, $"ProfilePagesDialog.PageListView_MouseLeftButtonUp: promoted '{item.PageName}' to start page.");
 
             // Exit Set Start Page mode
             _setStartPageMode = false;
@@ -115,19 +116,19 @@ public partial class ProfilePagesDialog : Window
         {
             if (item.IsStartPage)
             {
-                DebugLog.Write($"ProfilePagesDialog.PageListView_MouseLeftButtonUp: '{item.PageName}' is start page, cannot remove.");
+                DebugLog.Write(LogChannel.Input, $"ProfilePagesDialog.PageListView_MouseLeftButtonUp: '{item.PageName}' is start page, cannot remove.");
                 return;
             }
 
             if (item.InProfile)
             {
                 item.InProfile = false;
-                DebugLog.Write($"ProfilePagesDialog.PageListView_MouseLeftButtonUp: removed '{item.PageName}' from profile.");
+                DebugLog.Write(LogChannel.Input, $"ProfilePagesDialog.PageListView_MouseLeftButtonUp: removed '{item.PageName}' from profile.");
             }
             else
             {
                 item.InProfile = true;
-                DebugLog.Write($"ProfilePagesDialog.PageListView_MouseLeftButtonUp: added '{item.PageName}' to profile.");
+                DebugLog.Write(LogChannel.Input, $"ProfilePagesDialog.PageListView_MouseLeftButtonUp: added '{item.PageName}' to profile.");
             }
         }
     }
@@ -140,7 +141,7 @@ public partial class ProfilePagesDialog : Window
     private void SetStartPageButton_Click(object sender, RoutedEventArgs e)
     {
         _setStartPageMode = SetStartPageButton.IsChecked == true;
-        DebugLog.Write($"ProfilePagesDialog.SetStartPageButton_Click: setStartPageMode={_setStartPageMode}.");
+        DebugLog.Write(LogChannel.Input, $"ProfilePagesDialog.SetStartPageButton_Click: setStartPageMode={_setStartPageMode}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -150,7 +151,7 @@ public partial class ProfilePagesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write($"ProfilePagesDialog.Save_Click: characterSetId={_characterSetId}.");
+        DebugLog.Write(LogChannel.Input, $"ProfilePagesDialog.Save_Click: characterSetId={_characterSetId}.");
 
         var pages = _items
             .Where(p => p.InProfile)
@@ -165,7 +166,7 @@ public partial class ProfilePagesDialog : Window
         var repo = new ProfilePageRepository();
         repo.SetPagesForProfile(_characterSetId, pages);
 
-        DebugLog.Write($"ProfilePagesDialog.Save_Click: saved {pages.Count} pages.");
+        DebugLog.Write(LogChannel.Input, $"ProfilePagesDialog.Save_Click: saved {pages.Count} pages.");
         DialogResult = true;
     }
 
@@ -176,7 +177,7 @@ public partial class ProfilePagesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ProfilePagesDialog.Cancel_Click: cancelled.");
+        DebugLog.Write(LogChannel.Input, "ProfilePagesDialog.Cancel_Click: cancelled.");
         DialogResult = false;
     }
 }

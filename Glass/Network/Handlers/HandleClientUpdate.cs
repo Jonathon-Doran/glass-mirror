@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Glass.Core;
+using Glass.Core.Logging;
+using Glass.Network.Protocol;
+using System;
 using System.Buffers.Binary;
 using System.Security.RightsManagement;
-using Glass.Core;
-using Glass.Network.Protocol;
 
 namespace Glass.Network.Handlers;
 
@@ -65,8 +66,8 @@ public class HandleClientUpdate : IHandleOpcodes
     ///////////////////////////////////////////////////////////////////////////////////////////////
     private void HandleServerToClient(ReadOnlySpan<byte> data, int length, PacketMetadata metadata)
     {
-        DebugLog.Write(_opcodeName);
-        DebugLog.Write("Server to Client");
+        DebugLog.Write(LogChannel.Opcodes, _opcodeName);
+        DebugLog.Write(LogChannel.Opcodes, "Server to Client");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +80,7 @@ public class HandleClientUpdate : IHandleOpcodes
     ///////////////////////////////////////////////////////////////////////////////////////////////
     private void HandleClientToServer(ReadOnlySpan<byte> data, int length, PacketMetadata metadata)
     {
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length);
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length);
 
         ushort sequence = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0));
         uint playerId = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(2));
@@ -94,8 +95,8 @@ public class HandleClientUpdate : IHandleOpcodes
 
         // Note on heading:  measured as 160-degrees per second to within 0.2%.  One degree is 6.25ms of keypress.  
 
-        DebugLog.Write("Player " + playerId + " (0x" + playerId.ToString("x4") + ")");
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + " ID: " + playerId.ToString("x4") + " Position:  (" + xPos.ToString("F2") + "," + yPos.ToString("F2") + "," + zPos.ToString("F2") + ")");
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + " Heading is " + heading.ToString() + " 0x(" + heading.ToString("x8") + ") = " + heading/8192.0*360.0 + " degrees");
+        DebugLog.Write(LogChannel.Opcodes, "Player " + playerId + " (0x" + playerId.ToString("x4") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + " ID: " + playerId.ToString("x4") + " Position:  (" + xPos.ToString("F2") + "," + yPos.ToString("F2") + "," + zPos.ToString("F2") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + " Heading is " + heading.ToString() + " 0x(" + heading.ToString("x8") + ") = " + heading/8192.0*360.0 + " degrees");
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Glass.Controls;
 using Glass.Core;
+using Glass.Core.Logging;
 using System.Windows;
 
 namespace Glass;
@@ -22,7 +23,7 @@ public partial class KeyTestDialog : Window
         {
             if (e.Key == System.Windows.Input.Key.Escape)
             {
-                DebugLog.Write("KeyTestDialog: ESC pressed, closing.");
+                DebugLog.Write(LogChannel.Input, "KeyTestDialog: ESC pressed, closing.");
                 Close();
             }
         };
@@ -37,7 +38,7 @@ public partial class KeyTestDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void KeyTestDialog_Loaded(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("KeyTestDialog_Loaded: pushing test data.");
+        DebugLog.Write(LogChannel.Input, "KeyTestDialog_Loaded: pushing test data.");
 
         TestControl.ShowLabel = true;
         TestControl.Keys = new Dictionary<string, KeyDisplay>
@@ -49,9 +50,6 @@ public partial class KeyTestDialog : Window
         };
     }
 
-
-
-
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Key_Pressed
     //
@@ -59,7 +57,7 @@ public partial class KeyTestDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Key_Pressed(object sender, LayoutEventArgs e)
     {
-        DebugLog.Write($"KeyTestDialog.Key_Pressed: keyName='{e.KeyName}' isPressed={e.IsPressed}.");
+        DebugLog.Write(LogChannel.Input, $"KeyTestDialog.Key_Pressed: keyName='{e.KeyName}' isPressed={e.IsPressed}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,7 +67,7 @@ public partial class KeyTestDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Key_Released(object sender, LayoutEventArgs e)
     {
-        DebugLog.Write($"KeyTestDialog.Key_Released: keyName='{e.KeyName}' isPressed={e.IsPressed}.");
+        DebugLog.Write(LogChannel.Input, $"KeyTestDialog.Key_Released: keyName='{e.KeyName}' isPressed={e.IsPressed}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Microsoft.Data.Sqlite;
 
@@ -65,7 +66,7 @@ public class CommandRepository
         using var reader = cmd.ExecuteReader();
         if (!reader.Read())
         {
-            DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.GetCommand: id={id} not found.");
+            DebugLog.Write(LogChannel.Database, $"CommandRepository.GetCommand: id={id} not found.");
             return null;
         }
 
@@ -93,7 +94,7 @@ public class CommandRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void SaveCommand(Command command)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.SaveCommand: name='{command.Name}'.");
+        DebugLog.Write(LogChannel.Database, $"CommandRepository.SaveCommand: name='{command.Name}'.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -105,7 +106,7 @@ public class CommandRepository
             cmd.Parameters.AddWithValue("@name", command.Name);
             cmd.Parameters.AddWithValue("@label", command.Label);
             command.Id = Convert.ToInt32(cmd.ExecuteScalar());
-            DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.SaveCommand: inserted. id={command.Id}.");
+            DebugLog.Write(LogChannel.Database, $"CommandRepository.SaveCommand: inserted. id={command.Id}.");
         }
         else
         {
@@ -115,7 +116,7 @@ public class CommandRepository
             cmd.Parameters.AddWithValue("@label", command.Label);
             cmd.Parameters.AddWithValue("@id", command.Id);
             cmd.ExecuteNonQuery();
-            DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.SaveCommand: updated. id={command.Id}.");
+            DebugLog.Write(LogChannel.Database, $"CommandRepository.SaveCommand: updated. id={command.Id}.");
         }
     }
 
@@ -128,7 +129,7 @@ public class CommandRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void DeleteCommand(int id)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.DeleteCommand: id={id}.");
+        DebugLog.Write(LogChannel.Database, $"CommandRepository.DeleteCommand: id={id}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -149,12 +150,12 @@ public class CommandRepository
             deleteCmd.ExecuteNonQuery();
 
             tx.Commit();
-            DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.DeleteCommand: deleted. id={id}.");
+            DebugLog.Write(LogChannel.Database, $"CommandRepository.DeleteCommand: deleted. id={id}.");
         }
         catch (Exception ex)
         {
             tx.Rollback();
-            DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.DeleteCommand: exception: {ex.Message}, rolling back.");
+            DebugLog.Write(LogChannel.Database, $"CommandRepository.DeleteCommand: exception: {ex.Message}, rolling back.");
             throw;
         }
     }
@@ -169,7 +170,7 @@ public class CommandRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void SaveStep(CommandStep step)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.SaveStep: command_id={step.CommandId} sequence={step.Sequence} type='{step.Type}' value='{step.Value}' delay_ms={step.DelayMs}.");
+        DebugLog.Write(LogChannel.Database, $"CommandRepository.SaveStep: command_id={step.CommandId} sequence={step.Sequence} type='{step.Type}' value='{step.Value}' delay_ms={step.DelayMs}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -188,7 +189,7 @@ public class CommandRepository
             cmd.Parameters.AddWithValue("@delayMs", step.DelayMs);
             cmd.Parameters.AddWithValue("@pressType", step.PressType);
             step.Id = Convert.ToInt32(cmd.ExecuteScalar());
-            DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.SaveStep: inserted. id={step.Id}.");
+            DebugLog.Write(LogChannel.Database, $"CommandRepository.SaveStep: inserted. id={step.Id}.");
         }
         else
         {
@@ -204,7 +205,7 @@ public class CommandRepository
             cmd.Parameters.AddWithValue("@pressType", step.PressType);
             cmd.Parameters.AddWithValue("@id", step.Id);
             cmd.ExecuteNonQuery();
-            DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.SaveStep: updated. id={step.Id}.");
+            DebugLog.Write(LogChannel.Database, $"CommandRepository.SaveStep: updated. id={step.Id}.");
         }
     }
 
@@ -217,7 +218,7 @@ public class CommandRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void DeleteStep(int id)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.DeleteStep: id={id}.");
+        DebugLog.Write(LogChannel.Database, $"CommandRepository.DeleteStep: id={id}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -227,7 +228,7 @@ public class CommandRepository
         cmd.Parameters.AddWithValue("@id", id);
         cmd.ExecuteNonQuery();
 
-        DebugLog.Write(DebugLog.Log_Database, $"CommandRepository.DeleteStep: deleted. id={id}.");
+        DebugLog.Write(LogChannel.Database, $"CommandRepository.DeleteStep: deleted. id={id}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1,7 +1,8 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
+using System;
+using System.Runtime.InteropServices;
 
 namespace Glass.Network.Handlers;
 
@@ -89,13 +90,13 @@ public class HandleMovementHistory : IHandleOpcodes
     {
         if (length < 18)
         {
-            DebugLog.Write(_opcodeName + " packet too short: length=" + length + ", minimum is 18.");
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " packet too short: length=" + length + ", minimum is 18.");
             return;
         }
 
         if ((length - 1) % 17 != 0)
         {
-            DebugLog.Write(_opcodeName + " WARNING: payload length " + length + " minus trailing byte is not a multiple of 17.");
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " WARNING: payload length " + length + " minus trailing byte is not a multiple of 17.");
         }
 
         int entryCount = (length - 1) / 17;
@@ -106,7 +107,7 @@ public class HandleMovementHistory : IHandleOpcodes
             MovementHistoryEntry entry = MemoryMarshal.Read<MovementHistoryEntry>(data.Slice(i * 17));
 
             // unknown 2 seems 2 when standing still, 1 when moving.   And 2 appears mid-movement during duplicate position
-            DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " entry[" + i + "]"
+            DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " entry[" + i + "]"
                 + " X=" + entry.X.ToString("F2")
                 + " Y=" + entry.Y.ToString("F2")
                 + " Z=" + entry.Z.ToString("F2")
@@ -134,7 +135,7 @@ public class HandleMovementHistory : IHandleOpcodes
 
         if (_knownSpawns.TryGetValue(spawnId, out string? name))
         {
-            DebugLog.Write(name + " seen at offset " + index
+            DebugLog.Write(LogChannel.Opcodes, name + " seen at offset " + index
                 + " id=(0x" + spawnId.ToString("x4") + ")");
         }
     }

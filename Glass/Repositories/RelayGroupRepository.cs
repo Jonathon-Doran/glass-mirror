@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Microsoft.Data.Sqlite;
 
@@ -65,7 +66,7 @@ public class RelayGroupRepository
         using var reader = cmd.ExecuteReader();
         if (!reader.Read())
         {
-            DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.GetGroup: groupId={groupId} not found.");
+            DebugLog.Write(LogChannel.Database, $"RelayGroupRepository.GetGroup: groupId={groupId} not found.");
             return null;
         }
 
@@ -206,7 +207,7 @@ public class RelayGroupRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void AddMember(int groupId, int characterId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.AddMember: groupId={groupId} characterId={characterId}.");
+        DebugLog.Write(LogChannel.Database, $"RelayGroupRepository.AddMember: groupId={groupId} characterId={characterId}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -219,7 +220,7 @@ public class RelayGroupRepository
         cmd.Parameters.AddWithValue("@characterId", characterId);
         cmd.ExecuteNonQuery();
 
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.AddMember: added. groupId={groupId} characterId={characterId}.");
+        DebugLog.Write(LogChannel.Database, $"RelayGroupRepository.AddMember: added. groupId={groupId} characterId={characterId}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -232,7 +233,7 @@ public class RelayGroupRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void RemoveMember(int groupId, int characterId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.RemoveMember: groupId={groupId} characterId={characterId}.");
+        DebugLog.Write(LogChannel.Database, $"RelayGroupRepository.RemoveMember: groupId={groupId} characterId={characterId}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -245,7 +246,7 @@ public class RelayGroupRepository
         cmd.Parameters.AddWithValue("@characterId", characterId);
         cmd.ExecuteNonQuery();
 
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.RemoveMember: removed. groupId={groupId} characterId={characterId}.");
+        DebugLog.Write(LogChannel.Database, $"RelayGroupRepository.RemoveMember: removed. groupId={groupId} characterId={characterId}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -258,7 +259,7 @@ public class RelayGroupRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public int CreateGroup(string name)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.CreateGroup: name='{name}'.");
+        DebugLog.Write(LogChannel.Database, $"RelayGroupRepository.CreateGroup: name='{name}'.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -268,7 +269,7 @@ public class RelayGroupRepository
         cmd.Parameters.AddWithValue("@name", name);
         int id = Convert.ToInt32(cmd.ExecuteScalar());
 
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.CreateGroup: created. id={id}.");
+        DebugLog.Write(LogChannel.Database, $"RelayGroupRepository.CreateGroup: created. id={id}.");
         return id;
     }
 
@@ -282,7 +283,7 @@ public class RelayGroupRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void DeleteGroup(int groupId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.DeleteGroup: groupId={groupId}.");
+        DebugLog.Write(LogChannel.Database, $"RelayGroupRepository.DeleteGroup: groupId={groupId}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -294,7 +295,7 @@ public class RelayGroupRepository
 
         if (memberCount > 0)
         {
-            DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.DeleteGroup: groupId={groupId} has {memberCount} members, cannot delete.");
+            DebugLog.Write(LogChannel.Database, $"RelayGroupRepository.DeleteGroup: groupId={groupId} has {memberCount} members, cannot delete.");
             throw new InvalidOperationException($"Cannot delete relay group {groupId} — it has {memberCount} members.");
         }
 
@@ -303,6 +304,6 @@ public class RelayGroupRepository
         cmd.Parameters.AddWithValue("@id", groupId);
         cmd.ExecuteNonQuery();
 
-        DebugLog.Write(DebugLog.Log_Database, $"RelayGroupRepository.DeleteGroup: deleted. groupId={groupId}.");
+        DebugLog.Write(LogChannel.Database, $"RelayGroupRepository.DeleteGroup: deleted. groupId={groupId}.");
     }
 }

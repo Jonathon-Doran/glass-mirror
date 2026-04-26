@@ -1,4 +1,5 @@
-﻿using System.IO.Pipes;
+﻿using Glass.Core.Logging;
+using System.IO.Pipes;
 using System.Text;
 
 namespace Glass.Core;
@@ -57,7 +58,7 @@ public class PipeManager : IDisposable
 
     private void Log(string message)
     {
-        DebugLog.Write(DebugLog.Log_Pipes, $"[{_name}] {message}");
+        DebugLog.Write(LogChannel.Pipes, $"[{_name}] {message}");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

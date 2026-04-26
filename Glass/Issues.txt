@@ -2,7 +2,8 @@
 
 Glass:
 No way to delete a profile
-No way to create characters in a profile
+Need to be able to edit characters
+Changes to relay groups needs to be tested (is custom control wired?)
 
 ISXGlass:
 

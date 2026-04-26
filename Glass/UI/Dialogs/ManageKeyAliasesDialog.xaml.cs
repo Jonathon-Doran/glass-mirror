@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
 using System.Windows;
@@ -29,14 +30,14 @@ public partial class ManageKeyAliasesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadAliasList()
     {
-        DebugLog.Write("ManageKeyAliasesDialog.LoadAliasList: loading.");
+        DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.LoadAliasList: loading.");
 
         var repo = new KeyAliasRepository();
         var aliases = repo.GetAllAliases();
 
         AliasListView.ItemsSource = aliases;
 
-        DebugLog.Write($"ManageKeyAliasesDialog.LoadAliasList: loaded {aliases.Count} aliases.");
+        DebugLog.Write(LogChannel.General, $"ManageKeyAliasesDialog.LoadAliasList: loaded {aliases.Count} aliases.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -46,7 +47,7 @@ public partial class ManageKeyAliasesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ClearSelection()
     {
-        DebugLog.Write("ManageKeyAliasesDialog.ClearSelection: clearing selection.");
+        DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.ClearSelection: clearing selection.");
 
         _selectedAlias = null;
         _nameBeforeEdit = string.Empty;
@@ -72,14 +73,14 @@ public partial class ManageKeyAliasesDialog : Window
     {
         if (AliasListView.SelectedItem is not KeyAlias alias)
         {
-            DebugLog.Write("ManageKeyAliasesDialog.AliasListView_SelectionChanged: no alias selected.");
+            DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.AliasListView_SelectionChanged: no alias selected.");
             _selectedAlias = null;
             AliasNameTextBox.Text = string.Empty;
             AliasValueTextBox.Text = string.Empty;
             return;
         }
 
-        DebugLog.Write($"ManageKeyAliasesDialog.AliasListView_SelectionChanged: alias='{alias.Name}' value='{alias.Value}'.");
+        DebugLog.Write(LogChannel.General, $"ManageKeyAliasesDialog.AliasListView_SelectionChanged: alias='{alias.Name}' value='{alias.Value}'.");
 
         _selectedAlias = alias;
         _nameBeforeEdit = alias.Name;
@@ -103,7 +104,7 @@ public partial class ManageKeyAliasesDialog : Window
     {
         if (e.Key == Key.Escape)
         {
-            DebugLog.Write("ManageKeyAliasesDialog.AliasListView_KeyDown: Escape pressed, clearing selection.");
+            DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.AliasListView_KeyDown: Escape pressed, clearing selection.");
             ClearSelection();
             e.Handled = true;
         }
@@ -129,7 +130,7 @@ public partial class ManageKeyAliasesDialog : Window
     {
         if (e.Key == Key.Enter)
         {
-            DebugLog.Write("ManageKeyAliasesDialog.AliasNameTextBox_KeyDown: Enter pressed, committing.");
+            DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.AliasNameTextBox_KeyDown: Enter pressed, committing.");
             _suppressNameLostFocus = true;
             CommitChanges();
             _suppressNameLostFocus = false;
@@ -138,7 +139,7 @@ public partial class ManageKeyAliasesDialog : Window
         }
         else if (e.Key == Key.Escape)
         {
-            DebugLog.Write("ManageKeyAliasesDialog.AliasNameTextBox_KeyDown: Escape pressed, cancelling.");
+            DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.AliasNameTextBox_KeyDown: Escape pressed, cancelling.");
             _suppressNameLostFocus = true;
             AliasNameTextBox.Text = _nameBeforeEdit;
             _suppressNameLostFocus = false;
@@ -156,11 +157,11 @@ public partial class ManageKeyAliasesDialog : Window
     {
         if (_suppressNameLostFocus)
         {
-            DebugLog.Write("ManageKeyAliasesDialog.AliasNameTextBox_LostFocus: suppressed.");
+            DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.AliasNameTextBox_LostFocus: suppressed.");
             return;
         }
 
-        DebugLog.Write("ManageKeyAliasesDialog.AliasNameTextBox_LostFocus: committing.");
+        DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.AliasNameTextBox_LostFocus: committing.");
         CommitChanges();
     }
 
@@ -176,7 +177,7 @@ public partial class ManageKeyAliasesDialog : Window
             return;
         }
 
-        DebugLog.Write("ManageKeyAliasesDialog.AliasValueTextBox_LostFocus: committing.");
+        DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.AliasValueTextBox_LostFocus: committing.");
         CommitChanges();
     }
 
@@ -190,7 +191,7 @@ public partial class ManageKeyAliasesDialog : Window
     {
         if (_selectedAlias == null)
         {
-            DebugLog.Write("ManageKeyAliasesDialog.CommitChanges: no alias selected, nothing to commit.");
+            DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.CommitChanges: no alias selected, nothing to commit.");
             return;
         }
 
@@ -199,14 +200,14 @@ public partial class ManageKeyAliasesDialog : Window
 
         if (string.IsNullOrWhiteSpace(newName))
         {
-            DebugLog.Write("ManageKeyAliasesDialog.CommitChanges: name is empty, restoring original.");
+            DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.CommitChanges: name is empty, restoring original.");
             AliasNameTextBox.Text = _nameBeforeEdit;
             return;
         }
 
         if ((newName == _selectedAlias.Name) && (newValue == _selectedAlias.Value))
         {
-            DebugLog.Write("ManageKeyAliasesDialog.CommitChanges: no changes, skipping save.");
+            DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.CommitChanges: no changes, skipping save.");
             return;
         }
 
@@ -215,7 +216,7 @@ public partial class ManageKeyAliasesDialog : Window
 
         if (existing.Any(a => (a.Name == newName) && (a.Id != _selectedAlias.Id)))
         {
-            DebugLog.Write($"ManageKeyAliasesDialog.CommitChanges: name '{newName}' already exists, restoring original.");
+            DebugLog.Write(LogChannel.General, $"ManageKeyAliasesDialog.CommitChanges: name '{newName}' already exists, restoring original.");
             MessageBox.Show($"An alias named '{newName}' already exists.", "Duplicate Name", MessageBoxButton.OK, MessageBoxImage.Warning);
             AliasNameTextBox.Text = _nameBeforeEdit;
             return;
@@ -225,7 +226,7 @@ public partial class ManageKeyAliasesDialog : Window
         _selectedAlias.Value = newValue;
         repo.Save(_selectedAlias);
 
-        DebugLog.Write($"ManageKeyAliasesDialog.CommitChanges: saved name='{newName}' value='{newValue}'.");
+        DebugLog.Write(LogChannel.General, $"ManageKeyAliasesDialog.CommitChanges: saved name='{newName}' value='{newValue}'.");
 
         int savedId = _selectedAlias.Id;
 
@@ -248,11 +249,11 @@ public partial class ManageKeyAliasesDialog : Window
 
         if (_selectedAlias == null)
         {
-            DebugLog.Write($"ManageKeyAliasesDialog.NewRename_Click: creating alias name='{name}' value='{value}'.");
+            DebugLog.Write(LogChannel.General, $"ManageKeyAliasesDialog.NewRename_Click: creating alias name='{name}' value='{value}'.");
 
             if (string.IsNullOrWhiteSpace(value))
             {
-                DebugLog.Write("ManageKeyAliasesDialog.NewRename_Click: value is empty.");
+                DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.NewRename_Click: value is empty.");
                 MessageBox.Show("Please enter a keystroke value.", "No Value", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -262,7 +263,7 @@ public partial class ManageKeyAliasesDialog : Window
 
             if (existing.Any(a => a.Name == name))
             {
-                DebugLog.Write($"ManageKeyAliasesDialog.NewRename_Click: name '{name}' already exists.");
+                DebugLog.Write(LogChannel.General, $"ManageKeyAliasesDialog.NewRename_Click: name '{name}' already exists.");
                 MessageBox.Show($"An alias named '{name}' already exists.", "Duplicate Name", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -270,14 +271,14 @@ public partial class ManageKeyAliasesDialog : Window
             var alias = new KeyAlias { Name = name, Value = value };
             repo.Save(alias);
 
-            DebugLog.Write($"ManageKeyAliasesDialog.NewRename_Click: created. id={alias.Id}.");
+            DebugLog.Write(LogChannel.General, $"ManageKeyAliasesDialog.NewRename_Click: created. id={alias.Id}.");
 
             LoadAliasList();
             ClearSelection();
         }
         else
         {
-            DebugLog.Write($"ManageKeyAliasesDialog.NewRename_Click: renaming '{_selectedAlias.Name}' to '{name}'.");
+            DebugLog.Write(LogChannel.General, $"ManageKeyAliasesDialog.NewRename_Click: renaming '{_selectedAlias.Name}' to '{name}'.");
             CommitChanges();
         }
     }
@@ -291,25 +292,25 @@ public partial class ManageKeyAliasesDialog : Window
     {
         if (_selectedAlias == null)
         {
-            DebugLog.Write("ManageKeyAliasesDialog.DeleteAlias_Click: no alias selected.");
+            DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.DeleteAlias_Click: no alias selected.");
             return;
         }
 
-        DebugLog.Write($"ManageKeyAliasesDialog.DeleteAlias_Click: deleting alias id={_selectedAlias.Id} name='{_selectedAlias.Name}'.");
+        DebugLog.Write(LogChannel.General, $"ManageKeyAliasesDialog.DeleteAlias_Click: deleting alias id={_selectedAlias.Id} name='{_selectedAlias.Name}'.");
 
         var result = MessageBox.Show($"Delete alias '{_selectedAlias.Name}'?",
             "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
         if (result != MessageBoxResult.Yes)
         {
-            DebugLog.Write("ManageKeyAliasesDialog.DeleteAlias_Click: cancelled.");
+            DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.DeleteAlias_Click: cancelled.");
             return;
         }
 
         var repo = new KeyAliasRepository();
         repo.Delete(_selectedAlias.Id);
 
-        DebugLog.Write($"ManageKeyAliasesDialog.DeleteAlias_Click: deleted.");
+        DebugLog.Write(LogChannel.General, $"ManageKeyAliasesDialog.DeleteAlias_Click: deleted.");
 
         ClearSelection();
         LoadAliasList();
@@ -322,7 +323,7 @@ public partial class ManageKeyAliasesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Close_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ManageKeyAliasesDialog.Close_Click: closing.");
+        DebugLog.Write(LogChannel.General, "ManageKeyAliasesDialog.Close_Click: closing.");
         Close();
     }
 }

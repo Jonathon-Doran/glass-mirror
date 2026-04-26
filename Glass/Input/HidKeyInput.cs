@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
@@ -55,7 +56,7 @@ public class HidKeyInput
     {
         foreach (var pid in pids)
         {
-            DebugLog.Write($"HidKeyInput.RegisterParser: pid='{pid}' device={parser.Device}.");
+            DebugLog.Write(LogChannel.Input, $"HidKeyInput.RegisterParser: pid='{pid}' device={parser.Device}.");
             _parsers[pid] = parser;
         }
     }
@@ -69,13 +70,13 @@ public class HidKeyInput
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Start()
     {
-        DebugLog.Write("HidKeyInput.Start: enumerating devices.");
+        DebugLog.Write(LogChannel.Input, "HidKeyInput.Start: enumerating devices.");
 
         var devices = EnumerateDevices();
 
         foreach (var (instance, devicePath) in devices)
         {
-            DebugLog.Write($"HidKeyInput.Start: creating reader for {instance}.");
+            DebugLog.Write(LogChannel.Input, $"HidKeyInput.Start: creating reader for {instance}.");
             var parser = _parsers[instance.Pid];
             var reader = new HidDeviceReader(devicePath, instance, parser, _keyQueue, _axisQueue);
             _readers.Add(reader);
@@ -90,7 +91,7 @@ public class HidKeyInput
         };
         _dispatcherThread.Start();
 
-        DebugLog.Write($"HidKeyInput.Start: started {_readers.Count} readers.");
+        DebugLog.Write(LogChannel.Input, $"HidKeyInput.Start: started {_readers.Count} readers.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,7 +101,7 @@ public class HidKeyInput
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Stop()
     {
-        DebugLog.Write("HidKeyInput.Stop: stopping.");
+        DebugLog.Write(LogChannel.Input, "HidKeyInput.Stop: stopping.");
 
         _running = false;
 
@@ -113,7 +114,7 @@ public class HidKeyInput
         _dispatcherThread?.Join(TimeSpan.FromSeconds(3));
         _dispatcherThread = null;
 
-        DebugLog.Write("HidKeyInput.Stop: stopped.");
+        DebugLog.Write(LogChannel.Input, "HidKeyInput.Stop: stopped.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -124,13 +125,13 @@ public class HidKeyInput
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void DispatcherThread()
     {
-        DebugLog.Write("HidKeyInput.DispatcherThread: starting.");
+        DebugLog.Write(LogChannel.Input, "HidKeyInput.DispatcherThread: starting.");
 
         while (_running)
         {
             while (_keyQueue.TryDequeue(out var keyArgs))
             {
-                DebugLog.Write($"HidKeyInput.DispatcherThread: dispatching key='{keyArgs.KeyName}' {keyArgs.Device} isPressed={keyArgs.IsPressed}.");
+                DebugLog.Write(LogChannel.Input, $"HidKeyInput.DispatcherThread: dispatching key='{keyArgs.KeyName}' {keyArgs.Device} isPressed={keyArgs.IsPressed}.");
 
                 try
                 {
@@ -138,7 +139,7 @@ public class HidKeyInput
                 }
                 catch (Exception ex)
                 {
-                    DebugLog.Write($"HidKeyInput.DispatcherThread: exception in KeyStateChanged handler: {ex.Message}.");
+                    DebugLog.Write(LogChannel.Input, $"HidKeyInput.DispatcherThread: exception in KeyStateChanged handler: {ex.Message}.");
                 }
             }
 
@@ -163,14 +164,14 @@ public class HidKeyInput
                 }
                 catch (Exception ex)
                 {
-                    DebugLog.Write($"HidKeyInput.DispatcherThread: exception in AxisChanged handler: {ex.Message}.");
+                    DebugLog.Write(LogChannel.Input, $"HidKeyInput.DispatcherThread: exception in AxisChanged handler: {ex.Message}.");
                 }
             }
 
             Thread.Sleep(10);
         }
 
-        DebugLog.Write("HidKeyInput.DispatcherThread: exiting.");
+        DebugLog.Write(LogChannel.Input, "HidKeyInput.DispatcherThread: exiting.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -194,7 +195,7 @@ public class HidKeyInput
 
         if (deviceCount == 0)
         {
-            DebugLog.Write("HidKeyInput.EnumerateDevices: no Raw Input devices found.");
+            DebugLog.Write(LogChannel.Input, "HidKeyInput.EnumerateDevices: no Raw Input devices found.");
             return results;
         }
 
@@ -203,11 +204,11 @@ public class HidKeyInput
 
         if (found == unchecked((uint)-1))
         {
-            DebugLog.Write($"HidKeyInput.EnumerateDevices: GetRawInputDeviceList failed error={Marshal.GetLastWin32Error()}.");
+            DebugLog.Write(LogChannel.Input, $"HidKeyInput.EnumerateDevices: GetRawInputDeviceList failed error={Marshal.GetLastWin32Error()}.");
             return results;
         }
 
-        DebugLog.Write($"HidKeyInput.EnumerateDevices: scanning {found} devices.");
+        DebugLog.Write(LogChannel.Input, $"HidKeyInput.EnumerateDevices: scanning {found} devices.");
 
         for (int i = 0; i < found; i++)
         {
@@ -243,11 +244,11 @@ public class HidKeyInput
 
             var instance = new HidDeviceInstance(parser.Device, count, deviceId);
 
-            DebugLog.Write($"HidKeyInput.EnumerateDevices: found deviceId='{deviceId}', {instance}, path='{path}'.");
+            DebugLog.Write(LogChannel.Input, $"HidKeyInput.EnumerateDevices: found deviceId='{deviceId}', {instance}, path='{path}'.");
             results.Add((instance, path));
         }
 
-        DebugLog.Write($"HidKeyInput.EnumerateDevices: found {results.Count} Logitech HID devices.");
+        DebugLog.Write(LogChannel.Input, $"HidKeyInput.EnumerateDevices: found {results.Count} Logitech HID devices.");
         return results;
     }
 

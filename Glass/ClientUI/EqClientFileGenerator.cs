@@ -1,7 +1,8 @@
-﻿using System.IO;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
+using System.IO;
 
 namespace Glass.ClientUI;
 
@@ -28,7 +29,7 @@ public class EqClientFileGenerator
     {
         _outputDirectory = outputDirectory;
 
-        DebugLog.Write(DebugLog.Log_Database, "EqClientFileGenerator: loading monitor dimensions.");
+        DebugLog.Write(LogChannel.Database, "EqClientFileGenerator: loading monitor dimensions.");
 
         var monitorRepo = new MonitorRepository();
         var monitor = monitorRepo.GetFirstMonitor();
@@ -37,13 +38,13 @@ public class EqClientFileGenerator
         {
             _monitorWidth = monitor.Value.Width;
             _monitorHeight = monitor.Value.Height;
-            DebugLog.Write(DebugLog.Log_Database, $"EqClientFileGenerator: monitor {_monitorWidth}x{_monitorHeight}.");
+            DebugLog.Write(LogChannel.Database, $"EqClientFileGenerator: monitor {_monitorWidth}x{_monitorHeight}.");
         }
         else
         {
             _monitorWidth = 1920;
             _monitorHeight = 1080;
-            DebugLog.Write(DebugLog.Log_Database, $"EqClientFileGenerator: no monitor found, defaulting to {_monitorWidth}x{_monitorHeight}.");
+            DebugLog.Write(LogChannel.Database, $"EqClientFileGenerator: no monitor found, defaulting to {_monitorWidth}x{_monitorHeight}.");
         }
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -57,7 +58,7 @@ public class EqClientFileGenerator
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Generate(Character character)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"EqClientFileGenerator.Generate: character='{character.Name}' server='{character.Server}'.");
+        DebugLog.Write(LogChannel.Database, $"EqClientFileGenerator.Generate: character='{character.Name}' server='{character.Server}'.");
 
         string fileName = $"eqclient-{character.Name}-{character.Server}.ini";
         string outputPath = Path.Combine(_outputDirectory, fileName);
@@ -71,7 +72,7 @@ public class EqClientFileGenerator
         WriteBristlebane(writer);
         WriteNews(writer);
 
-        DebugLog.Write(DebugLog.Log_Database, $"EqClientFileGenerator.Generate: written to '{outputPath}'.");
+        DebugLog.Write(LogChannel.Database, $"EqClientFileGenerator.Generate: written to '{outputPath}'.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

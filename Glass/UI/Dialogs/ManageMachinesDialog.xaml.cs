@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
 using System.Collections.ObjectModel;
@@ -36,14 +37,14 @@ public partial class ManageMachinesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadMachineList()
     {
-        DebugLog.Write("ManageMachinesDialog.LoadMachineList: loading.");
+        DebugLog.Write(LogChannel.Database, "ManageMachinesDialog.LoadMachineList: loading.");
 
         var repo = new MachineRepository();
         var machines = repo.GetAll();
 
         MachineListView.ItemsSource = machines;
 
-        DebugLog.Write($"ManageMachinesDialog.LoadMachineList: loaded {machines.Count} machines.");
+        DebugLog.Write(LogChannel.Database, $"ManageMachinesDialog.LoadMachineList: loaded {machines.Count} machines.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -60,14 +61,14 @@ public partial class ManageMachinesDialog : Window
             return;
         }
 
-        DebugLog.Write($"ManageMachinesDialog.LoadDeviceList: machineId={_selectedMachine.Id}.");
+        DebugLog.Write(LogChannel.Database, $"ManageMachinesDialog.LoadDeviceList: machineId={_selectedMachine.Id}.");
 
         foreach (var device in _selectedMachine.Devices)
         {
             _devices.Add(device);
         }
 
-        DebugLog.Write($"ManageMachinesDialog.LoadDeviceList: loaded {_devices.Count} devices.");
+        DebugLog.Write(LogChannel.Database, $"ManageMachinesDialog.LoadDeviceList: loaded {_devices.Count} devices.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +80,7 @@ public partial class ManageMachinesDialog : Window
     {
         if (MachineListView.SelectedItem is not Machine machine)
         {
-            DebugLog.Write("ManageMachinesDialog.MachineListView_SelectionChanged: no machine selected.");
+            DebugLog.Write(LogChannel.General, "ManageMachinesDialog.MachineListView_SelectionChanged: no machine selected.");
             _selectedMachine = null;
             MachineNameTextBox.Text = string.Empty;
             _devices.Clear();
@@ -89,7 +90,7 @@ public partial class ManageMachinesDialog : Window
             return;
         }
 
-        DebugLog.Write($"ManageMachinesDialog.MachineListView_SelectionChanged: machine='{machine.Name}'.");
+        DebugLog.Write(LogChannel.General, $"ManageMachinesDialog.MachineListView_SelectionChanged: machine='{machine.Name}'.");
 
         _selectedMachine = machine;
         DeleteMachineButton.IsEnabled = true;
@@ -127,7 +128,7 @@ public partial class ManageMachinesDialog : Window
 
         if (string.IsNullOrWhiteSpace(name))
         {
-            DebugLog.Write("ManageMachinesDialog.SaveMachineName: name is empty, restoring.");
+            DebugLog.Write(LogChannel.Database, "ManageMachinesDialog.SaveMachineName: name is empty, restoring.");
             MachineNameTextBox.Text = _selectedMachine.Name;
             return;
         }
@@ -137,7 +138,7 @@ public partial class ManageMachinesDialog : Window
             return;
         }
 
-        DebugLog.Write($"ManageMachinesDialog.SaveMachineName: saving name='{name}'.");
+        DebugLog.Write(LogChannel.Database, $"ManageMachinesDialog.SaveMachineName: saving name='{name}'.");
 
         _selectedMachine.Name = name;
         var repo = new MachineRepository();
@@ -160,7 +161,7 @@ public partial class ManageMachinesDialog : Window
 
         if (_selectedMachine != null)
         {
-            DebugLog.Write($"ManageMachinesDialog.NewMachine_Click: updating machine id={_selectedMachine.Id} name='{name}'.");
+            DebugLog.Write(LogChannel.General, $"ManageMachinesDialog.NewMachine_Click: updating machine id={_selectedMachine.Id} name='{name}'.");
             _selectedMachine.Name = name;
             var repo = new MachineRepository();
             repo.Save(_selectedMachine);
@@ -171,11 +172,11 @@ public partial class ManageMachinesDialog : Window
             return;
         }
 
-        DebugLog.Write($"ManageMachinesDialog.NewMachine_Click: creating machine name='{name}'.");
+        DebugLog.Write(LogChannel.General, $"ManageMachinesDialog.NewMachine_Click: creating machine name='{name}'.");
         var machine = new Machine { Name = name };
         var updateRepo = new MachineRepository();
         updateRepo.Save(machine);
-        DebugLog.Write($"ManageMachinesDialog.NewMachine_Click: created id={machine.Id}.");
+        DebugLog.Write(LogChannel.General, $"ManageMachinesDialog.NewMachine_Click: created id={machine.Id}.");
         LoadMachineList();
         MachineListView.SelectedItem = (MachineListView.ItemsSource as List<Machine>)
             ?.FirstOrDefault(m => m.Id == machine.Id);
@@ -193,7 +194,7 @@ public partial class ManageMachinesDialog : Window
             return;
         }
 
-        DebugLog.Write($"ManageMachinesDialog.DeleteMachine_Click: deleting machine id={_selectedMachine.Id}.");
+        DebugLog.Write(LogChannel.General, $"ManageMachinesDialog.DeleteMachine_Click: deleting machine id={_selectedMachine.Id}.");
 
         var result = MessageBox.Show($"Delete machine '{_selectedMachine.Name}'?",
             "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
@@ -206,7 +207,7 @@ public partial class ManageMachinesDialog : Window
         var repo = new MachineRepository();
         repo.Delete(_selectedMachine.Id);
 
-        DebugLog.Write($"ManageMachinesDialog.DeleteMachine_Click: deleted.");
+        DebugLog.Write(LogChannel.General, $"ManageMachinesDialog.DeleteMachine_Click: deleted.");
 
         _selectedMachine = null;
         LoadMachineList();
@@ -224,7 +225,7 @@ public partial class ManageMachinesDialog : Window
             return;
         }
 
-        DebugLog.Write($"ManageMachinesDialog.AddDevice_Click: machineId={_selectedMachine.Id}.");
+        DebugLog.Write(LogChannel.General, $"ManageMachinesDialog.AddDevice_Click: machineId={_selectedMachine.Id}.");
 
         var existing = _devices.Select(d => d.KeyboardType).ToHashSet();
         var available = Enum.GetValues<KeyboardType>()
@@ -232,7 +233,7 @@ public partial class ManageMachinesDialog : Window
 
         if (existing.Count >= Enum.GetValues<KeyboardType>().Length)
         {
-            DebugLog.Write("ManageMachinesDialog.AddDevice_Click: all device types already added.");
+            DebugLog.Write(LogChannel.General, "ManageMachinesDialog.AddDevice_Click: all device types already added.");
             MessageBox.Show("All device types are already added.", "No More Devices", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
@@ -246,7 +247,7 @@ public partial class ManageMachinesDialog : Window
 
         _devices.Add(device);
 
-        DebugLog.Write($"ManageMachinesDialog.AddDevice_Click: added {device.KeyboardType}.");
+        DebugLog.Write(LogChannel.General, $"ManageMachinesDialog.AddDevice_Click: added {device.KeyboardType}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -261,7 +262,7 @@ public partial class ManageMachinesDialog : Window
             return;
         }
 
-        DebugLog.Write($"ManageMachinesDialog.RemoveDevice_Click: removing {device.KeyboardType}.");
+        DebugLog.Write(LogChannel.General, $"ManageMachinesDialog.RemoveDevice_Click: removing {device.KeyboardType}.");
 
         _devices.Remove(device);
     }
@@ -278,7 +279,7 @@ public partial class ManageMachinesDialog : Window
             return;
         }
 
-        DebugLog.Write($"ManageMachinesDialog.SaveDevices: machineId={_selectedMachine.Id} count={_devices.Count}.");
+        DebugLog.Write(LogChannel.Database, $"ManageMachinesDialog.SaveDevices: machineId={_selectedMachine.Id} count={_devices.Count}.");
 
         var repo = new MachineRepository();
         repo.SaveDevices(_selectedMachine.Id, _devices.ToList());
@@ -291,7 +292,7 @@ public partial class ManageMachinesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ManageMachinesDialog.Save_Click: saving.");
+        DebugLog.Write(LogChannel.Database, "ManageMachinesDialog.Save_Click: saving.");
 
         if (_selectedMachine != null)
         {
@@ -309,7 +310,7 @@ public partial class ManageMachinesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ManageMachinesDialog.Cancel_Click: cancelled.");
+        DebugLog.Write(LogChannel.General, "ManageMachinesDialog.Cancel_Click: cancelled.");
         DialogResult = false;
     }
 }

@@ -1,7 +1,8 @@
+using Glass.Core;
+using Glass.Core.Logging;
+using Glass.Network.Protocol;
 using System;
 using System.Buffers.Binary;
-using Glass.Core;
-using Glass.Network.Protocol;
 
 namespace Glass.Network.Handlers;
 
@@ -56,7 +57,7 @@ public class HandleZoneEntry : IHandleOpcodes
         }
         else
         {
-            DebugLog.Write("HandleZoneEntry: unknown direction=" + direction);
+            DebugLog.Write(LogChannel.Opcodes, "HandleZoneEntry: unknown direction=" + direction);
         }
     }
 
@@ -72,7 +73,7 @@ public class HandleZoneEntry : IHandleOpcodes
     {
         if (length < 4)
         {
-            DebugLog.Write("HandleZoneEntry.HandleServerToClient: "
+            DebugLog.Write(LogChannel.Opcodes, "HandleZoneEntry.HandleServerToClient: "
                 + _opcodeName + " too short, length=" + length);
             return;
         }
@@ -90,7 +91,7 @@ public class HandleZoneEntry : IHandleOpcodes
 
         if (nullPos < 0)
         {
-            DebugLog.Write("HandleZoneEntry.HandleServerToClient: "
+            DebugLog.Write(LogChannel.Opcodes, "HandleZoneEntry.HandleServerToClient: "
                 + _opcodeName + " no null terminator found, length=" + length);
             return;
         }
@@ -100,10 +101,10 @@ public class HandleZoneEntry : IHandleOpcodes
         uint spawnId = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(nullPos+1));
         uint level = data[nullPos + 5];
 
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length);
-        DebugLog.Write("name=\"" + name + "\"  id=(0x" + spawnId.ToString("x4")+")");
-        DebugLog.Write("SpawnId=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
-        DebugLog.Write("Level=" + level + " (0x" + level.ToString("x4") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] " + _opcodeName + " length=" + length);
+        DebugLog.Write(LogChannel.Opcodes, "name=\"" + name + "\"  id=(0x" + spawnId.ToString("x4")+")");
+        DebugLog.Write(LogChannel.Opcodes, "SpawnId=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "Level=" + level + " (0x" + level.ToString("x4") + ")");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -116,7 +117,7 @@ public class HandleZoneEntry : IHandleOpcodes
     ///////////////////////////////////////////////////////////////////////////////////////////////
     private void HandleClientToServer(ReadOnlySpan<byte> data, int length)
     {
-        DebugLog.Write("HandleZoneEntry.HandleClientToServer: "
+        DebugLog.Write(LogChannel.Opcodes, "HandleZoneEntry.HandleClientToServer: "
             + _opcodeName + " length=" + length);
     }
 }

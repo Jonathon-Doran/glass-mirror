@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Microsoft.Data.Sqlite;
 
@@ -63,7 +64,7 @@ public class ProfileRepository
                 });
             }
 
-            DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository: loaded. id={_profile.Id} layoutId={_profile.LayoutId} slots={_profile.Slots.Count}.");
+            DebugLog.Write(LogChannel.Database, $"ProfileRepository: loaded. id={_profile.Id} layoutId={_profile.LayoutId} slots={_profile.Slots.Count}.");
         }
         else
         {
@@ -71,7 +72,7 @@ public class ProfileRepository
             {
                 Name = profileName
             };
-            DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository: '{profileName}' not found, created empty.");
+            DebugLog.Write(LogChannel.Database, $"ProfileRepository: '{profileName}' not found, created empty.");
         }
     }
 
@@ -105,7 +106,7 @@ public class ProfileRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void SetLayoutId(int? layoutId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.SetLayoutId: layoutId={layoutId?.ToString() ?? "null"}.");
+        DebugLog.Write(LogChannel.Database, $"ProfileRepository.SetLayoutId: layoutId={layoutId?.ToString() ?? "null"}.");
         _profile.LayoutId = layoutId;
     }
 
@@ -147,7 +148,7 @@ public class ProfileRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void SetSlots(List<SlotAssignment> slots)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.SetSlots: {slots.Count} slots.");
+        DebugLog.Write(LogChannel.Database, $"ProfileRepository.SetSlots: {slots.Count} slots.");
         _profile.Slots = slots;
     }
 
@@ -176,11 +177,11 @@ public class ProfileRepository
     public int Save(bool overwrite = false)
     {
         string profileName = _profile.Name;
-        DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: name='{profileName}' slots={_profile.Slots.Count} overwrite={overwrite}.");
+        DebugLog.Write(LogChannel.Database, $"ProfileRepository.Save: name='{profileName}' slots={_profile.Slots.Count} overwrite={overwrite}.");
 
         if (string.IsNullOrWhiteSpace(profileName))
         {
-            DebugLog.Write(DebugLog.Log_Database, "ProfileRepository.Save: profile name is empty, aborting.");
+            DebugLog.Write(LogChannel.Database, "ProfileRepository.Save: profile name is empty, aborting.");
             throw new InvalidOperationException("Profile name must be set before calling Save.");
         }
 
@@ -202,13 +203,13 @@ public class ProfileRepository
             {
                 if (!overwrite)
                 {
-                    DebugLog.Write(DebugLog.Log_Database, "ProfileRepository.Save: profile exists and overwrite=false, returning -1.");
+                    DebugLog.Write(LogChannel.Database, "ProfileRepository.Save: profile exists and overwrite=false, returning -1.");
                     tx.Rollback();
                     return -1;
                 }
 
                 profileId = Convert.ToInt32(existingId);
-                DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: overwriting profileId={profileId}, deleting existing slots.");
+                DebugLog.Write(LogChannel.Database, $"ProfileRepository.Save: overwriting profileId={profileId}, deleting existing slots.");
 
                 using var deleteCmd = conn.CreateCommand();
                 deleteCmd.Transaction = tx;
@@ -226,7 +227,7 @@ public class ProfileRepository
                 updateCmd.Parameters.AddWithValue("@id", profileId);
                 updateCmd.ExecuteNonQuery();
 
-                DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: updated profile. machineId={_profile.MachineId} layoutId={_profile.LayoutId}.");
+                DebugLog.Write(LogChannel.Database, $"ProfileRepository.Save: updated profile. machineId={_profile.MachineId} layoutId={_profile.LayoutId}.");
             }
             else
             {
@@ -240,12 +241,12 @@ public class ProfileRepository
                 insertCmd.Parameters.AddWithValue("@server", _profile.Server);
                 profileId = Convert.ToInt32(insertCmd.ExecuteScalar());
 
-                DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: inserted new profile, profileId={profileId}. machineId={_profile.MachineId} layoutId={_profile.LayoutId}.");
+                DebugLog.Write(LogChannel.Database, $"ProfileRepository.Save: inserted new profile, profileId={profileId}. machineId={_profile.MachineId} layoutId={_profile.LayoutId}.");
             }
 
             foreach (var slot in _profile.Slots)
             {
-                DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: slot {slot.SlotNumber} = characterId={slot.CharacterId}.");
+                DebugLog.Write(LogChannel.Database, $"ProfileRepository.Save: slot {slot.SlotNumber} = characterId={slot.CharacterId}.");
 
                 using var insertSlot = conn.CreateCommand();
                 insertSlot.Transaction = tx;
@@ -258,12 +259,12 @@ public class ProfileRepository
 
             tx.Commit();
             _profile.Id = profileId;
-            DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: committed. profileId={profileId}.");
+            DebugLog.Write(LogChannel.Database, $"ProfileRepository.Save: committed. profileId={profileId}.");
             return profileId;
         }
         catch (Exception ex)
         {
-            DebugLog.Write(DebugLog.Log_Database, $"ProfileRepository.Save: exception: {ex.Message}, rolling back.");
+            DebugLog.Write(LogChannel.Database, $"ProfileRepository.Save: exception: {ex.Message}, rolling back.");
             tx.Rollback();
             throw;
         }

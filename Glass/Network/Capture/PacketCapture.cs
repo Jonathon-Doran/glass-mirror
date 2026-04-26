@@ -1,10 +1,11 @@
-using System;
-using System.Net;
-using System.Net.NetworkInformation;
 using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
 using SharpPcap;
 using SharpPcap.LibPcap;
+using System;
+using System.Net;
+using System.Net.NetworkInformation;
 using SharpPcapCapture = SharpPcap.PacketCapture;
 namespace Glass.Network.Capture;
 
@@ -68,13 +69,13 @@ public class PacketCapture
     {
         if (_capturing)
         {
-            DebugLog.Write("PacketCapture.Start: already capturing");
+            DebugLog.Write(LogChannel.LowNetwork, "PacketCapture.Start: already capturing");
             return false;
         }
 
         if (string.IsNullOrEmpty(bpfFilter))
         {
-            DebugLog.Write("PacketCapture.Start: no BPF filter provided");
+            DebugLog.Write(LogChannel.LowNetwork, "PacketCapture.Start: no BPF filter provided");
             return false;
         }
 
@@ -84,7 +85,7 @@ public class PacketCapture
 
             if (deviceList.Count == 0)
             {
-                DebugLog.Write("PacketCapture.Start: no capture devices found. "
+                DebugLog.Write(LogChannel.LowNetwork, "PacketCapture.Start: no capture devices found. "
                     + "Is Npcap installed?");
                 return false;
             }
@@ -93,7 +94,7 @@ public class PacketCapture
             {
                 if (_captureDevice >= deviceList.Count)
                 {
-                    DebugLog.Write("PacketCapture.Start: device index "
+                    DebugLog.Write(LogChannel.LowNetwork, "PacketCapture.Start: device index "
                         + _captureDevice + " out of range (0-"
                         + (deviceList.Count - 1) + ")");
                     return false;
@@ -106,12 +107,12 @@ public class PacketCapture
 
                 if (_device == null)
                 {
-                    DebugLog.Write("PacketCapture.Start: no suitable device found");
+                    DebugLog.Write(LogChannel.LowNetwork, "PacketCapture.Start: no suitable device found");
                     return false;
                 }
             }
 
-            DebugLog.Write("PacketCapture.Start: opening device '"
+            DebugLog.Write(LogChannel.LowNetwork, "PacketCapture.Start: opening device '"
                 + _device.Description + "'");
 
             _device.Open();
@@ -122,14 +123,14 @@ public class PacketCapture
             _capturing = true;
             _frameCount = 0;
 
-            DebugLog.Write("PacketCapture.Start: capture started, filter='"
+            DebugLog.Write(LogChannel.LowNetwork, "PacketCapture.Start: capture started, filter='"
                 + bpfFilter + "'");
 
             return true;
         }
         catch (Exception ex)
         {
-            DebugLog.Write("PacketCapture.Start: failed to start capture: "
+            DebugLog.Write(LogChannel.LowNetwork, "PacketCapture.Start: failed to start capture: "
                 + ex.Message);
             return false;
         }
@@ -158,14 +159,14 @@ public class PacketCapture
         }
         catch (Exception ex)
         {
-            DebugLog.Write("PacketCapture.Stop: error during shutdown: "
+            DebugLog.Write(LogChannel.LowNetwork, "PacketCapture.Stop: error during shutdown: "
                 + ex.Message);
         }
 
         _capturing = false;
         _device = null;
 
-        DebugLog.Write("PacketCapture.Stop: capture stopped");
+        DebugLog.Write(LogChannel.LowNetwork, "PacketCapture.Stop: capture stopped");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -202,7 +203,7 @@ public class PacketCapture
             }
         }
 
-        DebugLog.Write("PacketCapture.GetDefaultCaptureDevice: no suitable device found");
+        DebugLog.Write(LogChannel.LowNetwork, "PacketCapture.GetDefaultCaptureDevice: no suitable device found");
         return null;
     }
 
@@ -350,7 +351,7 @@ public class PacketCapture
                         address.Addr.ipAddress.AddressFamily ==
                             System.Net.Sockets.AddressFamily.InterNetwork)
                     {
-                        DebugLog.Write("PacketCapture.SelectDefaultDevice: selected '"
+                        DebugLog.Write(LogChannel.LowNetwork, "PacketCapture.SelectDefaultDevice: selected '"
                             + device.Description + "' with IP "
                             + address.Addr.ipAddress);
                         return device;

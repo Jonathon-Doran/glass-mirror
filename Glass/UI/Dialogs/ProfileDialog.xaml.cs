@@ -1,6 +1,7 @@
 ﻿using Glass.ClientUI;
 using Glass.Controls;
 using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
@@ -67,13 +68,13 @@ public partial class ProfileDialog : Window
 
             // Initialize selected layout ID from existing assignment.
             _selectedLayoutId = repo.GetLayoutId();
-            DebugLog.Write($"ProfileDialog: initialized _selectedLayoutId={_selectedLayoutId?.ToString() ?? "null"}.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog: initialized _selectedLayoutId={_selectedLayoutId?.ToString() ?? "null"}.");
 
             foreach (var slot in repo.GetSlots())
             {
                 _slotAssignments.Add(slot);
                 var character = _characterRepo.GetById(slot.CharacterId);
-                DebugLog.Write($"ProfileDialog: slot={slot.SlotNumber} characterId={slot.CharacterId} name='{character?.Name}'.");
+                DebugLog.Write(LogChannel.Profiles, $"ProfileDialog: slot={slot.SlotNumber} characterId={slot.CharacterId} name='{character?.Name}'.");
             }
 
             CharacterSlotsListView.ItemsSource = _slotAssignments.Select(s =>
@@ -142,7 +143,7 @@ public partial class ProfileDialog : Window
         }
 
         string serverType = selected.Content.ToString() ?? string.Empty;
-        DebugLog.Write("ProfileDialog.ServerTypeComboBox_SelectionChanged: serverType=" + serverType);
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.ServerTypeComboBox_SelectionChanged: serverType=" + serverType);
 
         switch (serverType)
         {
@@ -204,7 +205,7 @@ public partial class ProfileDialog : Window
         IReadOnlyList<Character> allCharacters = charRepo.GetAll();
         HashSet<int> selectedIds = existingSlots.Select(s => s.CharacterId).ToHashSet();
 
-        DebugLog.Write("PopulateCharacterList: selectedServer='" + (ServerComboBox.SelectedItem as string ?? "null") + "' characterCount=" + allCharacters.Count);
+        DebugLog.Write(LogChannel.Profiles, "PopulateCharacterList: selectedServer='" + (ServerComboBox.SelectedItem as string ?? "null") + "' characterCount=" + allCharacters.Count);
 
         string? selectedServer = ServerComboBox.SelectedItem as string;
 
@@ -307,7 +308,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ProfileDialog.Save_Click: saving.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.Save_Click: saving.");
 
         RebuildSlotAssignments();
 
@@ -317,7 +318,7 @@ public partial class ProfileDialog : Window
 
         if (_selectedLayoutId.HasValue)
         {
-            DebugLog.Write($"ProfileDialog.Save_Click: assigning layoutId={_selectedLayoutId.Value}.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.Save_Click: assigning layoutId={_selectedLayoutId.Value}.");
             repo.SetLayoutId(_selectedLayoutId.Value);
         }
 
@@ -346,14 +347,14 @@ public partial class ProfileDialog : Window
 
             if (result == MessageBoxResult.No)
             {
-                DebugLog.Write("ProfileDialog.Save_Click: user declined overwrite, aborting.");
+                DebugLog.Write(LogChannel.Profiles, "ProfileDialog.Save_Click: user declined overwrite, aborting.");
                 return;
             }
 
             profileId = repo.Save(overwrite: true);
         }
 
-        DebugLog.Write($"ProfileDialog.Save_Click: saved profileId={profileId}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.Save_Click: saved profileId={profileId}.");
         RecentProfiles.Add(profileName);
         DialogResult = true;
     }
@@ -453,7 +454,7 @@ public partial class ProfileDialog : Window
         {
             if (string.IsNullOrWhiteSpace(ProfileName.Text))
             {
-                DebugLog.Write("ProfileDialog: profile name required before leaving character selection.");
+                DebugLog.Write(LogChannel.Profiles, "ProfileDialog: profile name required before leaving character selection.");
                 MessageBox.Show("Please enter a profile name before continuing.", "Profile Name Required", MessageBoxButton.OK, MessageBoxImage.Warning);
                 ((TabControl)sender).SelectedItem = e.RemovedItems[0];
                 return;
@@ -500,13 +501,13 @@ public partial class ProfileDialog : Window
     {
         if (!CommandTypeComboBox.IsDropDownOpen)
         {
-            DebugLog.Write("ProfileDialog.CommandTypeComboBox_SelectionChanged: dropdown not open, ignoring.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.CommandTypeComboBox_SelectionChanged: dropdown not open, ignoring.");
             return;
         }
 
         if (e.AddedItems.Count == 0)
         {
-            DebugLog.Write("ProfileDialog.CommandTypeComboBox_SelectionChanged: no items added.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.CommandTypeComboBox_SelectionChanged: no items added.");
             return;
         }
 
@@ -516,7 +517,7 @@ public partial class ProfileDialog : Window
             if (cmd != null)
             {
                 LabelTextBox.Text = cmd.Label;
-                DebugLog.Write($"ProfileDialog.CommandTypeComboBox_SelectionChanged: populated label='{cmd.Label}' for commandId={selectedCommandId}.");
+                DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.CommandTypeComboBox_SelectionChanged: populated label='{cmd.Label}' for commandId={selectedCommandId}.");
             }
         }
 
@@ -526,7 +527,7 @@ public partial class ProfileDialog : Window
             return;
         }
 
-        DebugLog.Write("ProfileDialog.CommandTypeComboBox_SelectionChanged: opening ManageCommandsDialog.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.CommandTypeComboBox_SelectionChanged: opening ManageCommandsDialog.");
 
         CommandTypeComboBox.IsDropDownOpen = false;
         CommandTypeComboBox.SelectedIndex = 0;
@@ -545,11 +546,11 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadKeyboardLayoutTab()
     {
-        DebugLog.Write("ProfileDialog.LoadKeyboardLayoutTab: loading.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadKeyboardLayoutTab: loading.");
 
         if (_profileName == null)
         {
-            DebugLog.Write("ProfileDialog.LoadKeyboardLayoutTab: no profile name, nothing to load.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadKeyboardLayoutTab: no profile name, nothing to load.");
             PageListView.ItemsSource = null;
             return;
         }
@@ -559,12 +560,12 @@ public partial class ProfileDialog : Window
 
         if (profileId == 0)
         {
-            DebugLog.Write($"ProfileDialog.LoadKeyboardLayoutTab: profile '{_profileName}' not found in database, nothing to load.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadKeyboardLayoutTab: profile '{_profileName}' not found in database, nothing to load.");
             PageListView.ItemsSource = null;
             return;
         }
 
-        DebugLog.Write($"ProfileDialog.LoadKeyboardLayoutTab: profileId={profileId}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadKeyboardLayoutTab: profileId={profileId}.");
 
         var pageRepo = new ProfilePageRepository();
         var pages = pageRepo.GetPagesForProfile(profileId);
@@ -579,7 +580,7 @@ public partial class ProfileDialog : Window
         }).ToList();
 
         PageListView.ItemsSource = items;
-        DebugLog.Write($"ProfileDialog.LoadKeyboardLayoutTab: loaded {items.Count} pages.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadKeyboardLayoutTab: loaded {items.Count} pages.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -590,7 +591,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadMachineComboBox()
     {
-        DebugLog.Write("ProfileDialog.LoadMachineComboBox: loading.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadMachineComboBox: loading.");
 
         var repo = new MachineRepository();
         var machines = repo.GetAll();
@@ -624,7 +625,7 @@ public partial class ProfileDialog : Window
             MachineComboBox.SelectedIndex = 0;
         }
 
-        DebugLog.Write($"ProfileDialog.LoadMachineComboBox: loaded {machines.Count} machines.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadMachineComboBox: loaded {machines.Count} machines.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -634,17 +635,17 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadRelayGroupsTab()
     {
-        DebugLog.Write("ProfileDialog.LoadRelayGroupsTab: loading.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadRelayGroupsTab: loading.");
 
         List<RelayGroup> groups = new RelayGroupRepository().GetAllGroups();
-        DebugLog.Write($"ProfileDialog.LoadRelayGroupsTab: {groups.Count} groups.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadRelayGroupsTab: {groups.Count} groups.");
 
         List<Character> characters = _slotAssignments
             .Select(s => _characterRepo.GetById(s.CharacterId))
             .Where(c => c != null)
             .Cast<Character>()
             .ToList();
-        DebugLog.Write($"ProfileDialog.LoadRelayGroupsTab: {characters.Count} characters.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadRelayGroupsTab: {characters.Count} characters.");
 
         HashSet<(int GroupId, int CharacterId)> membership = new HashSet<(int, int)>();
         foreach (RelayGroup group in groups)
@@ -654,13 +655,13 @@ public partial class ProfileDialog : Window
                 membership.Add((group.Id, member.Id));
             }
         }
-        DebugLog.Write($"ProfileDialog.LoadRelayGroupsTab: {membership.Count} membership pairs.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadRelayGroupsTab: {membership.Count} membership pairs.");
 
         RelayGroupMatrixControl.Load(groups, characters, membership);
         RelayGroupMatrixControl.MembershipChanged -= RelayGroupMatrixControl_MembershipChanged;         // prevent double-wiring
         RelayGroupMatrixControl.MembershipChanged += RelayGroupMatrixControl_MembershipChanged;
 
-        DebugLog.Write("ProfileDialog.LoadRelayGroupsTab: done.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadRelayGroupsTab: done.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -672,7 +673,7 @@ public partial class ProfileDialog : Window
     {
         if (MachineComboBox.SelectedItem is ComboBoxItem item && item.Tag is int machineId)
         {
-            DebugLog.Write($"ProfileDialog.MachineComboBox_SelectionChanged: machineId={machineId}.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.MachineComboBox_SelectionChanged: machineId={machineId}.");
         }
     }
 
@@ -733,7 +734,7 @@ public partial class ProfileDialog : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private void Button_NewCharacter_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ProfileDialog.Button_NewCharacter_Click");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.Button_NewCharacter_Click");
 
         string? selectedServer = ServerComboBox.SelectedItem as string;
         if (string.IsNullOrEmpty(selectedServer))
@@ -750,7 +751,7 @@ public partial class ProfileDialog : Window
         {
             CharacterRepository charRepo = new CharacterRepository();
             charRepo.Add(dialog.CreatedCharacter);
-            DebugLog.Write("ProfileDialog.Button_NewCharacter_Click: character added, refreshing list");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.Button_NewCharacter_Click: character added, refreshing list");
             PopulateCharacterList(_slotAssignments.ToList());
         }
     }
@@ -809,7 +810,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadSlotAssignmentLayoutComboBox()
     {
-        DebugLog.Write("ProfileDialog.LoadSlotAssignmentLayoutComboBox: loading.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadSlotAssignmentLayoutComboBox: loading.");
 
         SlotAssignmentLayoutComboBox.Items.Clear();
 
@@ -825,12 +826,12 @@ public partial class ProfileDialog : Window
             };
 
             SlotAssignmentLayoutComboBox.Items.Add(item);
-            DebugLog.Write($"ProfileDialog.LoadSlotAssignmentLayoutComboBox: added layoutId={layout.Id} display='{layout.DisplayName}'.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadSlotAssignmentLayoutComboBox: added layoutId={layout.Id} display='{layout.DisplayName}'.");
         }
 
         if (_profileName == null)
         {
-            DebugLog.Write("ProfileDialog.LoadSlotAssignmentLayoutComboBox: no profile name, skipping pre-selection.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadSlotAssignmentLayoutComboBox: no profile name, skipping pre-selection.");
             return;
         }
 
@@ -839,7 +840,7 @@ public partial class ProfileDialog : Window
 
         if (!assignedLayoutId.HasValue)
         {
-            DebugLog.Write("ProfileDialog.LoadSlotAssignmentLayoutComboBox: no layout assigned to profile.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadSlotAssignmentLayoutComboBox: no layout assigned to profile.");
             return;
         }
 
@@ -854,10 +855,10 @@ public partial class ProfileDialog : Window
         }
         else
         {
-            DebugLog.Write($"ProfileDialog.LoadSlotAssignmentLayoutComboBox: assigned layoutId={assignedLayoutId.Value} not found in list.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadSlotAssignmentLayoutComboBox: assigned layoutId={assignedLayoutId.Value} not found in list.");
         }
 
-        DebugLog.Write($"ProfileDialog.LoadSlotAssignmentLayoutComboBox: loaded {layouts.Count} layouts.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadSlotAssignmentLayoutComboBox: loaded {layouts.Count} layouts.");
     }
 
 
@@ -871,12 +872,12 @@ public partial class ProfileDialog : Window
     {
         if (SlotAssignmentLayoutComboBox.SelectedItem is not ComboBoxItem item || item.Tag is not int layoutId)
         {
-            DebugLog.Write("ProfileDialog.SlotAssignmentLayoutComboBox_SelectionChanged: no layout selected.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.SlotAssignmentLayoutComboBox_SelectionChanged: no layout selected.");
             _selectedLayoutId = null;
             return;
         }
 
-        DebugLog.Write($"ProfileDialog.SlotAssignmentLayoutComboBox_SelectionChanged: layoutId={layoutId}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.SlotAssignmentLayoutComboBox_SelectionChanged: layoutId={layoutId}.");
 
         _selectedLayoutId = layoutId;
     }
@@ -919,7 +920,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private LayoutMonitorViewModel CreateNewMonitorConfig(int layoutPosition)
     {
-        DebugLog.Write($"ProfileDialog.CreateNewMonitorConfig: layoutPosition={layoutPosition}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.CreateNewMonitorConfig: layoutPosition={layoutPosition}.");
 
         List<Glass.Data.Models.Monitor> usedMonitors = Monitors
             .Where(m => m.Monitor != null)
@@ -935,7 +936,7 @@ public partial class ProfileDialog : Window
 
         if (selectedMonitor == null)
         {
-            DebugLog.Write($"ProfileDialog.CreateNewMonitorConfig: no available monitor found, using defaults.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.CreateNewMonitorConfig: no available monitor found, using defaults.");
             selectedMonitor = new Glass.Data.Models.Monitor
             {
                 Width = 1920,
@@ -952,7 +953,7 @@ public partial class ProfileDialog : Window
 
         layoutMonitor.SlotWidth = selectedMonitor.Width / 4;
 
-        DebugLog.Write($"ProfileDialog.CreateNewMonitorConfig: created layoutPosition={layoutPosition} monitorId={selectedMonitor.Id} adapter='{selectedMonitor.AdapterName}' {selectedMonitor.Width}x{selectedMonitor.Height} slotWidth={layoutMonitor.SlotWidth}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.CreateNewMonitorConfig: created layoutPosition={layoutPosition} monitorId={selectedMonitor.Id} adapter='{selectedMonitor.AdapterName}' {selectedMonitor.Width}x{selectedMonitor.Height} slotWidth={layoutMonitor.SlotWidth}.");
         return layoutMonitor;
     }
 
@@ -967,7 +968,7 @@ public partial class ProfileDialog : Window
         {
             return machineId;
         }
-        DebugLog.Write("ProfileDialog.GetSelectedMachineId: no machine selected, returning 0.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.GetSelectedMachineId: no machine selected, returning 0.");
         return 0;
     }
 
@@ -1003,7 +1004,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadBindingList(int pageId)
     {
-        DebugLog.Write($"ProfileDialog.LoadBindingList: pageId={pageId}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadBindingList: pageId={pageId}.");
 
         List<KeyBinding> bindings = new KeyBindingRepository().GetBindingsForPage(pageId)
             .OrderBy(b => System.Text.RegularExpressions.Regex.Replace(b.Key, @"\d+", m => m.Value.PadLeft(4, '0')))
@@ -1040,7 +1041,7 @@ public partial class ProfileDialog : Window
 
         BindingListView.ItemsSource = items;
 
-        DebugLog.Write($"ProfileDialog.LoadBindingList: loaded {items.Count} bindings.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadBindingList: loaded {items.Count} bindings.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1052,7 +1053,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadTargetGroupComboBox()
     {
-        DebugLog.Write("ProfileDialog.LoadTargetGroupComboBox: loading.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadTargetGroupComboBox: loading.");
 
         TargetGroupComboBox.Items.Clear();
 
@@ -1078,7 +1079,7 @@ public partial class ProfileDialog : Window
             TargetGroupComboBox.SelectedIndex = 0;
         }
 
-        DebugLog.Write($"ProfileDialog.LoadTargetGroupComboBox: loaded {groups.Count} relay groups plus 4 special entries.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadTargetGroupComboBox: loaded {groups.Count} relay groups plus 4 special entries.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1088,7 +1089,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadPageComboBox()
     {
-        DebugLog.Write("ProfileDialog.LoadPageComboBox: loading.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadPageComboBox: loading.");
 
         PageComboBox.Items.Clear();
 
@@ -1097,7 +1098,7 @@ public partial class ProfileDialog : Window
 
         if (_profileName == null)
         {
-            DebugLog.Write("ProfileDialog.LoadPageComboBox: no profile name, skipping pages.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadPageComboBox: no profile name, skipping pages.");
             return;
         }
 
@@ -1106,7 +1107,7 @@ public partial class ProfileDialog : Window
 
         if (profileId == 0)
         {
-            DebugLog.Write($"ProfileDialog.LoadPageComboBox: profile '{_profileName}' not found in database, skipping pages.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadPageComboBox: profile '{_profileName}' not found in database, skipping pages.");
             return;
         }
 
@@ -1128,11 +1129,11 @@ public partial class ProfileDialog : Window
         if (PageComboBox.Items.Count > 2)
         {
             PageComboBox.SelectedIndex = 2;
-            DebugLog.Write($"ProfileDialog.LoadPageComboBox: loaded {pages.Count} pages, defaulted to first.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadPageComboBox: loaded {pages.Count} pages, defaulted to first.");
         }
         else
         {
-            DebugLog.Write("ProfileDialog.LoadPageComboBox: no pages found for profile.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadPageComboBox: no pages found for profile.");
         }
     }
 
@@ -1144,17 +1145,17 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadWindowLayoutTab()
     {
-        DebugLog.Write("ProfileDialog.LoadWindowLayoutTab: loading.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadWindowLayoutTab: loading.");
 
         WindowLayoutRepository layoutRepo = new WindowLayoutRepository();
         List<WindowLayout> layouts = layoutRepo.GetAllLayouts().ToList();
 
         LayoutListView.ItemsSource = layouts;
-        DebugLog.Write($"ProfileDialog.LoadWindowLayoutTab: loaded {layouts.Count} layouts.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadWindowLayoutTab: loaded {layouts.Count} layouts.");
 
         if (_profileName == null)
         {
-            DebugLog.Write("ProfileDialog.LoadWindowLayoutTab: no profile name, skipping pre-selection.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadWindowLayoutTab: no profile name, skipping pre-selection.");
             return;
         }
 
@@ -1163,7 +1164,7 @@ public partial class ProfileDialog : Window
 
         if (!assignedLayoutId.HasValue)
         {
-            DebugLog.Write("ProfileDialog.LoadWindowLayoutTab: no layout assigned to profile.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadWindowLayoutTab: no layout assigned to profile.");
             ClearLayoutSummary();
             return;
         }
@@ -1172,14 +1173,14 @@ public partial class ProfileDialog : Window
 
         if (assigned == null)
         {
-            DebugLog.Write($"ProfileDialog.LoadWindowLayoutTab: assigned layoutId={assignedLayoutId.Value} not found in list.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadWindowLayoutTab: assigned layoutId={assignedLayoutId.Value} not found in list.");
             ClearLayoutSummary();
             return;
         }
 
         LayoutListView.SelectedItem = assigned;
         UpdateLayoutSummary(assigned);
-        DebugLog.Write($"ProfileDialog.LoadWindowLayoutTab: pre-selected layoutId={assigned.Id} name='{assigned.Name}'.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadWindowLayoutTab: pre-selected layoutId={assigned.Id} name='{assigned.Name}'.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1190,7 +1191,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadCommandComboBox()
     {
-        DebugLog.Write("ProfileDialog.LoadCommandComboBox: loading.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadCommandComboBox: loading.");
 
         var repo = new CommandRepository();
         var commands = repo.GetAllCommands();
@@ -1215,10 +1216,10 @@ public partial class ProfileDialog : Window
         if (CommandTypeComboBox.Items.Count > 2)
         {
             CommandTypeComboBox.SelectedIndex = 2;
-            DebugLog.Write("ProfileDialog.LoadCommandComboBox: defaulted to first command.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LoadCommandComboBox: defaulted to first command.");
         }
 
-        DebugLog.Write($"ProfileDialog.LoadCommandComboBox: loaded {commands.Count} commands.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LoadCommandComboBox: loaded {commands.Count} commands.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1231,7 +1232,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void RefreshKey(string key)
     {
-        DebugLog.Write($"ProfileDialog.RefreshKey: key='{key}'.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.RefreshKey: key='{key}'.");
 
         string selectedKey = SelectedKeyTextBlock.Text;
 
@@ -1248,7 +1249,7 @@ public partial class ProfileDialog : Window
 
         KeyLayoutControl.UpdateKey(keyDisplay);
 
-        DebugLog.Write($"ProfileDialog.RefreshKey: key='{key}' label='{keyDisplay.Label}' isSelected={keyDisplay.IsSelected}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.RefreshKey: key='{key}' label='{keyDisplay.Label}' isSelected={keyDisplay.IsSelected}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1259,7 +1260,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void RefreshKeyLayout()
     {
-        DebugLog.Write("ProfileDialog.RefreshKeyLayout: refreshing.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.RefreshKeyLayout: refreshing.");
 
         if (KeyLayoutControl.Keys == null)
         {
@@ -1275,7 +1276,7 @@ public partial class ProfileDialog : Window
  
         foreach (string key in KeyLayoutControl.Keys.Keys.Where(k => !boundKeys.Contains(k)).ToList())
         {
-            DebugLog.Write($"ProfileDialog.RefreshKeyLayout: clearing key='{key}'.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.RefreshKeyLayout: clearing key='{key}'.");
             KeyLayoutControl.ClearKey(key);
         }
  
@@ -1293,7 +1294,7 @@ public partial class ProfileDialog : Window
             RefreshKey(selectedKey);
         }
 
-        DebugLog.Write($"ProfileDialog.RefreshKeyLayout: complete.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.RefreshKeyLayout: complete.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1303,7 +1304,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ClearLayoutSummary()
     {
-        DebugLog.Write("ProfileDialog.ClearLayoutSummary: clearing.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.ClearLayoutSummary: clearing.");
 
         LayoutSummaryName.Text = string.Empty;
         LayoutSummaryMonitors.Text = string.Empty;
@@ -1324,7 +1325,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void UpdateLayoutSummary(WindowLayout layout)
     {
-        DebugLog.Write($"ProfileDialog.UpdateLayoutSummary: layoutId={layout.Id} name='{layout.Name}'.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.UpdateLayoutSummary: layoutId={layout.Id} name='{layout.Name}'.");
 
         LayoutSummaryName.Text = layout.Name;
         LayoutSummaryMonitors.Text = layout.Monitors.Count.ToString();
@@ -1346,7 +1347,7 @@ public partial class ProfileDialog : Window
         NewUpdateLayoutButton.IsEnabled = true;
         DeleteLayoutButton.IsEnabled = true;
 
-        DebugLog.Write($"ProfileDialog.UpdateLayoutSummary: monitors={layout.Monitors.Count} slots={layout.Slots.Count} profiles={profiles.Count}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.UpdateLayoutSummary: monitors={layout.Monitors.Count} slots={layout.Slots.Count} profiles={profiles.Count}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1359,13 +1360,13 @@ public partial class ProfileDialog : Window
     {
         if (LayoutListView.SelectedItem is not WindowLayout layout)
         {
-            DebugLog.Write("ProfileDialog.LayoutListView_SelectionChanged: no layout selected.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LayoutListView_SelectionChanged: no layout selected.");
             ClearLayoutSummary();
             _selectedLayoutId = null;
             return;
         }
 
-        DebugLog.Write($"ProfileDialog.LayoutListView_SelectionChanged: layoutId={layout.Id} name='{layout.Name}'.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.LayoutListView_SelectionChanged: layoutId={layout.Id} name='{layout.Name}'.");
 
         _selectedLayoutId = layout.Id;
         UpdateLayoutSummary(layout);
@@ -1380,7 +1381,7 @@ public partial class ProfileDialog : Window
     {
         if (e.Key == Key.Escape)
         {
-            DebugLog.Write("ProfileDialog.LayoutListView_KeyDown: Escape pressed, clearing selection.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.LayoutListView_KeyDown: Escape pressed, clearing selection.");
             LayoutListView.SelectedItem = null;
             ClearLayoutSummary();
             e.Handled = true;
@@ -1400,22 +1401,22 @@ public partial class ProfileDialog : Window
 
         if (selected == null)
         {
-            DebugLog.Write("ProfileDialog.NewUpdateLayout_Click: no layout selected, creating new.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.NewUpdateLayout_Click: no layout selected, creating new.");
         }
         else
         {
-            DebugLog.Write($"ProfileDialog.NewUpdateLayout_Click: editing layoutId={selected.Id} name='{selected.Name}'.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.NewUpdateLayout_Click: editing layoutId={selected.Id} name='{selected.Name}'.");
         }
 
         EditLayoutDialog dialog = new EditLayoutDialog(selected) { Owner = this };
 
         if (dialog.ShowDialog() != true)
         {
-            DebugLog.Write("ProfileDialog.NewUpdateLayout_Click: dialog cancelled.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.NewUpdateLayout_Click: dialog cancelled.");
             return;
         }
 
-        DebugLog.Write("ProfileDialog.NewUpdateLayout_Click: dialog saved, refreshing layout list.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.NewUpdateLayout_Click: dialog saved, refreshing layout list.");
 
         int? editedId = selected?.Id;
         LoadWindowLayoutTab();
@@ -1437,11 +1438,11 @@ public partial class ProfileDialog : Window
     {
         if (LayoutListView.SelectedItem is not WindowLayout layout)
         {
-            DebugLog.Write("ProfileDialog.DeleteLayout_Click: no layout selected.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.DeleteLayout_Click: no layout selected.");
             return;
         }
 
-        DebugLog.Write($"ProfileDialog.DeleteLayout_Click: layoutId={layout.Id} name='{layout.Name}'.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.DeleteLayout_Click: layoutId={layout.Id} name='{layout.Name}'.");
 
         WindowLayoutRepository layoutRepo = new WindowLayoutRepository();
         List<Profile> affectedProfiles = layoutRepo.GetProfilesUsingLayout(layout.Id);
@@ -1449,7 +1450,7 @@ public partial class ProfileDialog : Window
         if (affectedProfiles.Count > 0)
         {
             string profileList = string.Join(", ", affectedProfiles.Select(p => p.Name));
-            DebugLog.Write($"ProfileDialog.DeleteLayout_Click: layout in use by profiles: {profileList}.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.DeleteLayout_Click: layout in use by profiles: {profileList}.");
             MessageBox.Show(
                 $"Layout '{layout.Name}' is used by the following profile(s) and cannot be deleted:\n\n{profileList}\n\nRemove the layout from these profiles first.",
                 "Layout In Use", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -1461,12 +1462,12 @@ public partial class ProfileDialog : Window
 
         if (result != MessageBoxResult.Yes)
         {
-            DebugLog.Write("ProfileDialog.DeleteLayout_Click: cancelled.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.DeleteLayout_Click: cancelled.");
             return;
         }
 
         layoutRepo.Delete(layout.Id);
-        DebugLog.Write($"ProfileDialog.DeleteLayout_Click: deleted layoutId={layout.Id}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.DeleteLayout_Click: deleted layoutId={layout.Id}.");
 
         ClearLayoutSummary();
         LoadWindowLayoutTab();
@@ -1493,12 +1494,12 @@ public partial class ProfileDialog : Window
     {
         if (PageListView.SelectedItem is not ProfilePageViewModel page)
         {
-            DebugLog.Write("ProfileDialog.PageListView_SelectionChanged: no page selected.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.PageListView_SelectionChanged: no page selected.");
             KeyLayoutControl.Visibility = Visibility.Collapsed;
             return;
         }
 
-        DebugLog.Write($"ProfileDialog.PageListView_SelectionChanged: page='{page.PageName}' device='{page.Device}'.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.PageListView_SelectionChanged: page='{page.PageName}' device='{page.Device}'.");
 
         KeyLayoutControl.Visibility = Visibility.Visible;
         KeyLayoutControl.Device = page.Device;
@@ -1516,7 +1517,7 @@ public partial class ProfileDialog : Window
     private void KeyLayoutControl_KeyPressed(object sender, LayoutEventArgs e)
     {
         string key = e.KeyName;
-        DebugLog.Write($"ProfileDialog.KeyLayoutControl_KeyPressed: key='{key}'.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.KeyLayoutControl_KeyPressed: key='{key}'.");
 
         SelectedKeyTextBlock.Text = key;
         RefreshKeyLayout();
@@ -1526,7 +1527,7 @@ public partial class ProfileDialog : Window
 
         if (binding != null)
         {
-            DebugLog.Write($"ProfileDialog.KeyLayoutControl_KeyPressed: found binding. commandId={binding.Binding.CommandId} target={binding.Binding.Target}.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.KeyLayoutControl_KeyPressed: found binding. commandId={binding.Binding.CommandId} target={binding.Binding.Target}.");
 
             CommandTypeComboBox.SelectedItem = CommandTypeComboBox.Items
                 .OfType<ComboBoxItem>()
@@ -1561,7 +1562,7 @@ public partial class ProfileDialog : Window
         }
         else
         {
-            DebugLog.Write($"ProfileDialog.KeyLayoutControl_KeyPressed: no binding found for key='{key}'.");
+            DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.KeyLayoutControl_KeyPressed: no binding found for key='{key}'.");
             CommandTypeComboBox.SelectedIndex = 0;
             TargetGroupComboBox.SelectedIndex = 0;
             RoundRobinCheckBox.IsChecked = false;
@@ -1581,14 +1582,14 @@ public partial class ProfileDialog : Window
     {
         if (string.IsNullOrWhiteSpace(SelectedKeyTextBlock.Text))
         {
-            DebugLog.Write("ProfileDialog.SaveBinding_Click: no key selected.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.SaveBinding_Click: no key selected.");
             MessageBox.Show("Please select a key first.", "No Key Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         if (PageComboBox.SelectedItem is not ProfilePageViewModel page)
         {
-            DebugLog.Write("ProfileDialog.SaveBinding_Click: no page selected.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.SaveBinding_Click: no page selected.");
             return;
         }
 
@@ -1609,7 +1610,7 @@ public partial class ProfileDialog : Window
             target = tag;
         }
 
-        DebugLog.Write($"ProfileDialog.SaveBinding_Click: page={page.KeyPageId} key='{key}' commandId={commandId} target={target} roundRobin={roundRobin} triggerOn={triggerOn}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.SaveBinding_Click: page={page.KeyPageId} key='{key}' commandId={commandId} target={target} roundRobin={roundRobin} triggerOn={triggerOn}.");
      
         List<KeyBindingViewModel>? existingItems = BindingListView.ItemsSource as List<KeyBindingViewModel>;
         KeyBindingViewModel? existing = existingItems?.FirstOrDefault(b => b.Binding.Key == key);
@@ -1626,7 +1627,7 @@ public partial class ProfileDialog : Window
         KeyBindingRepository repo = new KeyBindingRepository();
         repo.Save(binding);
 
-        DebugLog.Write($"ProfileDialog.SaveBinding_Click: saved. id={binding.Id}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.SaveBinding_Click: saved. id={binding.Id}.");
 
         LoadBindingList(page.KeyPageId);
         RefreshKey(key);
@@ -1641,32 +1642,32 @@ public partial class ProfileDialog : Window
     {
         if (string.IsNullOrWhiteSpace(SelectedKeyTextBlock.Text))
         {
-            DebugLog.Write("ProfileDialog.ClearBinding_Click: no key selected.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.ClearBinding_Click: no key selected.");
             return;
         }
 
         if (PageComboBox.SelectedItem is not ProfilePageViewModel page)
         {
-            DebugLog.Write("ProfileDialog.ClearBinding_Click: no page selected.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.ClearBinding_Click: no page selected.");
             return;
         }
 
         string key = SelectedKeyTextBlock.Text;
-        DebugLog.Write($"ProfileDialog.ClearBinding_Click: page={page.KeyPageId} key='{key}'.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.ClearBinding_Click: page={page.KeyPageId} key='{key}'.");
 
         var existing = (BindingListView.ItemsSource as List<KeyBindingViewModel>)
             ?.FirstOrDefault(b => b.Binding.Key == key);
 
         if (existing == null)
         {
-            DebugLog.Write("ProfileDialog.ClearBinding_Click: no binding found for key.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.ClearBinding_Click: no binding found for key.");
             return;
         }
 
         var repo = new KeyBindingRepository();
         repo.Delete(existing.Binding.Id);
 
-        DebugLog.Write($"ProfileDialog.ClearBinding_Click: deleted. id={existing.Binding.Id}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.ClearBinding_Click: deleted. id={existing.Binding.Id}.");
 
         CommandTypeComboBox.SelectedIndex = 0;
         TargetGroupComboBox.SelectedIndex = 0;
@@ -1692,7 +1693,7 @@ public partial class ProfileDialog : Window
             return;
         }
 
-        DebugLog.Write($"ProfileDialog.BindingListView_SelectionChanged: key='{item.Binding.Key}'.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.BindingListView_SelectionChanged: key='{item.Binding.Key}'.");
 
         SelectedKeyTextBlock.Text = item.Binding.Key;
         RefreshKeyLayout();
@@ -1733,7 +1734,7 @@ public partial class ProfileDialog : Window
         {
             if (item.Content.ToString() == "Manage Pages...")
             {
-                DebugLog.Write("ProfileDialog.PageComboBox_SelectionChanged: Manage Pages selected.");
+                DebugLog.Write(LogChannel.Profiles, "ProfileDialog.PageComboBox_SelectionChanged: Manage Pages selected.");
                 PageComboBox.SelectedIndex = 0;
                 ManagePages_Click(sender, e);
             }
@@ -1742,12 +1743,12 @@ public partial class ProfileDialog : Window
 
         if (PageComboBox.SelectedItem is not ProfilePageViewModel page)
         {
-            DebugLog.Write("ProfileDialog.PageComboBox_SelectionChanged: no page selected.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.PageComboBox_SelectionChanged: no page selected.");
             KeyLayoutControl.Visibility = Visibility.Collapsed;
             return;
         }
 
-        DebugLog.Write($"ProfileDialog.PageComboBox_SelectionChanged: page='{page.PageName}' device='{page.Device}'.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.PageComboBox_SelectionChanged: page='{page.PageName}' device='{page.Device}'.");
 
         KeyLayoutControl.Visibility = Visibility.Visible;
         KeyLayoutControl.Device = page.Device;
@@ -1763,12 +1764,12 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ManagePages_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ProfileDialog.ManagePages_Click: opening ManagePagesDialog.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.ManagePages_Click: opening ManagePagesDialog.");
 
         var dialog = new ManagePagesDialog { Owner = this };
         dialog.ShowDialog();
 
-        DebugLog.Write("ProfileDialog.ManagePages_Click: dialog closed, refreshing page list.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.ManagePages_Click: dialog closed, refreshing page list.");
         LoadPageComboBox();
     }
 
@@ -1779,14 +1780,14 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void AssignPages_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ProfileDialog.AssignPages_Click: opening ProfilePagesDialog.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.AssignPages_Click: opening ProfilePagesDialog.");
 
         var repo = new ProfileRepository(ProfileName.Text);
         int id = repo.GetId();
 
         if (id == 0)
         {
-            DebugLog.Write("ProfileDialog.AssignPages_Click: profile not saved yet.");
+            DebugLog.Write(LogChannel.Profiles, "ProfileDialog.AssignPages_Click: profile not saved yet.");
             MessageBox.Show("Please save the profile before assigning pages.", "Profile Not Saved", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -1805,7 +1806,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void RepeatCheckBox_Checked(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ProfileDialog.RepeatCheckBox_Checked: showing interval field.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.RepeatCheckBox_Checked: showing interval field.");
         RepeatIntervalLabel.Visibility = Visibility.Visible;
         RepeatIntervalTextBox.Visibility = Visibility.Visible;
     }
@@ -1817,7 +1818,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void RepeatCheckBox_Unchecked(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ProfileDialog.RepeatCheckBox_Unchecked: hiding interval field.");
+        DebugLog.Write(LogChannel.Profiles, "ProfileDialog.RepeatCheckBox_Unchecked: hiding interval field.");
         RepeatIntervalLabel.Visibility = Visibility.Collapsed;
         RepeatIntervalTextBox.Visibility = Visibility.Collapsed;
     }
@@ -1830,7 +1831,7 @@ public partial class ProfileDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void RelayGroupMatrixControl_MembershipChanged(object? sender, RelayGroupMatrix.MembershipChangedEventArgs e)
     {
-        DebugLog.Write($"ProfileDialog.RelayGroupMatrixControl_MembershipChanged: groupId={e.GroupId} characterId={e.CharacterId} added={e.Added}.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.RelayGroupMatrixControl_MembershipChanged: groupId={e.GroupId} characterId={e.CharacterId} added={e.Added}.");
 
         RelayGroupRepository repo = new RelayGroupRepository();
 
@@ -1843,6 +1844,6 @@ public partial class ProfileDialog : Window
             repo.RemoveMember(e.GroupId, e.CharacterId);
         }
 
-        DebugLog.Write($"ProfileDialog.RelayGroupMatrixControl_MembershipChanged: done.");
+        DebugLog.Write(LogChannel.Profiles, $"ProfileDialog.RelayGroupMatrixControl_MembershipChanged: done.");
     }
 }

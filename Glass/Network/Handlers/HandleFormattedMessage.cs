@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
 using System;
 using System.Buffers.Binary;
@@ -64,9 +65,9 @@ public class HandleFormattedMessage : IHandleOpcodes
         uint msgLength = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(13));
         string msgText = Encoding.ASCII.GetString(data.Slice(17, (int) msgLength));
 
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
             + _opcodeName + " length=" + length);
-        DebugLog.Write("Message: " + msgText);
+        DebugLog.Write(LogChannel.Opcodes, "Message: " + msgText);
 
     }
 

@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
 using System;
 using System.Buffers.Binary;
@@ -71,8 +72,8 @@ public class HandleCommonMessage : IHandleOpcodes
     ///////////////////////////////////////////////////////////////////////////////////////////////
     private void HandleServerToClient(ReadOnlySpan<byte> data, int length, PacketMetadata metadata)
     {
-        DebugLog.Write(_opcodeName);
-        DebugLog.Write("Server to Client");
+        DebugLog.Write(LogChannel.Opcodes, _opcodeName);
+        DebugLog.Write(LogChannel.Opcodes, "Server to Client");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -92,12 +93,12 @@ public class HandleCommonMessage : IHandleOpcodes
     ///////////////////////////////////////////////////////////////////////////////////////////////
     private void HandleClientToServer(ReadOnlySpan<byte> data, int length, PacketMetadata metadata)
     {
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
             + _opcodeName + " length=" + length);
 
         if (length < 35)
         {
-            DebugLog.Write(_opcodeName + " too short, length=" + length + ", minimum is 35.");
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " too short, length=" + length + ", minimum is 35.");
             return;
         }
 
@@ -105,16 +106,16 @@ public class HandleCommonMessage : IHandleOpcodes
         int nullIndex = data.Slice(0, 21).IndexOf((byte)0x00);
         if (nullIndex < 0)
         {
-            DebugLog.Write(_opcodeName + " no null terminator in sender name field.");
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " no null terminator in sender name field.");
             return;
         }
         string senderName = Encoding.ASCII.GetString(data.Slice(0, nullIndex));
-        DebugLog.Write(_opcodeName + " Sender=\"" + senderName + "\"");
+        DebugLog.Write(LogChannel.Opcodes, _opcodeName + " Sender=\"" + senderName + "\"");
 
         // Channel ID at offset 0x15
         byte channelId = data[21];
         string channelName = GetChannelName(channelId);
-        DebugLog.Write(_opcodeName + " Channel=" + channelId
+        DebugLog.Write(LogChannel.Opcodes, _opcodeName + " Channel=" + channelId
             + " (0x" + channelId.ToString("x2") + ") " + channelName);
 
         // Message text: null-terminated starting at offset 0x22
@@ -122,11 +123,11 @@ public class HandleCommonMessage : IHandleOpcodes
         int messageNull = messageSpan.IndexOf((byte)0x00);
         if (messageNull < 0)
         {
-            DebugLog.Write(_opcodeName + " no null terminator in message text.");
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " no null terminator in message text.");
             return;
         }
         string messageText = Encoding.ASCII.GetString(messageSpan.Slice(0, messageNull));
-        DebugLog.Write(_opcodeName + " Message=\"" + messageText + "\"");
+        DebugLog.Write(LogChannel.Opcodes, _opcodeName + " Message=\"" + messageText + "\"");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////

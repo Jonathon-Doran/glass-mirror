@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Capture;
 using Glass.Network.Protocol;
 using Inference.Core;
@@ -73,18 +74,18 @@ public partial class MainWindow : Window
 
         GlassContext.ProfileManager = new ProfileManager();
 
-        InferenceDebugLog.Initialize(WriteToDebugLog);
-        InferenceLog.Initialize(WriteToInferenceLog);
+     //   InferenceDebugLog.Initialize(WriteToDebugLog);
+     //   InferenceLog.Initialize(WriteToInferenceLog);
         // DebugLog.Initialize(msg => InferenceDebugLog.Write(msg));
 
-        InferenceDebugLog.Write("Inference application started");
-        InferenceLog.Write("Inference log initialized");
+        DebugLog.Write(LogChannel.InferenceDebug, "Inference application started");
+        DebugLog.Write(LogChannel.Inference, "Inference log initialized");
 
         _opcodeEntries = new ObservableCollection<OpcodeEntry>();
         _opcodeLookup = new Dictionary<uint, OpcodeEntry>();
         OpcodeGrid.ItemsSource = _opcodeEntries;
 
-        InferenceDebugLog.Write("MainWindow: OpcodeGrid bound to collection");
+        DebugLog.Write(LogChannel.InferenceDebug, "MainWindow: OpcodeGrid bound to collection");
 
         _patchOpcodes = new Dictionary<uint, string>();
         _payloadLock = new object();
@@ -121,7 +122,7 @@ public partial class MainWindow : Window
         });
 
         CandidateGrid.ItemsSource = dummyCandidates;
-        InferenceDebugLog.Write("MainWindow: loaded 2 dummy candidates for UI review");
+        DebugLog.Write(LogChannel.InferenceDebug, "MainWindow: loaded 2 dummy candidates for UI review");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -136,7 +137,7 @@ public partial class MainWindow : Window
         string serverType = Properties.Settings.Default.LastOpenedPatchServerType;
         if (string.IsNullOrEmpty(patchDate) || string.IsNullOrEmpty(serverType))
         {
-            InferenceDebugLog.Write("RestoreLastPatchLevel: no previous patch level found");
+            DebugLog.Write(LogChannel.InferenceDebug, "RestoreLastPatchLevel: no previous patch level found");
             return;
         }
         _patchOpcodes = LoadPatchOpcodes(patchDate, serverType);
@@ -145,7 +146,7 @@ public partial class MainWindow : Window
         StatusPatchLevel.Text = patchDate + " (" + displayServerType + ")";
         UpdateRecentPatches(patchDate, serverType);
         BuildRecentPatchesMenu();
-        InferenceDebugLog.Write("RestoreLastPatchLevel: restored " + serverType + " " + patchDate);
+        DebugLog.Write(LogChannel.InferenceDebug, "RestoreLastPatchLevel: restored " + serverType + " " + patchDate);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -158,9 +159,9 @@ public partial class MainWindow : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
-        InferenceDebugLog.Write("Inference application closing");
-        InferenceLog.Shutdown();
-        InferenceDebugLog.Shutdown();
+        DebugLog.Write(LogChannel.InferenceDebug, "Inference application closing");
+      //  InferenceLog.Shutdown();
+       // InferenceDebugLog.Shutdown();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -175,12 +176,12 @@ public partial class MainWindow : Window
         GlassContext.ISXGlassPipe.Connected += () => Dispatcher.Invoke(() =>
         {
             StatusIsx.Text = "ISX: Connected";
-            InferenceDebugLog.Write("ISXGlass pipe connected");
+            DebugLog.Write(LogChannel.InferenceDebug, "ISXGlass pipe connected");
         });
         GlassContext.ISXGlassPipe.Disconnected += () => Dispatcher.Invoke(() =>
         {
             StatusIsx.Text = "ISX: Disconnected";
-            InferenceDebugLog.Write("ISXGlass pipe disconnected");
+            DebugLog.Write(LogChannel.InferenceDebug, "ISXGlass pipe disconnected");
         });
         GlassContext.ISXGlassPipe.MessageReceived += msg => Dispatcher.Invoke(() => HandleISXGlassMessage(msg));
         GlassContext.ISXGlassPipe.Start();
@@ -189,25 +190,22 @@ public partial class MainWindow : Window
         GlassContext.GlassVideoPipe.Connected += () => Dispatcher.Invoke(() =>
         {
             StatusGlassVideo.Text = "GlassVideo: Connected";
-            InferenceDebugLog.Write("GlassVideo pipe connected");
+            DebugLog.Write(LogChannel.InferenceDebug, "GlassVideo pipe connected");
         });
         GlassContext.GlassVideoPipe.Disconnected += () => Dispatcher.Invoke(() =>
         {
             StatusGlassVideo.Text = "GlassVideo: Not Running";
-            InferenceDebugLog.Write("GlassVideo pipe disconnected");
+            DebugLog.Write(LogChannel.InferenceDebug, "GlassVideo pipe disconnected");
         });
         GlassContext.GlassVideoPipe.MessageReceived += msg => Dispatcher.Invoke(() =>
         {
-            InferenceDebugLog.Write("GlassVideo message: " + msg);
+            DebugLog.Write(LogChannel.InferenceDebug, "GlassVideo message: " + msg);
         });
         GlassContext.GlassVideoPipe.Start();
 
-        InferenceDebugLog.Write("InitializePipes: pipes started");
+        DebugLog.Write(LogChannel.InferenceDebug, "InitializePipes: pipes started");
         
-
-
-
-        InferenceDebugLog.Write("InitializePipes: session registry and focus tracker initialized");
+        DebugLog.Write(LogChannel.InferenceDebug, "InitializePipes: session registry and focus tracker initialized");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -246,7 +244,7 @@ public partial class MainWindow : Window
 
         AnalysisChannelFilter.SelectedIndex = 0;
 
-        InferenceDebugLog.Write("InitializeAnalysisFilters: channel filter populated with 5 entries");
+        DebugLog.Write(LogChannel.InferenceDebug, "InitializeAnalysisFilters: channel filter populated with 5 entries");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -288,12 +286,12 @@ public partial class MainWindow : Window
         string dbPath = Glass.Data.Database.DefaultPath;
         if (!System.IO.File.Exists(dbPath))
         {
-            InferenceDebugLog.Write("OpenDatabase: database not found at " + dbPath);
+            DebugLog.Write(LogChannel.InferenceDebug, "OpenDatabase: database not found at " + dbPath);
             return;
         }
 
         Glass.Data.Database.Open(dbPath);
-        InferenceDebugLog.Write("OpenDatabase: opened " + dbPath);
+        DebugLog.Write(LogChannel.InferenceDebug, "OpenDatabase: opened " + dbPath);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -333,14 +331,14 @@ public partial class MainWindow : Window
                         string opcodeName = reader.GetString(1);
                         int version = reader.GetInt32(2);
                         result[(uint)opcodeValue] = opcodeName;
-                        InferenceDebugLog.Write("LoadPatchOpcodes: loaded 0x"
+                        DebugLog.Write(LogChannel.InferenceDebug, "LoadPatchOpcodes: loaded 0x"
                             + opcodeValue.ToString("x4") + " " + opcodeName
                             + " version=" + version);
                     }
                 }
             }
         }
-        InferenceDebugLog.Write("LoadPatchOpcodes: loaded "
+        DebugLog.Write(LogChannel.InferenceDebug, "LoadPatchOpcodes: loaded "
             + result.Count + " distinct opcodes");
         return result;
     }
@@ -552,7 +550,7 @@ public partial class MainWindow : Window
     {
         if (OpcodeGrid.SelectedItem == null)
         {
-            InferenceDebugLog.Write("RefreshAnalysis: no opcode selected, skipping");
+            DebugLog.Write(LogChannel.InferenceDebug, "RefreshAnalysis: no opcode selected, skipping");
             return;
         }
 
@@ -564,12 +562,12 @@ public partial class MainWindow : Window
 
         if (packets.Count == 0)
         {
-            InferenceDebugLog.Write("RefreshAnalysis: no packets for "
+            DebugLog.Write(LogChannel.InferenceDebug, "RefreshAnalysis: no packets for "
                 + selected.Opcode + " with current filters");
             return;
         }
 
-        InferenceDebugLog.Write("RefreshAnalysis: analyzing " + selected.Opcode
+        DebugLog.Write(LogChannel.InferenceDebug, "RefreshAnalysis: analyzing " + selected.Opcode
             + " packets=" + packets.Count
             + " channel=" + (_analysisFilterChannel?.ToString() ?? "All")
             + " session=" + (_analysisFilterSessionId?.ToString() ?? "All")
@@ -622,7 +620,7 @@ public partial class MainWindow : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private void MenuItem_NewPatchLevel_Click(object sender, RoutedEventArgs e)
     {
-        InferenceDebugLog.Write("MenuItem_NewPatchLevel_Click");
+        DebugLog.Write(LogChannel.InferenceDebug, "MenuItem_NewPatchLevel_Click");
 
         NewPatchLevelDialog dialog = new NewPatchLevelDialog();
         dialog.Owner = this;
@@ -633,7 +631,7 @@ public partial class MainWindow : Window
             string serverType = dialog.ServerType;
             string entry = patchDate + " (" + serverType + ")";
 
-            InferenceDebugLog.Write("New patch level created: " + entry);
+            DebugLog.Write(LogChannel.InferenceDebug, "New patch level created: " + entry);
 
             _hasPatchLevel = true;
             StatusPatchLevel.Text = patchDate + " (" + serverType.Substring(0, 1).ToUpper() + serverType.Substring(1) + ")";
@@ -668,14 +666,14 @@ public partial class MainWindow : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private void MenuItem_OpenPatchLevel_Click(object sender, RoutedEventArgs e)
     {
-        InferenceDebugLog.Write("MenuItem_OpenPatchLevel_Click");
+        DebugLog.Write(LogChannel.InferenceDebug, "MenuItem_OpenPatchLevel_Click");
 
         OpenDialog dialog = new OpenDialog();
         dialog.Owner = this;
 
         if (dialog.ShowDialog() == true)
         {
-            InferenceDebugLog.Write("Opened patch level: ServerType="
+            DebugLog.Write(LogChannel.InferenceDebug, "Opened patch level: ServerType="
                 + dialog.ServerType + " PatchDate=" + dialog.PatchDate);
 
             _hasPatchLevel = true;
@@ -704,7 +702,7 @@ public partial class MainWindow : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private async void MenuItem_LaunchProfile_Click(object sender, RoutedEventArgs e)
     {
-        InferenceDebugLog.Write("MenuItem_LaunchProfile_Click");
+        DebugLog.Write(LogChannel.InferenceDebug, "MenuItem_LaunchProfile_Click");
 
         string serverType = Properties.Settings.Default.LastOpenedPatchServerType;
         LaunchProfileDialog dialog = new LaunchProfileDialog(serverType);
@@ -712,17 +710,18 @@ public partial class MainWindow : Window
 
         if (dialog.ShowDialog() == true)
         {
-            InferenceDebugLog.Write("Profile selected: " + dialog.SelectedProfileName);
+            DebugLog.Write(LogChannel.InferenceDebug, "Profile selected: " + dialog.SelectedProfileName);
 
             string? localIp = PacketCapture.GetLocalIP();
             if (localIp == null)
             {
-                InferenceDebugLog.Write("MenuItem_LaunchProfile_Click: no capture device found");
+                DebugLog.Write(LogChannel.InferenceDebug, "MenuItem_LaunchProfile_Click: no capture device found");
                 MessageBox.Show("No suitable capture device found. Is Npcap installed?",
                     "Capture Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            DebugLog.Log_Network = false;
+            // TODO:  Throttle network log
+            // DebugLog.Log_Network = false;
 
 
             _sessionDemux = new SessionDemux(localIp, HandleAppPacket);
@@ -732,13 +731,13 @@ public partial class MainWindow : Window
             string bpfFilter = "udp and (net 69.174.0.0/16 or net 64.37.0.0/16 or net 209.0.0.0/16)";
             if (!_packetCapture.Start(bpfFilter))
             {
-                InferenceDebugLog.Write("MenuItem_LaunchProfile_Click: capture failed to start");
+                DebugLog.Write(LogChannel.InferenceDebug, "MenuItem_LaunchProfile_Click: capture failed to start");
                 MessageBox.Show("Failed to start packet capture.",
                     "Capture Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
-            InferenceDebugLog.Write("MenuItem_LaunchProfile_Click: capture started");
+            DebugLog.Write(LogChannel.InferenceDebug, "MenuItem_LaunchProfile_Click: capture started");
             StatusCapture.Text = "Capture: Active";
 
             await GlassContext.ProfileManager.LaunchProfile(dialog.SelectedProfileName);
@@ -756,7 +755,7 @@ public partial class MainWindow : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private void MenuItem_Save_Click(object sender, RoutedEventArgs e)
     {
-        InferenceDebugLog.Write("MenuItem_Save_Click");
+        DebugLog.Write(LogChannel.InferenceDebug, "MenuItem_Save_Click");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -770,7 +769,7 @@ public partial class MainWindow : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private void MenuItem_Exit_Click(object sender, RoutedEventArgs e)
     {
-        InferenceDebugLog.Write("MenuItem_Exit_Click");
+        DebugLog.Write(LogChannel.InferenceDebug, "MenuItem_Exit_Click");
         Close();
     }
 
@@ -785,7 +784,7 @@ public partial class MainWindow : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private void MenuItem_Undo_Click(object sender, RoutedEventArgs e)
     {
-        InferenceDebugLog.Write("MenuItem_Undo_Click");
+        DebugLog.Write(LogChannel.InferenceDebug, "MenuItem_Undo_Click");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -818,7 +817,7 @@ public partial class MainWindow : Window
         if (selected == null)
         {
             _analysisFilterSessionId = null;
-            InferenceDebugLog.Write("AnalysisSessionFilter_SelectionChanged: no selection, filter cleared");
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisSessionFilter_SelectionChanged: no selection, filter cleared");
             RefreshAnalysis();
             return;
         }
@@ -826,12 +825,12 @@ public partial class MainWindow : Window
         if (selected.Tag is int sessionId)
         {
             _analysisFilterSessionId = sessionId;
-            InferenceDebugLog.Write("AnalysisSessionFilter_SelectionChanged: filter set to session " + sessionId);
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisSessionFilter_SelectionChanged: filter set to session " + sessionId);
         }
         else
         {
             _analysisFilterSessionId = null;
-            InferenceDebugLog.Write("AnalysisSessionFilter_SelectionChanged: filter cleared (All)");
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisSessionFilter_SelectionChanged: filter cleared (All)");
         }
 
         RefreshAnalysis();
@@ -853,7 +852,7 @@ public partial class MainWindow : Window
         if (selected == null)
         {
             _analysisFilterChannel = null;
-            InferenceDebugLog.Write("AnalysisChannelFilter_SelectionChanged: no selection, filter cleared");
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisChannelFilter_SelectionChanged: no selection, filter cleared");
             RefreshAnalysis();
             return;
         }
@@ -863,12 +862,12 @@ public partial class MainWindow : Window
         if (selected.Tag is SoeConstants.StreamId streamId)
         {
             _analysisFilterChannel = streamId;
-            InferenceDebugLog.Write("AnalysisChannelFilter_SelectionChanged: filter set to " + streamId);
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisChannelFilter_SelectionChanged: filter set to " + streamId);
         }
         else
         {
             _analysisFilterChannel = null;
-            InferenceDebugLog.Write("AnalysisChannelFilter_SelectionChanged: filter cleared (All)");
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisChannelFilter_SelectionChanged: filter cleared (All)");
         }
         RefreshAnalysis();
     }
@@ -888,7 +887,7 @@ public partial class MainWindow : Window
 
         if (selected == null)
         {
-            InferenceDebugLog.Write("AnalysisPacketCount_SelectionChanged: no selection");
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisPacketCount_SelectionChanged: no selection");
             return;
         }
 
@@ -897,16 +896,16 @@ public partial class MainWindow : Window
         if (value == "All")
         {
             _analysisMaxPackets = int.MaxValue;
-            InferenceDebugLog.Write("AnalysisPacketCount_SelectionChanged: set to All");
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisPacketCount_SelectionChanged: set to All");
         }
         else if (int.TryParse(value, out int count))
         {
             _analysisMaxPackets = count;
-            InferenceDebugLog.Write("AnalysisPacketCount_SelectionChanged: set to " + count);
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisPacketCount_SelectionChanged: set to " + count);
         }
         else
         {
-            InferenceDebugLog.Write("AnalysisPacketCount_SelectionChanged: unexpected value '" + value + "'");
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisPacketCount_SelectionChanged: unexpected value '" + value + "'");
         }
         RefreshAnalysis();
     }
@@ -926,7 +925,7 @@ public partial class MainWindow : Window
 
         if (selected == null)
         {
-            InferenceDebugLog.Write("AnalysisHexLength_SelectionChanged: no selection");
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisHexLength_SelectionChanged: no selection");
             return;
         }
 
@@ -935,16 +934,16 @@ public partial class MainWindow : Window
         if (value == "Full")
         {
             _analysisMaxHexBytes = int.MaxValue;
-            InferenceDebugLog.Write("AnalysisHexLength_SelectionChanged: set to Full");
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisHexLength_SelectionChanged: set to Full");
         }
         else if (int.TryParse(value, out int bytes))
         {
             _analysisMaxHexBytes = bytes;
-            InferenceDebugLog.Write("AnalysisHexLength_SelectionChanged: set to " + bytes);
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisHexLength_SelectionChanged: set to " + bytes);
         }
         else
         {
-            InferenceDebugLog.Write("AnalysisHexLength_SelectionChanged: unexpected value '" + value + "'");
+            DebugLog.Write(LogChannel.InferenceDebug, "AnalysisHexLength_SelectionChanged: unexpected value '" + value + "'");
         }
         RefreshAnalysis();
     }
@@ -964,12 +963,12 @@ public partial class MainWindow : Window
     {
         if (CandidateGrid.SelectedItem == null)
         {
-            InferenceDebugLog.Write("ToggleButton_AcceptCandidate_Click: no candidate selected");
+            DebugLog.Write(LogChannel.InferenceDebug, "ToggleButton_AcceptCandidate_Click: no candidate selected");
             return;
         }
         System.Windows.Controls.Primitives.ToggleButton toggle = (System.Windows.Controls.Primitives.ToggleButton)sender;
         bool isAccepted = toggle.IsChecked == true;
-        InferenceDebugLog.Write("ToggleButton_AcceptCandidate_Click: accepted=" + isAccepted);
+        DebugLog.Write(LogChannel.InferenceDebug, "ToggleButton_AcceptCandidate_Click: accepted=" + isAccepted);
     }
 
 
@@ -1004,9 +1003,6 @@ public partial class MainWindow : Window
             dumpSample.Header += "Session " + packet.Metadata.SessionId + ", Channel " + StreamAbbrev[packet.Metadata.Channel];
 
             dumpSample.Lines = new List<HexDumpLine>();
-
-            InferenceLog.Write("logging packet " + (packetIndex + 1) + " at " + packet.Payload.Length + " vs limit of " +
-                _analysisMaxHexBytes);
 
             int offset = 0;
             while (offset < displayLength)
@@ -1102,8 +1098,6 @@ public partial class MainWindow : Window
                 HexDumpDisplay.Document.Blocks.Add(para);
             }
         }
-
-        InferenceDebugLog.Write("RenderHexDump: rendered " + dumpData.Count + " samples");
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -1164,7 +1158,7 @@ public partial class MainWindow : Window
 
     private void HandleISXGlassMessage(string msg)
     {
-        DebugLog.Write($"ISXGlass: message in {msg}");
+        DebugLog.Write(LogChannel.ISXGlass, $"ISXGlass: message in {msg}");
         var parts = msg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0)
         {
@@ -1180,7 +1174,7 @@ public partial class MainWindow : Window
                 {
                     if (parts.Length < 4)
                     {
-                        InferenceDebugLog.Write($"ISXGlass: malformed session_connected: {msg}");
+                        DebugLog.Write(LogChannel.ISXGlass, $"ISXGlass: malformed session_connected: {msg}");
                         return;
                     }
 
@@ -1195,12 +1189,12 @@ public partial class MainWindow : Window
                         bool hasId = uint.TryParse(sessionName.Substring(2), out uint accountId);
                         if (!hasId)
                         {
-                            InferenceDebugLog.Write($"ISXGlass: no integer account-id: {sessionName}");
+                            DebugLog.Write(LogChannel.ISXGlass, $"ISXGlass: no integer account-id: {sessionName}");
                             return;
                         }
 
                         characterName = GlassContext.ProfileManager.GetCharacterNameByAccountId(accountId);
-                        InferenceDebugLog.Write($"session connected: {sessionName}, pid={pid}, character={characterName}");
+                        DebugLog.Write(LogChannel.ISXGlass, $"session connected: {sessionName}, pid={pid}, character={characterName}");
                         GlassContext.SessionRegistry.OnSessionConnected(sessionName, characterName, pid, hwnd);
                         int slot = GlassContext.ProfileManager.GetSlotForCharacter(characterName);
                         if (slot == -1)
@@ -1209,12 +1203,12 @@ public partial class MainWindow : Window
                         }
 
                         string cmd = $"slot_assign {slot} {sessionName} {hwnd:X}";
-                        InferenceDebugLog.Write($"HandleISXGlassMessage: sending {cmd}");
+                        DebugLog.Write(LogChannel.ISXGlass, $"HandleISXGlassMessage: sending {cmd}");
                         GlassContext.GlassVideoPipe.Send(cmd);
                     }
                     else
                     {
-                        InferenceDebugLog.Write($"session connected: {sessionName}, pid={pid}, no active profile.");
+                        DebugLog.Write(LogChannel.ISXGlass, $"session connected: {sessionName}, pid={pid}, no active profile.");
                         GlassContext.SessionRegistry.OnSessionConnected(sessionName, characterName, pid, hwnd);
                     }
 
@@ -1225,19 +1219,19 @@ public partial class MainWindow : Window
                 {
                     if (parts.Length < 2)
                     {
-                        InferenceDebugLog.Write($"ISXGlass: malformed session_disconnected: {msg}");
+                        DebugLog.Write(LogChannel.ISXGlass, $"ISXGlass: malformed session_disconnected: {msg}");
                         return;
                     }
 
                     string sessionName = parts[1];
-                    InferenceDebugLog.Write($"session_disconnected: {sessionName}");
+                    DebugLog.Write(LogChannel.ISXGlass, $"session_disconnected: {sessionName}");
                     GlassContext.GlassVideoPipe.Send($"unassign {sessionName}");
                     GlassContext.SessionRegistry.OnSessionDisconnected(sessionName);
                     break;
                 }
 
             default:
-                InferenceDebugLog.Write($"{msg}");
+                DebugLog.Write(LogChannel.ISXGlass, $"{msg}");
                 break;
         }
     }
@@ -1374,13 +1368,6 @@ public partial class MainWindow : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private void WriteToDebugLog(string message)
     {
-        if (!Dispatcher.CheckAccess())
-        {
-            Dispatcher.Invoke(() => WriteToDebugLog(message));
-            return;
-        }
-        DebugLogOutput.AppendText(message + Environment.NewLine);
-        DebugLogScroller.ScrollToEnd();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -1393,12 +1380,5 @@ public partial class MainWindow : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private void WriteToInferenceLog(string message)
     {
-        if (!Dispatcher.CheckAccess())
-        {
-            Dispatcher.Invoke(() => WriteToInferenceLog(message));
-            return;
-        }
-        InferenceLogList.Items.Add(message);
-        InferenceLogList.ScrollIntoView(InferenceLogList.Items[InferenceLogList.Items.Count - 1]);
     }
 }

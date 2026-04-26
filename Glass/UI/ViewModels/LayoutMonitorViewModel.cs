@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using System.ComponentModel;
 using System.Windows;
@@ -171,7 +172,7 @@ public class LayoutMonitorViewModel : INotifyPropertyChanged
             !int.TryParse(dimensions[0], out int width) ||
             !int.TryParse(dimensions[1], out int height))
         {
-            DebugLog.Write($"LayoutMonitorViewModel.AdjustMonitorDimensions: invalid resolution '{SelectedResolution}'.");
+            DebugLog.Write(LogChannel.Database, $"LayoutMonitorViewModel.AdjustMonitorDimensions: invalid resolution '{SelectedResolution}'.");
             return;
         }
 
@@ -189,6 +190,6 @@ public class LayoutMonitorViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(OverlayCanvasWidth));
         OnPropertyChanged(nameof(OverlayCanvasHeight));
 
-        DebugLog.Write($"LayoutMonitorViewModel.AdjustMonitorDimensions: resolution='{SelectedResolution}' orientation={Monitor.Orientation} width={Monitor.Width} height={Monitor.Height}.");
+        DebugLog.Write(LogChannel.Database, $"LayoutMonitorViewModel.AdjustMonitorDimensions: resolution='{SelectedResolution}' orientation={Monitor.Orientation} width={Monitor.Width} height={Monitor.Height}.");
     }
 }

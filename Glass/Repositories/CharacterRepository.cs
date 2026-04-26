@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data;
 using Glass.Data.Models;
 using Microsoft.Data.Sqlite;
@@ -82,7 +83,7 @@ public class CharacterRepository
         character.Id = Convert.ToInt32(cmd.ExecuteScalar());
         _characters.Add(character);
 
-        DebugLog.Write(DebugLog.Log_Database, "CharacterRepository.Add: added character="
+        DebugLog.Write(LogChannel.Database, "CharacterRepository.Add: added character="
             + character.Name + " id=" + character.Id
             + " server=" + character.Server
             + " class=" + character.Class
@@ -117,7 +118,7 @@ public class CharacterRepository
             _characters[index] = character;
         }
 
-        DebugLog.Write(DebugLog.Log_Database, "CharacterRepository.Update: updated character="
+        DebugLog.Write(LogChannel.Database, "CharacterRepository.Update: updated character="
             + character.Name + " id=" + character.Id
             + " server=" + character.Server
             + " class=" + character.Class

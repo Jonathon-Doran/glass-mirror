@@ -1,4 +1,5 @@
 using Glass.Core;
+using Glass.Core.Logging;
 using System.IO;
 
 namespace Glass.ClientUI;
@@ -23,13 +24,13 @@ public static class IniFileReader
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public static Dictionary<string, List<string>> Read(string path)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"IniFileReader.Read: path='{path}'.");
+        DebugLog.Write(LogChannel.Database, $"IniFileReader.Read: path='{path}'.");
 
         var result = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
         if (!File.Exists(path))
         {
-            DebugLog.Write(DebugLog.Log_Database, $"IniFileReader.Read: file not found, returning empty.");
+            DebugLog.Write(LogChannel.Database, $"IniFileReader.Read: file not found, returning empty.");
             return result;
         }
 
@@ -49,7 +50,7 @@ public static class IniFileReader
                     result[currentSection] = new List<string>();
                 }
 
-                DebugLog.Write(DebugLog.Log_Database, $"IniFileReader.Read: section '{currentSection}'.");
+                DebugLog.Write(LogChannel.Database, $"IniFileReader.Read: section '{currentSection}'.");
             }
             else if (currentSection != null)
             {
@@ -57,7 +58,7 @@ public static class IniFileReader
             }
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"IniFileReader.Read: read {result.Count} sections.");
+        DebugLog.Write(LogChannel.Database, $"IniFileReader.Read: read {result.Count} sections.");
         return result;
     }
 }

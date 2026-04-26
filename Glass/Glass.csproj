@@ -11,6 +11,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Logs\**" />
+    <EmbeddedResource Remove="Logs\**" />
+    <None Remove="Logs\**" />
+    <Page Remove="Logs\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Generic.xml" />
     <None Remove="Resources\drag_handle.png" />
     <None Remove="Resources\target.png" />

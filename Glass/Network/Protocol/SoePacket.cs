@@ -1,5 +1,6 @@
 ﻿using System;
 using Glass.Core;
+using Glass.Core.Logging;
 
 namespace Glass.Network.Protocol;
 
@@ -168,11 +169,11 @@ public class SoePacket
 
             if (!decompressor.Decompress(compData, out ReadOnlySpan<byte> decompressedSpan))
             {
-                DebugLog.Write(DebugLog.Log_Network,
+                DebugLog.Write(LogChannel.LowNetwork,
                     "WARNING: Uncompress failed for packet op 0x"
                     + _netOp.ToString("x4") + ", flags 0x"
                     + _flags.ToString("x2"));
-                DebugLog.Write(DebugLog.Log_Network,
+                DebugLog.Write(LogChannel.LowNetwork,
                     "  Raw: " + BitConverter.ToString(
                         _packet, 0, Math.Min(_length, 64))
                         .Replace("-", " ").ToLower());

@@ -1,7 +1,8 @@
-﻿using System;
-using System.Buffers.Binary;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
+using System;
+using System.Buffers.Binary;
 
 namespace Glass.Network.Handlers;
 
@@ -62,7 +63,7 @@ public class HandleDeath : IHandleOpcodes
     {
         if (length < 4)
         {
-            DebugLog.Write(_opcodeName + " too short, length=" + length);
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " too short, length=" + length);
             return;
         }
 
@@ -74,15 +75,14 @@ public class HandleDeath : IHandleOpcodes
         uint unk4 = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(20));
         uint unk5 = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(24));
 
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
             + _opcodeName + " length=" + length);
-        DebugLog.Write("Dead=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
-        DebugLog.Write("Killer=" + killerId + " (0x" + killerId.ToString("x4") + ")");
-        DebugLog.Write("Unk1=" + unk1 + " (0x" + unk1.ToString("x8") + ")");
-        DebugLog.Write("Unk2=" + unk2 + " (0x" + unk2.ToString("x8") + ")");
-        DebugLog.Write("Unk3=" + unk3 + " (0x" + unk3.ToString("x8") + ")");
-        DebugLog.Write("Unk4=" + unk4 + " (0x" + unk4.ToString("x8") + ")");
-        DebugLog.Write("Unk5=" + unk5 + " (0x" + unk5.ToString("x8") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "Dead=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "Killer=" + killerId + " (0x" + killerId.ToString("x4") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "Unk1=" + unk1 + " (0x" + unk1.ToString("x8") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "Unk2=" + unk2 + " (0x" + unk2.ToString("x8") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "Unk3=" + unk3 + " (0x" + unk3.ToString("x8") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "Unk4=" + unk4 + " (0x" + unk4.ToString("x8") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "Unk5=" + unk5 + " (0x" + unk5.ToString("x8") + ")");
     }
-
 }

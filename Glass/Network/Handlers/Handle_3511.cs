@@ -1,7 +1,8 @@
-﻿using System;
-using System.Buffers.Binary;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
+using System;
+using System.Buffers.Binary;
 
 namespace Glass.Network.Handlers;
 
@@ -62,7 +63,7 @@ public class Handle_3511 : IHandleOpcodes
     {
         if (length != 6)
         {
-            DebugLog.Write(_opcodeName + " wrong size, should be 4, length=" + length);
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " wrong size, should be 4, length=" + length);
             return;
         }
 
@@ -70,9 +71,9 @@ public class Handle_3511 : IHandleOpcodes
         Int32 unk1 = BinaryPrimitives.ReadInt32BigEndian(data.Slice(2));
 
 
-        DebugLog.Write(_opcodeName);
-        DebugLog.Write("Spawn?=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
-        DebugLog.Write("Unk1 =" + unk1 + " (0x" + unk1.ToString("x4") + ")");
+        DebugLog.Write(LogChannel.Opcodes, _opcodeName);
+        DebugLog.Write(LogChannel.Opcodes, "Spawn?=" + spawnId + " (0x" + spawnId.ToString("x4") + ")");
+        DebugLog.Write(LogChannel.Opcodes, "Unk1 =" + unk1 + " (0x" + unk1.ToString("x4") + ")");
     }
 
 }

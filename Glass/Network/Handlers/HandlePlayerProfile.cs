@@ -1,7 +1,8 @@
-﻿using System;
-using System.Buffers.Binary;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
+using System;
+using System.Buffers.Binary;
 
 namespace Glass.Network.Handlers;
 
@@ -63,7 +64,7 @@ public class HandlePlayerProfile : IHandleOpcodes
     {
         if (length < 4)
         {
-            DebugLog.Write(_opcodeName + " too short, length=" + length);
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " too short, length=" + length);
             return;
         }
 
@@ -95,11 +96,11 @@ public class HandlePlayerProfile : IHandleOpcodes
         int copperCarried = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(0x4bf7));
 
 
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
             + _opcodeName + " length=" + length);
-        DebugLog.Write("Name: " + name + ", " + level + " " + className);
-        DebugLog.Write("HP: " + hitpoints + ", Mana: " + mana + ", " + platinumCarried + "pp/" + goldCarried + "gp/" + silverCarried + "sp/" + copperCarried + "cp");
-        DebugLog.Write("Str: " + strength + ", Cha: " + charisma + ", Dex: " + dexterity + ", Int: " + intelligence + ", Agi: " + agility + ", Wis: " + wisdom);
+        DebugLog.Write(LogChannel.Opcodes, "Name: " + name + ", " + level + " " + className);
+        DebugLog.Write(LogChannel.Opcodes, "HP: " + hitpoints + ", Mana: " + mana + ", " + platinumCarried + "pp/" + goldCarried + "gp/" + silverCarried + "sp/" + copperCarried + "cp");
+        DebugLog.Write(LogChannel.Opcodes, "Str: " + strength + ", Cha: " + charisma + ", Dex: " + dexterity + ", Int: " + intelligence + ", Agi: " + agility + ", Wis: " + wisdom);
     }
     private int FindNullTerminator(ReadOnlySpan<byte> data, int length)
     {
@@ -116,7 +117,7 @@ public class HandlePlayerProfile : IHandleOpcodes
 
         if (nullPos < 0)
         {
-            DebugLog.Write(_opcodeName + ": no null terminator found");
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + ": no null terminator found");
             return -1;
         }
 
@@ -159,7 +160,7 @@ public class HandlePlayerProfile : IHandleOpcodes
             return name;
         }
 
-        DebugLog.Write($"[GetClassName] classId=0x{classId:X2} not in map, returning 'Unknown'");
+        DebugLog.Write(LogChannel.Opcodes, $"[GetClassName] classId=0x{classId:X2} not in map, returning 'Unknown'");
         return $"Unknown(0x{classId:X2})";
     }
 }

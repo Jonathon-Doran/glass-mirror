@@ -1,10 +1,10 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
+using Glass.Data.Models;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-
-using Glass.Data.Models;
 
 namespace Glass.Controls;
 
@@ -251,7 +251,7 @@ public class KeyboardLayoutControl : Control
     {
         if (Keys == null)
         {
-            DebugLog.Write("KeyboardLayoutControl.UpdateKey: Keys dictionary is null, ignoring.");
+            DebugLog.Write(LogChannel.Input, "KeyboardLayoutControl.UpdateKey: Keys dictionary is null, ignoring.");
             return;
         }
 
@@ -260,7 +260,7 @@ public class KeyboardLayoutControl : Control
         Grid? activeGrid = GetActiveGrid();
         if (activeGrid == null)
         {
-            DebugLog.Write("KeyboardLayoutControl.UpdateKey: no active grid.");
+            DebugLog.Write(LogChannel.Input, "KeyboardLayoutControl.UpdateKey: no active grid.");
             return;
         }
 
@@ -270,7 +270,7 @@ public class KeyboardLayoutControl : Control
 
         if (cell == null)
         {
-            DebugLog.Write($"KeyboardLayoutControl.UpdateKey: key='{keyDisplay.KeyName}' not found in grid.");
+            DebugLog.Write(LogChannel.Input, $"KeyboardLayoutControl.UpdateKey: key='{keyDisplay.KeyName}' not found in grid.");
             return;
         }
 
@@ -279,7 +279,7 @@ public class KeyboardLayoutControl : Control
         cell.IsSelected = keyDisplay.IsSelected;
         cell.IsPressed = keyDisplay.IsPressed;
 
-        DebugLog.Write($"KeyboardLayoutControl.UpdateKey: key='{keyDisplay.KeyName}' updated.");
+        DebugLog.Write(LogChannel.Input, $"KeyboardLayoutControl.UpdateKey: key='{keyDisplay.KeyName}' updated.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -292,7 +292,7 @@ public class KeyboardLayoutControl : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void ClearKey(string keyName)
     {
-        DebugLog.Write($"KeyboardLayoutControl.ClearKey: key='{keyName}'.");
+        DebugLog.Write(LogChannel.Input, $"KeyboardLayoutControl.ClearKey: key='{keyName}'.");
 
         if (Keys != null)
         {
@@ -319,7 +319,7 @@ public class KeyboardLayoutControl : Control
         cell.IsSelected = false;
         cell.IsPressed = false;
 
-        DebugLog.Write($"KeyboardLayoutControl.ClearKey: key='{keyName}' cleared.");
+        DebugLog.Write(LogChannel.Input, $"KeyboardLayoutControl.ClearKey: key='{keyName}' cleared.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -332,7 +332,7 @@ public class KeyboardLayoutControl : Control
     {
         if ((_g13Grid == null) && (_g15Grid == null) && (_x36Grid == null))
         {
-            DebugLog.Write("KeyboardLayoutControl.RebuildGrid: template not yet applied, deferring.");
+            DebugLog.Write(LogChannel.Input, "KeyboardLayoutControl.RebuildGrid: template not yet applied, deferring.");
             return;
         }
 
@@ -365,7 +365,7 @@ public class KeyboardLayoutControl : Control
 
         if (activeGrid == null)
         {
-            DebugLog.Write("KeyboardLayoutControl.UpdateChildShowLabel: no active grid.");
+            DebugLog.Write(LogChannel.Input, "KeyboardLayoutControl.UpdateChildShowLabel: no active grid.");
             return;
         }
 
@@ -387,7 +387,7 @@ public class KeyboardLayoutControl : Control
 
         if (activeGrid == null)
         {
-            DebugLog.Write("KeyboardLayoutControl.RefreshKeys: no active grid, returning.");
+            DebugLog.Write(LogChannel.Input, "KeyboardLayoutControl.RefreshKeys: no active grid, returning.");
             return;
         }
 

@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Microsoft.Data.Sqlite;
 
@@ -23,7 +24,7 @@ public class ProfilePageRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<ProfilePage> GetPagesForProfile(int profileId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"ProfilePageRepository.GetPagesForProfile: characterSetId={profileId}.");
+        DebugLog.Write(LogChannel.Database, $"ProfilePageRepository.GetPagesForProfile: characterSetId={profileId}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -53,7 +54,7 @@ public class ProfilePageRepository
             });
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"ProfilePageRepository.GetPagesForProfile: found {pages.Count} pages.");
+        DebugLog.Write(LogChannel.Database, $"ProfilePageRepository.GetPagesForProfile: found {pages.Count} pages.");
         return pages;
     }
 
@@ -68,7 +69,7 @@ public class ProfilePageRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void SetPagesForProfile(int characterSetId, List<ProfilePage> pages)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"ProfilePageRepository.SetPagesForProfile: characterSetId={characterSetId} count={pages.Count}.");
+        DebugLog.Write(LogChannel.Database, $"ProfilePageRepository.SetPagesForProfile: characterSetId={characterSetId} count={pages.Count}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -96,12 +97,12 @@ public class ProfilePageRepository
             }
 
             tx.Commit();
-            DebugLog.Write(DebugLog.Log_Database, $"ProfilePageRepository.SetPagesForProfile: committed.");
+            DebugLog.Write(LogChannel.Database, $"ProfilePageRepository.SetPagesForProfile: committed.");
         }
         catch (Exception ex)
         {
             tx.Rollback();
-            DebugLog.Write(DebugLog.Log_Database, $"ProfilePageRepository.SetPagesForProfile: exception: {ex.Message}, rolling back.");
+            DebugLog.Write(LogChannel.Database, $"ProfilePageRepository.SetPagesForProfile: exception: {ex.Message}, rolling back.");
             throw;
         }
     }

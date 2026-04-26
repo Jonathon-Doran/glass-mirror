@@ -3,6 +3,7 @@ using Glass.Network.Protocol;
 using Glass.Network.Capture;
 using static Glass.Network.Protocol.SoeConstants;
 using System.Runtime.InteropServices;
+using Glass.Core.Logging;
 
 namespace Glass.Core;
 
@@ -153,7 +154,7 @@ public class SessionRegistry
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void OnSessionDisconnected(string sessionName)
     {
-        DebugLog.Write(DebugLog.Log_Sessions, $"SessionRegistry.OnSessionDisconnected: session={sessionName} count will be={_sessionCount - 1}.");
+        DebugLog.Write(LogChannel.Sessions, $"SessionRegistry.OnSessionDisconnected: session={sessionName} count will be={_sessionCount - 1}.");
 
         lock (_lock)
         {
@@ -165,7 +166,7 @@ public class SessionRegistry
         if (_sessionCount <= 0)
         {
             _sessionCount = 0;
-            DebugLog.Write(DebugLog.Log_Sessions, "SessionRegistry.OnSessionDisconnected: all sessions disconnected.");
+            DebugLog.Write(LogChannel.Sessions, "SessionRegistry.OnSessionDisconnected: all sessions disconnected.");
             AllSessionsDisconnected?.Invoke();
         }
     }
@@ -272,7 +273,7 @@ public class SessionRegistry
                 connection = new Connection(localPort, _arqSeqGiveUp, _appPacketHandler);
                 _connectionsByPort[localPort] = connection;
 
-                DebugLog.Write(DebugLog.Log_Sessions,
+                DebugLog.Write(LogChannel.Sessions,
                     "SessionRegistry.GetConnection: new connection on port " + localPort
                     + ", connections=" + _connectionsByPort.Count);
             }
@@ -316,7 +317,7 @@ public class SessionRegistry
         {
             if (!_connectionsByPort.TryGetValue(localPort, out Connection? connection))
             {
-                DebugLog.Write(DebugLog.Log_Sessions,
+                DebugLog.Write(LogChannel.Sessions,
                     "SessionRegistry.IdentifyConnection: no connection for port " + localPort
                     + ", character=" + characterName);
                 return;
@@ -324,7 +325,7 @@ public class SessionRegistry
 
             if (connection.ConnectionId >= 0)
             {
-                DebugLog.Write(DebugLog.Log_Sessions,
+                DebugLog.Write(LogChannel.Sessions,
                     "SessionRegistry.IdentifyConnection: port " + localPort
                     + " already identified as connectionId=" + connection.ConnectionId
                     + ", character=" + characterName);
@@ -344,7 +345,7 @@ public class SessionRegistry
                     _nextSessionId++;
                     pair.Value.CharacterName = characterName;
 
-                    DebugLog.Write(DebugLog.Log_Sessions,
+                    DebugLog.Write(LogChannel.Sessions,
                         "SessionRegistry.IdentifyConnection: port " + localPort
                         + " identified as character=" + characterName
                         + " session=" + pair.Value.SessionName
@@ -353,7 +354,7 @@ public class SessionRegistry
                 }
             }
 
-            DebugLog.Write(DebugLog.Log_Sessions,
+            DebugLog.Write(LogChannel.Sessions,
                 "SessionRegistry.IdentifyConnection: no SessionEntry for character="
                 + characterName + " on port " + localPort
                 + ", connection remains unidentified");

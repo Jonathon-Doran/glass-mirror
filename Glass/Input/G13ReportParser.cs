@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 
 namespace Glass.Input;
@@ -102,7 +103,7 @@ public class G13ReportParser : IParseHidReport, IParseHidAxes
 
         if ((report == null) || (report.Length < ReportLength))
         {
-            DebugLog.Write($"G13ReportParser.Parse: invalid report length={report?.Length ?? 0}.");
+            DebugLog.Write(LogChannel.Input, $"G13ReportParser.Parse: invalid report length={report?.Length ?? 0}.");
             return results;
         }
 
@@ -127,7 +128,7 @@ public class G13ReportParser : IParseHidReport, IParseHidAxes
 
             if (wasPressed != isPressed)
             {
-                DebugLog.Write($"G13ReportParser.Parse: key='{keyName}' isPressed={isPressed}.");
+                DebugLog.Write(LogChannel.Input, $"G13ReportParser.Parse: key='{keyName}' isPressed={isPressed}.");
                 results.Add(new HidKeyEventArgs(keyName, isPressed));
             }
         }

@@ -1,10 +1,11 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Client;
 using System;
 using System.Collections.Generic;
 using System.Net;
-using static Glass.Network.Protocol.SoeStream;
 using static Glass.Network.Protocol.SoeConstants;
+using static Glass.Network.Protocol.SoeStream;
 
 namespace Glass.Network.Protocol;
 
@@ -113,7 +114,7 @@ public class SessionDemux
 
         if (parts.Length != 4)
         {
-            DebugLog.Write("SessionDemux.IpToUInt32: invalid IP '" + ip + "'");
+            DebugLog.Write(LogChannel.LowNetwork, "SessionDemux.IpToUInt32: invalid IP '" + ip + "'");
             return 0;
         }
 

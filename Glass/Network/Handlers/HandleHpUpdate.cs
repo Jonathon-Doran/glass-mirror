@@ -1,7 +1,8 @@
-﻿using System;
-using System.Buffers.Binary;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
+using System;
+using System.Buffers.Binary;
 
 namespace Glass.Network.Handlers;
 
@@ -65,7 +66,7 @@ public class HandleHpUpdate : IHandleOpcodes
     {
         if (length < 18)
         {
-            DebugLog.Write("HPUpdate packet less than 18 bytes.  This is unusual");
+            DebugLog.Write(LogChannel.Opcodes, "HPUpdate packet less than 18 bytes.  This is unusual");
             return;
         }
 
@@ -73,9 +74,9 @@ public class HandleHpUpdate : IHandleOpcodes
         int currentHP = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(2));
         int maxHP = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(10));
 
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
             + _opcodeName + " length=" + length);
-        DebugLog.Write("HP at " + currentHP + " / " + maxHP);
+        DebugLog.Write(LogChannel.Opcodes, "HP at " + currentHP + " / " + maxHP);
     }
 }
 

@@ -1,5 +1,6 @@
 ﻿using Glass.Controls;
 using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Microsoft.Data.Sqlite;
 
@@ -22,7 +23,7 @@ public class KeyBindingRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<KeyBinding> GetBindingsForPage(int keyPageId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"KeyBindingRepository.GetBindingsForPage: keyPageId={keyPageId}.");
+        DebugLog.Write(LogChannel.Database, $"KeyBindingRepository.GetBindingsForPage: keyPageId={keyPageId}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -67,7 +68,7 @@ public class KeyBindingRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Save(KeyBinding binding)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"KeyBindingRepository.Save: keyPageId={binding.KeyPageId} key='{binding.Key}' commandId={binding.CommandId} target={binding.Target} relayGroupId={binding.RelayGroupId} roundRobin={binding.RoundRobin} label='{binding.Label}'.");
+        DebugLog.Write(LogChannel.Database, $"KeyBindingRepository.Save: keyPageId={binding.KeyPageId} key='{binding.Key}' commandId={binding.CommandId} target={binding.Target} relayGroupId={binding.RelayGroupId} roundRobin={binding.RoundRobin} label='{binding.Label}'.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -90,7 +91,7 @@ public class KeyBindingRepository
             cmd.Parameters.AddWithValue("@repeatIntervalMs", binding.RepeatIntervalMs);
 
             binding.Id = Convert.ToInt32(cmd.ExecuteScalar());
-            DebugLog.Write(DebugLog.Log_Database, $"KeyBindingRepository.Save: inserted. id={binding.Id}.");
+            DebugLog.Write(LogChannel.Database, $"KeyBindingRepository.Save: inserted. id={binding.Id}.");
         }
         else
         {
@@ -110,7 +111,7 @@ public class KeyBindingRepository
             cmd.Parameters.AddWithValue("@id", binding.Id); cmd.ExecuteNonQuery();
 
 
-            DebugLog.Write(DebugLog.Log_Database, $"KeyBindingRepository.Save: updated. id={binding.Id}.");
+            DebugLog.Write(LogChannel.Database, $"KeyBindingRepository.Save: updated. id={binding.Id}.");
         }
     }
 
@@ -123,7 +124,7 @@ public class KeyBindingRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Delete(int id)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"KeyBindingRepository.Delete: id={id}.");
+        DebugLog.Write(LogChannel.Database, $"KeyBindingRepository.Delete: id={id}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -133,6 +134,6 @@ public class KeyBindingRepository
         cmd.Parameters.AddWithValue("@id", id);
         cmd.ExecuteNonQuery();
 
-        DebugLog.Write(DebugLog.Log_Database, $"KeyBindingRepository.Delete: deleted. id={id}.");
+        DebugLog.Write(LogChannel.Database, $"KeyBindingRepository.Delete: deleted. id={id}.");
     }
 }

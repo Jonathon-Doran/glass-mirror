@@ -1,7 +1,8 @@
-﻿using System;
-using System.Buffers.Binary;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
+using System;
+using System.Buffers.Binary;
 namespace Glass.Network.Handlers;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // HandleNpcMove
@@ -69,7 +70,7 @@ public class HandleNpcMove : IHandleOpcodes
     {
         if (length < 14)
         {
-            DebugLog.Write(_opcodeName + " minimum length is 14, saw " + length);
+            DebugLog.Write(LogChannel.Opcodes, _opcodeName + " minimum length is 14, saw " + length);
             return;
         }
 
@@ -120,7 +121,7 @@ public class HandleNpcMove : IHandleOpcodes
         {
             if (reader.BitsRemaining < 12)
             {
-                DebugLog.Write(_opcodeName + " underrun reading pitch, bits remaining=" + reader.BitsRemaining);
+                DebugLog.Write(LogChannel.Opcodes, _opcodeName + " underrun reading pitch, bits remaining=" + reader.BitsRemaining);
                 return;
             }
             pitch = reader.ReadInt(12);
@@ -129,7 +130,7 @@ public class HandleNpcMove : IHandleOpcodes
         {
             if (reader.BitsRemaining < 10)
             {
-                DebugLog.Write(_opcodeName + " underrun reading headingDelta, bits remaining=" + reader.BitsRemaining);
+                DebugLog.Write(LogChannel.Opcodes, _opcodeName + " underrun reading headingDelta, bits remaining=" + reader.BitsRemaining);
                 return;
             }
             headingDelta = reader.ReadInt(10);
@@ -138,7 +139,7 @@ public class HandleNpcMove : IHandleOpcodes
         {
             if (reader.BitsRemaining < 10)
             {
-                DebugLog.Write(_opcodeName + " underrun reading velocity, bits remaining=" + reader.BitsRemaining);
+                DebugLog.Write(LogChannel.Opcodes, _opcodeName + " underrun reading velocity, bits remaining=" + reader.BitsRemaining);
                 return;
             }
             velocity = reader.ReadInt(10);
@@ -147,7 +148,7 @@ public class HandleNpcMove : IHandleOpcodes
         {
             if (reader.BitsRemaining < 13)
             {
-                DebugLog.Write(_opcodeName + " underrun reading dy, bits remaining=" + reader.BitsRemaining);
+                DebugLog.Write(LogChannel.Opcodes, _opcodeName + " underrun reading dy, bits remaining=" + reader.BitsRemaining);
                 return;
             }
             dy = reader.ReadInt(13);
@@ -156,7 +157,7 @@ public class HandleNpcMove : IHandleOpcodes
         {
             if (reader.BitsRemaining < 13)
             {
-                DebugLog.Write(_opcodeName + " underrun reading dx, bits remaining=" + reader.BitsRemaining);
+                DebugLog.Write(LogChannel.Opcodes, _opcodeName + " underrun reading dx, bits remaining=" + reader.BitsRemaining);
                 return;
             }
             dx = reader.ReadInt(13);
@@ -165,7 +166,7 @@ public class HandleNpcMove : IHandleOpcodes
         {
             if (reader.BitsRemaining < 13)
             {
-                DebugLog.Write(_opcodeName + " underrun reading dz, bits remaining=" + reader.BitsRemaining);
+                DebugLog.Write(LogChannel.Opcodes, _opcodeName + " underrun reading dz, bits remaining=" + reader.BitsRemaining);
                 return;
             }
             dz = reader.ReadInt(13);
@@ -203,7 +204,7 @@ public class HandleNpcMove : IHandleOpcodes
         }
 
         string timestamp = metadata.Timestamp.ToString("HH:mm:ss.fff");
-        DebugLog.Write("[" + timestamp + "] " + _opcodeName
+        DebugLog.Write(LogChannel.Opcodes, "[" + timestamp + "] " + _opcodeName
             + " SpawnId=0x" + spawnId.ToString("x4")
             + " pos=(" + x.ToString("F2") + "," + y.ToString("F2") + "," + z.ToString("F2") + ")"
             + " heading=" + headingDegrees.ToString("0.00")

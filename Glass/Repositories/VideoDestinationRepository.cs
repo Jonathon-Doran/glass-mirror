@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Microsoft.Data.Sqlite;
 
@@ -20,7 +21,7 @@ public class VideoDestinationRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<VideoDestination> GetAll()
     {
-        DebugLog.Write(DebugLog.Log_Database, "VideoDestinationRepository.GetAll: loading destinations.");
+        DebugLog.Write(LogChannel.Database, "VideoDestinationRepository.GetAll: loading destinations.");
 
         List<VideoDestination> destinations = new List<VideoDestination>();
 
@@ -46,7 +47,7 @@ public class VideoDestinationRepository
             destinations.Add(destination);
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"VideoDestinationRepository.GetAll: loaded {destinations.Count} destinations.");
+        DebugLog.Write(LogChannel.Database, $"VideoDestinationRepository.GetAll: loaded {destinations.Count} destinations.");
         return destinations;
     }
 
@@ -59,7 +60,7 @@ public class VideoDestinationRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<VideoDestination> GetByUISkin(int uiSkinId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"VideoDestinationRepository.GetByUISkin: uiSkinId={uiSkinId}.");
+        DebugLog.Write(LogChannel.Database, $"VideoDestinationRepository.GetByUISkin: uiSkinId={uiSkinId}.");
 
         List<VideoDestination> destinations = new List<VideoDestination>();
 
@@ -86,7 +87,7 @@ public class VideoDestinationRepository
             destinations.Add(destination);
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"VideoDestinationRepository.GetByUISkin: loaded {destinations.Count} destinations.");
+        DebugLog.Write(LogChannel.Database, $"VideoDestinationRepository.GetByUISkin: loaded {destinations.Count} destinations.");
         return destinations;
     }
 
@@ -100,7 +101,7 @@ public class VideoDestinationRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public VideoDestination? GetByNameAndSkin(string name, int uiSkinId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"VideoDestinationRepository.GetByNameAndSkin: name='{name}' uiSkinId={uiSkinId}.");
+        DebugLog.Write(LogChannel.Database, $"VideoDestinationRepository.GetByNameAndSkin: name='{name}' uiSkinId={uiSkinId}.");
 
         using SqliteConnection conn = Database.Instance.Connect();
         conn.Open();
@@ -123,11 +124,11 @@ public class VideoDestinationRepository
                 Width = reader.GetInt32(5),
                 Height = reader.GetInt32(6)
             };
-            DebugLog.Write(DebugLog.Log_Database, $"VideoDestinationRepository.GetByNameAndSkin: found id={destination.Id}.");
+            DebugLog.Write(LogChannel.Database, $"VideoDestinationRepository.GetByNameAndSkin: found id={destination.Id}.");
             return destination;
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"VideoDestinationRepository.GetByNameAndSkin: not found.");
+        DebugLog.Write(LogChannel.Database, $"VideoDestinationRepository.GetByNameAndSkin: not found.");
         return null;
     }
 
@@ -140,7 +141,7 @@ public class VideoDestinationRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Save(VideoDestination destination)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"VideoDestinationRepository.Save: name='{destination.Name}' uiSkinId={destination.UISkinId}.");
+        DebugLog.Write(LogChannel.Database, $"VideoDestinationRepository.Save: name='{destination.Name}' uiSkinId={destination.UISkinId}.");
 
         using SqliteConnection conn = Database.Instance.Connect();
         conn.Open();
@@ -156,7 +157,7 @@ public class VideoDestinationRepository
             cmd.Parameters.AddWithValue("@width", destination.Width);
             cmd.Parameters.AddWithValue("@height", destination.Height);
             destination.Id = Convert.ToInt32(cmd.ExecuteScalar());
-            DebugLog.Write(DebugLog.Log_Database, $"VideoDestinationRepository.Save: inserted id={destination.Id}.");
+            DebugLog.Write(LogChannel.Database, $"VideoDestinationRepository.Save: inserted id={destination.Id}.");
         }
         else
         {
@@ -170,7 +171,7 @@ public class VideoDestinationRepository
             cmd.Parameters.AddWithValue("@height", destination.Height);
             cmd.Parameters.AddWithValue("@id", destination.Id);
             cmd.ExecuteNonQuery();
-            DebugLog.Write(DebugLog.Log_Database, $"VideoDestinationRepository.Save: updated id={destination.Id}.");
+            DebugLog.Write(LogChannel.Database, $"VideoDestinationRepository.Save: updated id={destination.Id}.");
         }
     }
 
@@ -183,7 +184,7 @@ public class VideoDestinationRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Delete(int id)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"VideoDestinationRepository.Delete: id={id}.");
+        DebugLog.Write(LogChannel.Database, $"VideoDestinationRepository.Delete: id={id}.");
 
         using SqliteConnection conn = Database.Instance.Connect();
         conn.Open();
@@ -193,6 +194,6 @@ public class VideoDestinationRepository
         cmd.Parameters.AddWithValue("@id", id);
         cmd.ExecuteNonQuery();
 
-        DebugLog.Write(DebugLog.Log_Database, $"VideoDestinationRepository.Delete: deleted id={id}.");
+        DebugLog.Write(LogChannel.Database, $"VideoDestinationRepository.Delete: deleted id={id}.");
     }
 }

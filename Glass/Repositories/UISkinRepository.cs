@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Microsoft.Data.Sqlite;
 using System.Collections.Generic;
@@ -19,7 +20,7 @@ public class UISkinRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<UISkin> GetAll()
     {
-        DebugLog.Write(DebugLog.Log_Database, "UISkinRepository.GetAll: loading all skins.");
+        DebugLog.Write(LogChannel.Database, "UISkinRepository.GetAll: loading all skins.");
 
         List<UISkin> skins = new List<UISkin>();
 
@@ -40,7 +41,7 @@ public class UISkinRepository
             skins.Add(skin);
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"UISkinRepository.GetAll: loaded {skins.Count} skins.");
+        DebugLog.Write(LogChannel.Database, $"UISkinRepository.GetAll: loaded {skins.Count} skins.");
         return skins;
     }
 
@@ -53,7 +54,7 @@ public class UISkinRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public UISkin? GetById(int id)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"UISkinRepository.GetById: id={id}.");
+        DebugLog.Write(LogChannel.Database, $"UISkinRepository.GetById: id={id}.");
 
         using var conn = Database.Instance.Connect();
         conn.Open();
@@ -70,11 +71,11 @@ public class UISkinRepository
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1)
             };
-            DebugLog.Write(DebugLog.Log_Database, $"UISkinRepository.GetById: found '{skin.Name}'.");
+            DebugLog.Write(LogChannel.Database, $"UISkinRepository.GetById: found '{skin.Name}'.");
             return skin;
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"UISkinRepository.GetById: id={id} not found.");
+        DebugLog.Write(LogChannel.Database, $"UISkinRepository.GetById: id={id} not found.");
         return null;
     }
 }

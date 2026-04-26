@@ -1,6 +1,7 @@
-﻿using System.IO;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
+using System.IO;
 
 namespace Glass.ClientUI;
 
@@ -53,7 +54,7 @@ public class HotbuttonFileGenerator
     public HotbuttonFileGenerator(string outputDirectory)
     {
         _outputDirectory = outputDirectory;
-        DebugLog.Write(DebugLog.Log_Database, $"HotbuttonFileGenerator: outputDirectory='{outputDirectory}'.");
+        DebugLog.Write(LogChannel.Database, $"HotbuttonFileGenerator: outputDirectory='{outputDirectory}'.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -78,7 +79,7 @@ public class HotbuttonFileGenerator
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Generate(Character character)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"HotbuttonFileGenerator.Generate: character='{character.Name}' class={character.Class}.");
+        DebugLog.Write(LogChannel.Database, $"HotbuttonFileGenerator.Generate: character='{character.Name}' class={character.Class}.");
 
         string fileName = GetFileName(character);
         string outputPath = Path.Combine(_outputDirectory, fileName);
@@ -91,7 +92,7 @@ public class HotbuttonFileGenerator
         WriteHotButtons4(writer);
         WriteKeyMaps(writer);
 
-        DebugLog.Write(DebugLog.Log_Database, $"HotbuttonFileGenerator.Generate: written to '{outputPath}'.");
+        DebugLog.Write(LogChannel.Database, $"HotbuttonFileGenerator.Generate: written to '{outputPath}'.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -104,7 +105,7 @@ public class HotbuttonFileGenerator
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void WriteSocials(StreamWriter writer, Character character)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"HotbuttonFileGenerator.WriteSocials: character='{character.Name}' class={character.Class}.");
+        DebugLog.Write(LogChannel.Database, $"HotbuttonFileGenerator.WriteSocials: character='{character.Name}' class={character.Class}.");
 
         writer.WriteLine("[Socials]");
 

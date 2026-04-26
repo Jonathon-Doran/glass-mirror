@@ -1,7 +1,8 @@
-﻿using System;
-using System.Buffers.Binary;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
+using System;
+using System.Buffers.Binary;
 
 namespace Glass.Network.Handlers;
 
@@ -65,7 +66,7 @@ public class HandleManaUpdate : IHandleOpcodes
     {
         if (length < 10)
         {
-            DebugLog.Write("ManaUpdate packet less than 10 bytes.  This is unusual");
+            DebugLog.Write(LogChannel.Opcodes, "ManaUpdate packet less than 10 bytes.  This is unusual");
             return;
         }
 
@@ -75,9 +76,9 @@ public class HandleManaUpdate : IHandleOpcodes
 
 
 
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
             + _opcodeName + " length=" + length);
-        DebugLog.Write("Mana at " + currentMana + " / " + maxMana);
+        DebugLog.Write(LogChannel.Opcodes, "Mana at " + currentMana + " / " + maxMana);
     }
 }
 

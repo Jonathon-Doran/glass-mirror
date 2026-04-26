@@ -1,4 +1,5 @@
 using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
 using System;
 using static Glass.Network.Protocol.SoeConstants;
@@ -71,7 +72,7 @@ public class Connection : IDisposable
             _streams[streamId].OnAppPacket = _handler;
         }
 
-        DebugLog.Write("Connection: created for local port " + _localPort);
+        DebugLog.Write(LogChannel.LowNetwork, "Connection: created for local port " + _localPort);
     }
 
     public int ConnectionId
@@ -121,7 +122,7 @@ public class Connection : IDisposable
     ///////////////////////////////////////////////////////////////////////////////////////////////
     private void PropagateClose(uint sessionId, StreamId fromStream)
     {
-        DebugLog.Write("Connection.PropagateClose [port " + _localPort
+        DebugLog.Write(LogChannel.LowNetwork, "Connection.PropagateClose [port " + _localPort
             + "]: session=0x" + sessionId.ToString("X8")
             + " from " + SoeConstants.StreamNames[fromStream]);
 
@@ -150,7 +151,7 @@ public class Connection : IDisposable
 
             _disposed = true;
 
-            DebugLog.Write("Connection.Dispose: disposed client on port " + _localPort);
+            DebugLog.Write(LogChannel.LowNetwork, "Connection.Dispose: disposed client on port " + _localPort);
         }
     }
 

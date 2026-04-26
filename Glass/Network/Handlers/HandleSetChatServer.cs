@@ -1,7 +1,8 @@
-﻿using System;
-using System.Buffers.Binary;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
+using System;
+using System.Buffers.Binary;
 using static Glass.Network.Protocol.SoeConstants;
 
 namespace Glass.Network.Handlers;
@@ -73,7 +74,7 @@ public class HandleSetChatServer : IHandleOpcodes
 
         if (fields.Length < 4)
         {
-            DebugLog.Write("HandleSetChatServer: malformed payload, field count="
+            DebugLog.Write(LogChannel.Opcodes, "HandleSetChatServer: malformed payload, field count="
                 + fields.Length + " raw='" + payload + "'");
             return;
         }
@@ -87,7 +88,7 @@ public class HandleSetChatServer : IHandleOpcodes
 
         if (dotIndex < 0)
         {
-            DebugLog.Write("HandleSetChatServer: no dot in server.character field: '"
+            DebugLog.Write(LogChannel.Opcodes, "HandleSetChatServer: no dot in server.character field: '"
                 + serverDotCharacter + "'");
             return;
         }
@@ -95,7 +96,7 @@ public class HandleSetChatServer : IHandleOpcodes
         string serverName = serverDotCharacter.Substring(0, dotIndex);
         string characterName = serverDotCharacter.Substring(dotIndex + 1);
 
-        DebugLog.Write("HandleSetChatServer: server=" + serverName
+        DebugLog.Write(LogChannel.Opcodes, "HandleSetChatServer: server=" + serverName
             + " character=" + characterName
             + " chatServer=" + chatServer
             + " chatPort=" + chatPort
@@ -105,7 +106,7 @@ public class HandleSetChatServer : IHandleOpcodes
         if (metadata.SessionId == -1)
         {
             GlassContext.SessionRegistry.IdentifyConnection(characterName, metadata);
-            DebugLog.Write("identifying port " + metadata.DestPort + " as " +
+            DebugLog.Write(LogChannel.Opcodes, "identifying port " + metadata.DestPort + " as " +
                 characterName);
         }
     }

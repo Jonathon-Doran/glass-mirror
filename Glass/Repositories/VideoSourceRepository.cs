@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Microsoft.Data.Sqlite;
 
@@ -20,7 +21,7 @@ public class VideoSourceRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<VideoSource> GetAll()
     {
-        DebugLog.Write(DebugLog.Log_Database, "VideoSourceRepository.GetAll: loading sources.");
+        DebugLog.Write(LogChannel.Database, "VideoSourceRepository.GetAll: loading sources.");
 
         List<VideoSource> sources = new List<VideoSource>();
 
@@ -46,7 +47,7 @@ public class VideoSourceRepository
             sources.Add(source);
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"VideoSourceRepository.GetAll: loaded {sources.Count} sources.");
+        DebugLog.Write(LogChannel.Database, $"VideoSourceRepository.GetAll: loaded {sources.Count} sources.");
         return sources;
     }
 
@@ -59,7 +60,7 @@ public class VideoSourceRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public VideoSource? GetById(int id)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"VideoSourceRepository.GetById: id={id}.");
+        DebugLog.Write(LogChannel.Database, $"VideoSourceRepository.GetById: id={id}.");
 
         using SqliteConnection conn = Database.Instance.Connect();
         conn.Open();
@@ -81,11 +82,11 @@ public class VideoSourceRepository
                 Width = reader.GetInt32(5),
                 Height = reader.GetInt32(6)
             };
-            DebugLog.Write(DebugLog.Log_Database, $"VideoSourceRepository.GetById: found '{source.Name}'.");
+            DebugLog.Write(LogChannel.Database, $"VideoSourceRepository.GetById: found '{source.Name}'.");
             return source;
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"VideoSourceRepository.GetById: id={id} not found.");
+        DebugLog.Write(LogChannel.Database, $"VideoSourceRepository.GetById: id={id} not found.");
         return null;
     }
 
@@ -98,7 +99,7 @@ public class VideoSourceRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Save(VideoSource source)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"VideoSourceRepository.Save: name='{source.Name}' uiSkinId={source.UISkinId}.");
+        DebugLog.Write(LogChannel.Database, $"VideoSourceRepository.Save: name='{source.Name}' uiSkinId={source.UISkinId}.");
 
         using SqliteConnection conn = Database.Instance.Connect();
         conn.Open();
@@ -114,7 +115,7 @@ public class VideoSourceRepository
             cmd.Parameters.AddWithValue("@width", source.Width);
             cmd.Parameters.AddWithValue("@height", source.Height);
             source.Id = Convert.ToInt32(cmd.ExecuteScalar());
-            DebugLog.Write(DebugLog.Log_Database, $"VideoSourceRepository.Save: inserted id={source.Id}.");
+            DebugLog.Write(LogChannel.Database, $"VideoSourceRepository.Save: inserted id={source.Id}.");
         }
         else
         {
@@ -128,7 +129,7 @@ public class VideoSourceRepository
             cmd.Parameters.AddWithValue("@height", source.Height);
             cmd.Parameters.AddWithValue("@id", source.Id);
             cmd.ExecuteNonQuery();
-            DebugLog.Write(DebugLog.Log_Database, $"VideoSourceRepository.Save: updated id={source.Id}.");
+            DebugLog.Write(LogChannel.Database, $"VideoSourceRepository.Save: updated id={source.Id}.");
         }
     }
 
@@ -141,7 +142,7 @@ public class VideoSourceRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public List<VideoSource> GetByUISkin(int uiSkinId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"VideoSourceRepository.GetByUISkin: uiSkinId={uiSkinId}.");
+        DebugLog.Write(LogChannel.Database, $"VideoSourceRepository.GetByUISkin: uiSkinId={uiSkinId}.");
 
         List<VideoSource> sources = new List<VideoSource>();
 
@@ -168,7 +169,7 @@ public class VideoSourceRepository
             sources.Add(source);
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"VideoSourceRepository.GetByUISkin: loaded {sources.Count} sources.");
+        DebugLog.Write(LogChannel.Database, $"VideoSourceRepository.GetByUISkin: loaded {sources.Count} sources.");
         return sources;
     }
 
@@ -182,7 +183,7 @@ public class VideoSourceRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Delete(int id)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"VideoSourceRepository.Delete: id={id}.");
+        DebugLog.Write(LogChannel.Database, $"VideoSourceRepository.Delete: id={id}.");
 
         using SqliteConnection conn = Database.Instance.Connect();
         conn.Open();
@@ -192,6 +193,6 @@ public class VideoSourceRepository
         cmd.Parameters.AddWithValue("@id", id);
         int rows = cmd.ExecuteNonQuery();
 
-        DebugLog.Write(DebugLog.Log_Database, $"VideoSourceRepository.Delete: {rows} row(s) deleted for id={id}.");
+        DebugLog.Write(LogChannel.Database, $"VideoSourceRepository.Delete: {rows} row(s) deleted for id={id}.");
     }
 }

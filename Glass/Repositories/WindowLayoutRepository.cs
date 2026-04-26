@@ -1,7 +1,8 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
-using Microsoft.Data.Sqlite;
 using Glass.UI.ViewModels;
+using Microsoft.Data.Sqlite;
 
 namespace Glass.Data.Repositories;
 using Monitor = Glass.Data.Models.Monitor;
@@ -82,12 +83,12 @@ public class WindowLayoutRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public int GetClientWidth(int layoutId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.GetClientWidth: layoutId={layoutId}.");
+        DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.GetClientWidth: layoutId={layoutId}.");
 
         WindowLayout? layout = GetLayoutById(layoutId);
         if (layout == null || layout.Monitors == null || layout.Monitors.Count == 0)
         {
-            DebugLog.Write(DebugLog.Log_Database, "WindowLayoutRepository.GetClientWidth: layout has no monitors.");
+            DebugLog.Write(LogChannel.Database, "WindowLayoutRepository.GetClientWidth: layout has no monitors.");
             return 0;
         }
 
@@ -97,11 +98,11 @@ public class WindowLayoutRepository
 
         if (monitor == null)
         {
-            DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.GetClientWidth: monitor id {monitorId} not found.");
+            DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.GetClientWidth: monitor id {monitorId} not found.");
             return 0;
         }
 
-        DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.GetClientWidth: returning width={monitor.Width}.");
+        DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.GetClientWidth: returning width={monitor.Width}.");
         return monitor.Width;
     }
 
@@ -308,7 +309,7 @@ public class WindowLayoutRepository
         }
         catch (Exception ex)
         {
-            DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.Save: exception: {ex.Message}, rolling back.");
+            DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.Save: exception: {ex.Message}, rolling back.");
             tx.Rollback();
             throw;
         }
@@ -337,7 +338,7 @@ public class WindowLayoutRepository
 
         if (layout == null)
         {
-            DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.GetLayoutById: layoutId={layoutId} not found.");
+            DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.GetLayoutById: layoutId={layoutId} not found.");
         }
 
         return layout;
@@ -353,12 +354,12 @@ public class WindowLayoutRepository
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void SetUISkinId(int layoutId, int? uiSkinId)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.SetUISkinId: layoutId={layoutId} uiSkinId={uiSkinId?.ToString() ?? "null"}.");
+        DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.SetUISkinId: layoutId={layoutId} uiSkinId={uiSkinId?.ToString() ?? "null"}.");
 
         WindowLayout? layout = _layouts.FirstOrDefault(l => l.Id == layoutId);
         if (layout == null)
         {
-            DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.SetUISkinId: layoutId={layoutId} not found.");
+            DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.SetUISkinId: layoutId={layoutId} not found.");
             return;
         }
 
@@ -373,7 +374,7 @@ public class WindowLayoutRepository
 
         layout.UISkinId = uiSkinId;
 
-        DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.SetUISkinId: updated.");
+        DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.SetUISkinId: updated.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -388,7 +389,7 @@ public class WindowLayoutRepository
     {
         if (!_placementCache.TryGetValue(layoutId, out List<SlotPlacement>? placements))
         {
-            DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.GetSlotPlacements: layoutId={layoutId} not found in cache.");
+            DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.GetSlotPlacements: layoutId={layoutId} not found in cache.");
             return new List<SlotPlacement>();
         }
 
@@ -453,7 +454,7 @@ public class WindowLayoutRepository
         }
         catch (Exception ex)
         {
-            DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.SaveSlotPlacements: exception: {ex.Message}, rolling back.");
+            DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.SaveSlotPlacements: exception: {ex.Message}, rolling back.");
             tx.Rollback();
             throw;
         }
@@ -513,7 +514,7 @@ public class WindowLayoutRepository
 
         if (layout == null)
         {
-            DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.Rename: layoutId={layoutId} not found in cache, aborting.");
+            DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.Rename: layoutId={layoutId} not found in cache, aborting.");
             return;
         }
 
@@ -544,7 +545,7 @@ public class WindowLayoutRepository
 
         if (layout == null)
         {
-            DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.Delete: layoutId={layoutId} not found in cache, aborting.");
+            DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.Delete: layoutId={layoutId} not found in cache, aborting.");
             return;
         }
 
@@ -612,7 +613,7 @@ public class WindowLayoutRepository
     {
         if (!_monitorCache.TryGetValue(layoutId, out List<LayoutMonitorSettings>? monitors))
         {
-            DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.GetLayoutMonitors: layoutId={layoutId} not found in cache.");
+            DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.GetLayoutMonitors: layoutId={layoutId} not found in cache.");
             return new List<LayoutMonitorSettings>();
         }
 
@@ -671,7 +672,7 @@ public class WindowLayoutRepository
         }
         catch (Exception ex)
         {
-            DebugLog.Write(DebugLog.Log_Database, $"WindowLayoutRepository.SaveLayoutMonitors: exception: {ex.Message}, rolling back.");
+            DebugLog.Write(LogChannel.Database, $"WindowLayoutRepository.SaveLayoutMonitors: exception: {ex.Message}, rolling back.");
             tx.Rollback();
             throw;
         }

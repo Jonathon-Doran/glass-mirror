@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
 using System.Windows;
@@ -30,14 +31,14 @@ public partial class ManageCommandsDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadCommandList()
     {
-        DebugLog.Write("ManageCommandsDialog.LoadCommandList: loading.");
+        DebugLog.Write(LogChannel.Database, "ManageCommandsDialog.LoadCommandList: loading.");
 
         var repo = new CommandRepository();
         var commands = repo.GetAllCommands();
 
         CommandListView.ItemsSource = commands;
 
-        DebugLog.Write($"ManageCommandsDialog.LoadCommandList: loaded {commands.Count} commands.");
+        DebugLog.Write(LogChannel.Database, $"ManageCommandsDialog.LoadCommandList: loaded {commands.Count} commands.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,7 +50,7 @@ public partial class ManageCommandsDialog : Window
     {
         if (_selectedCommand == null)
         {
-            DebugLog.Write("ManageCommandsDialog.LoadStepList: no command selected.");
+            DebugLog.Write(LogChannel.Database, "ManageCommandsDialog.LoadStepList: no command selected.");
             StepListView.ItemsSource = null;
             return;
         }
@@ -61,7 +62,7 @@ public partial class ManageCommandsDialog : Window
 
         if (command == null)
         {
-            DebugLog.Write($"ManageCommandsDialog.LoadStepList: command {_selectedCommand.Id} not found.");
+            DebugLog.Write(LogChannel.Database, $"ManageCommandsDialog.LoadStepList: command {_selectedCommand.Id} not found.");
             StepListView.ItemsSource = null;
             return;
         }
@@ -78,7 +79,7 @@ public partial class ManageCommandsDialog : Window
                 DisplayText = $"{i + 1}. {s.Type}{(s.Type == "key" && s.PressType != "press" ? $" [{s.PressType}]" : string.Empty)}: {s.Value}" + (s.DelayMs > 0 ? $" (followed by {s.DelayMs / 1000.0}s delay)" : "")
             }).ToList();
 
-        DebugLog.Write($"ManageCommandsDialog.LoadStepList: loaded {command.Steps.Count} steps.");
+        DebugLog.Write(LogChannel.Database, $"ManageCommandsDialog.LoadStepList: loaded {command.Steps.Count} steps.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -90,7 +91,7 @@ public partial class ManageCommandsDialog : Window
     {
         if (CommandListView.SelectedItem is not Command command)
         {
-            DebugLog.Write("ManageCommandsDialog.CommandListView_SelectionChanged: no command selected.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.CommandListView_SelectionChanged: no command selected.");
             _selectedCommand = null;
             CommandNameTextBox.Text = string.Empty;
             LabelTextBox.Text = string.Empty;
@@ -98,7 +99,7 @@ public partial class ManageCommandsDialog : Window
             return;
         }
 
-        DebugLog.Write($"ManageCommandsDialog.CommandListView_SelectionChanged: command='{command.Name}'.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.CommandListView_SelectionChanged: command='{command.Name}'.");
 
         _selectedCommand = command;
         _nameBeforeEdit = command.Name;
@@ -131,7 +132,7 @@ public partial class ManageCommandsDialog : Window
     {
         if (e.Key == Key.Enter)
         {
-            DebugLog.Write("ManageCommandsDialog.CommandNameTextBox_KeyDown: Enter pressed, committing rename.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.CommandNameTextBox_KeyDown: Enter pressed, committing rename.");
             _suppressNameLostFocus = true;
             CommitRename();
             _suppressNameLostFocus = false;
@@ -140,7 +141,7 @@ public partial class ManageCommandsDialog : Window
         }
         else if (e.Key == Key.Escape)
         {
-            DebugLog.Write("ManageCommandsDialog.CommandNameTextBox_KeyDown: Escape pressed, cancelling rename.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.CommandNameTextBox_KeyDown: Escape pressed, cancelling rename.");
             _suppressNameLostFocus = true;
             CommandNameTextBox.Text = _nameBeforeEdit;
             _suppressNameLostFocus = false;
@@ -158,11 +159,11 @@ public partial class ManageCommandsDialog : Window
     {
         if (_suppressNameLostFocus)
         {
-            DebugLog.Write("ManageCommandsDialog.CommandNameTextBox_LostFocus: suppressed.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.CommandNameTextBox_LostFocus: suppressed.");
             return;
         }
 
-        DebugLog.Write("ManageCommandsDialog.CommandNameTextBox_LostFocus: committing.");
+        DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.CommandNameTextBox_LostFocus: committing.");
         CommitRename();
     }
 
@@ -177,7 +178,7 @@ public partial class ManageCommandsDialog : Window
     {
         if (_selectedCommand == null)
         {
-            DebugLog.Write("ManageCommandsDialog.CommitRename: no command selected, nothing to commit.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.CommitRename: no command selected, nothing to commit.");
             return;
         }
 
@@ -186,14 +187,14 @@ public partial class ManageCommandsDialog : Window
 
         if (string.IsNullOrWhiteSpace(newName))
         {
-            DebugLog.Write("ManageCommandsDialog.CommitRename: name is empty, restoring original.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.CommitRename: name is empty, restoring original.");
             CommandNameTextBox.Text = _nameBeforeEdit;
             return;
         }
 
         if ((newName == _selectedCommand.Name) && (newLabel == _selectedCommand.Label))
         {
-            DebugLog.Write("ManageCommandsDialog.CommitRename: no changes, skipping save.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.CommitRename: no changes, skipping save.");
             return;
         }
 
@@ -202,7 +203,7 @@ public partial class ManageCommandsDialog : Window
 
         if (existing.Any(c => (c.Name == newName) && (c.Id != _selectedCommand.Id)))
         {
-            DebugLog.Write($"ManageCommandsDialog.CommitRename: name '{newName}' already exists, restoring original.");
+            DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.CommitRename: name '{newName}' already exists, restoring original.");
             MessageBox.Show($"A command named '{newName}' already exists.", "Duplicate Name", MessageBoxButton.OK, MessageBoxImage.Warning);
             CommandNameTextBox.Text = _nameBeforeEdit;
             return;
@@ -212,7 +213,7 @@ public partial class ManageCommandsDialog : Window
         _selectedCommand.Label = newLabel;
         repo.SaveCommand(_selectedCommand);
 
-        DebugLog.Write($"ManageCommandsDialog.CommitRename: saved name='{newName}' label='{newLabel}'.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.CommitRename: saved name='{newName}' label='{newLabel}'.");
 
         int savedId = _selectedCommand.Id;
         _suppressNameLostFocus = true;
@@ -229,7 +230,7 @@ public partial class ManageCommandsDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ClearSelection()
     {
-        DebugLog.Write("ManageCommandsDialog.ClearSelection: clearing selection.");
+        DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.ClearSelection: clearing selection.");
 
         _selectedCommand = null;
         _nameBeforeEdit = string.Empty;
@@ -259,14 +260,14 @@ public partial class ManageCommandsDialog : Window
 
         if (item == null)
         {
-            DebugLog.Write("ManageCommandsDialog.CommandListView_MouseDown: click on empty space, clearing selection.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.CommandListView_MouseDown: click on empty space, clearing selection.");
             ClearSelection();
             return;
         }
 
         if ((item.DataContext as Command)?.Id == _selectedCommand?.Id)
         {
-            DebugLog.Write("ManageCommandsDialog.CommandListView_MouseDown: click on already-selected item, clearing selection.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.CommandListView_MouseDown: click on already-selected item, clearing selection.");
             ClearSelection();
             e.Handled = true;
         }
@@ -281,7 +282,7 @@ public partial class ManageCommandsDialog : Window
     {
         if (e.Key == Key.Escape)
         {
-            DebugLog.Write("ManageCommandsDialog.CommandListView_KeyDown: Escape pressed, clearing selection.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.CommandListView_KeyDown: Escape pressed, clearing selection.");
             ClearSelection();
             e.Handled = true;
         }
@@ -299,14 +300,14 @@ public partial class ManageCommandsDialog : Window
 
         if (_selectedCommand == null)
         {
-            DebugLog.Write($"ManageCommandsDialog.NewRename_Click: creating command name='{name}' label='{label}'.");
+            DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.NewRename_Click: creating command name='{name}' label='{label}'.");
 
             var repo = new CommandRepository();
             var existing = repo.GetAllCommands();
 
             if (existing.Any(c => c.Name == name))
             {
-                DebugLog.Write($"ManageCommandsDialog.NewRename_Click: name '{name}' already exists.");
+                DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.NewRename_Click: name '{name}' already exists.");
                 MessageBox.Show($"A command named '{name}' already exists.", "Duplicate Name", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -314,14 +315,14 @@ public partial class ManageCommandsDialog : Window
             var command = new Command { Name = name, Label = label };
             repo.SaveCommand(command);
 
-            DebugLog.Write($"ManageCommandsDialog.NewRename_Click: created. id={command.Id}.");
+            DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.NewRename_Click: created. id={command.Id}.");
 
             LoadCommandList();
             ClearSelection();
         }
         else
         {
-            DebugLog.Write($"ManageCommandsDialog.NewRename_Click: renaming '{_selectedCommand.Name}' to '{name}'.");
+            DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.NewRename_Click: renaming '{_selectedCommand.Name}' to '{name}'.");
             CommitRename();
         }
     }
@@ -335,11 +336,11 @@ public partial class ManageCommandsDialog : Window
     {
         if (_selectedCommand == null)
         {
-            DebugLog.Write("ManageCommandsDialog.DeleteCommand_Click: no command selected.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.DeleteCommand_Click: no command selected.");
             return;
         }
 
-        DebugLog.Write($"ManageCommandsDialog.DeleteCommand_Click: deleting command id={_selectedCommand.Id}.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.DeleteCommand_Click: deleting command id={_selectedCommand.Id}.");
 
         var result = MessageBox.Show($"Delete command '{_selectedCommand.Name}'?",
             "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
@@ -352,7 +353,7 @@ public partial class ManageCommandsDialog : Window
         var repo = new CommandRepository();
         repo.DeleteCommand(_selectedCommand.Id);
 
-        DebugLog.Write($"ManageCommandsDialog.DeleteCommand_Click: deleted.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.DeleteCommand_Click: deleted.");
 
         _selectedCommand = null;
         DeleteCommandButton.IsEnabled = false;
@@ -374,16 +375,16 @@ public partial class ManageCommandsDialog : Window
     {
         if (_selectedStep == null)
         {
-            DebugLog.Write("ManageCommandsDialog.DeleteStep_Click: no step selected.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.DeleteStep_Click: no step selected.");
             return;
         }
 
-        DebugLog.Write($"ManageCommandsDialog.DeleteStep_Click: deleting step id={_selectedStep.Id}.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.DeleteStep_Click: deleting step id={_selectedStep.Id}.");
 
         var repo = new CommandRepository();
         repo.DeleteStep(_selectedStep.Id);
 
-        DebugLog.Write($"ManageCommandsDialog.DeleteStep_Click: deleted.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.DeleteStep_Click: deleted.");
 
         _selectedStep = null;
         ClearStepSelection();
@@ -398,7 +399,7 @@ public partial class ManageCommandsDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ClearStepSelection()
     {
-        DebugLog.Write("ManageCommandsDialog.ClearStepSelection: clearing step selection.");
+        DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.ClearStepSelection: clearing step selection.");
 
         _selectedStep = null;
         StepListView.SelectedItem = null;
@@ -421,14 +422,14 @@ public partial class ManageCommandsDialog : Window
 
         if (item == null)
         {
-            DebugLog.Write("ManageCommandsDialog.StepListView_MouseDown: click on empty space, clearing selection.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.StepListView_MouseDown: click on empty space, clearing selection.");
             ClearStepSelection();
             return;
         }
 
         if ((item.DataContext as StepViewModel)?.Step.Id == _selectedStep?.Id)
         {
-            DebugLog.Write("ManageCommandsDialog.StepListView_MouseDown: click on already-selected step, clearing selection.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.StepListView_MouseDown: click on already-selected step, clearing selection.");
             ClearStepSelection();
             e.Handled = true;
         }
@@ -443,7 +444,7 @@ public partial class ManageCommandsDialog : Window
     {
         if (e.Key == Key.Escape)
         {
-            DebugLog.Write("ManageCommandsDialog.StepListView_KeyDown: Escape pressed, clearing selection.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.StepListView_KeyDown: Escape pressed, clearing selection.");
             ClearStepSelection();
             e.Handled = true;
         }
@@ -458,7 +459,7 @@ public partial class ManageCommandsDialog : Window
     {
         if (_selectedCommand == null)
         {
-            DebugLog.Write("ManageCommandsDialog.NewUpdateStep_Click: no command selected.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.NewUpdateStep_Click: no command selected.");
             return;
         }
 
@@ -469,7 +470,7 @@ public partial class ManageCommandsDialog : Window
 
         if (string.IsNullOrWhiteSpace(value))
         {
-            DebugLog.Write("ManageCommandsDialog.NewUpdateStep_Click: value is empty, ignoring.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.NewUpdateStep_Click: value is empty, ignoring.");
             MessageBox.Show("Please enter a value for the step.", "No Value", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -492,11 +493,11 @@ public partial class ManageCommandsDialog : Window
                 PressType = pressType,
             };
 
-            DebugLog.Write($"ManageCommandsDialog.NewUpdateStep_Click: creating step commandId={_selectedCommand.Id} sequence={nextSequence} type='{type}' value='{value}' delayMs={delayMs}.");
+            DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.NewUpdateStep_Click: creating step commandId={_selectedCommand.Id} sequence={nextSequence} type='{type}' value='{value}' delayMs={delayMs}.");
 
             repo.SaveStep(step);
 
-            DebugLog.Write($"ManageCommandsDialog.NewUpdateStep_Click: created. id={step.Id}.");
+            DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.NewUpdateStep_Click: created. id={step.Id}.");
         }
         else
         {
@@ -505,7 +506,7 @@ public partial class ManageCommandsDialog : Window
             _selectedStep.DelayMs = delayMs;
             _selectedStep.PressType = pressType;
 
-            DebugLog.Write($"ManageCommandsDialog.NewUpdateStep_Click: updating step id={_selectedStep.Id} type='{type}' value='{value}' delayMs={delayMs}.");
+            DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.NewUpdateStep_Click: updating step id={_selectedStep.Id} type='{type}' value='{value}' delayMs={delayMs}.");
 
             repo.SaveStep(_selectedStep);
         }
@@ -532,7 +533,7 @@ public partial class ManageCommandsDialog : Window
             return;
         }
         string type = (StepTypeComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? string.Empty;
-        DebugLog.Write($"ManageCommandsDialog.StepTypeComboBox_SelectionChanged: type='{type}'.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.StepTypeComboBox_SelectionChanged: type='{type}'.");
         PressTypeComboBox.Visibility = (type == "key") ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -546,7 +547,7 @@ public partial class ManageCommandsDialog : Window
     {
         if (_selectedStep == null || _selectedCommand == null)
         {
-            DebugLog.Write("ManageCommandsDialog.MoveStepUp_Click: no step or command selected.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.MoveStepUp_Click: no step or command selected.");
             return;
         }
 
@@ -555,11 +556,11 @@ public partial class ManageCommandsDialog : Window
 
         if (index <= 0)
         {
-            DebugLog.Write("ManageCommandsDialog.MoveStepUp_Click: already at top.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.MoveStepUp_Click: already at top.");
             return;
         }
 
-        DebugLog.Write($"ManageCommandsDialog.MoveStepUp_Click: moving step id={_selectedStep.Id} up.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.MoveStepUp_Click: moving step id={_selectedStep.Id} up.");
 
         var repo = new CommandRepository();
         int seqA = steps[index].Sequence;
@@ -568,15 +569,15 @@ public partial class ManageCommandsDialog : Window
 
         steps[index].Sequence = tempSeq;
         repo.SaveStep(steps[index]);
-        DebugLog.Write($"ManageCommandsDialog.MoveStepUp_Click: moved step id={steps[index].Id} to temp sequence {tempSeq}.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.MoveStepUp_Click: moved step id={steps[index].Id} to temp sequence {tempSeq}.");
 
         steps[index - 1].Sequence = seqA;
         repo.SaveStep(steps[index - 1]);
-        DebugLog.Write($"ManageCommandsDialog.MoveStepUp_Click: moved step id={steps[index - 1].Id} to sequence {seqA}.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.MoveStepUp_Click: moved step id={steps[index - 1].Id} to sequence {seqA}.");
 
         steps[index].Sequence = seqB;
         repo.SaveStep(steps[index]);
-        DebugLog.Write($"ManageCommandsDialog.MoveStepUp_Click: moved step id={steps[index].Id} to sequence {seqB}.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.MoveStepUp_Click: moved step id={steps[index].Id} to sequence {seqB}.");
 
         int selectedStepId = _selectedStep.Id;
 
@@ -596,7 +597,7 @@ public partial class ManageCommandsDialog : Window
     {
         if (_selectedStep == null || _selectedCommand == null)
         {
-            DebugLog.Write("ManageCommandsDialog.MoveStepDown_Click: no step or command selected.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.MoveStepDown_Click: no step or command selected.");
             return;
         }
 
@@ -605,11 +606,11 @@ public partial class ManageCommandsDialog : Window
 
         if (index >= steps.Count - 1)
         {
-            DebugLog.Write("ManageCommandsDialog.MoveStepDown_Click: already at bottom.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.MoveStepDown_Click: already at bottom.");
             return;
         }
 
-        DebugLog.Write($"ManageCommandsDialog.MoveStepDown_Click: moving step id={_selectedStep.Id} down.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.MoveStepDown_Click: moving step id={_selectedStep.Id} down.");
 
         var repo = new CommandRepository();
         int seqA = steps[index].Sequence;
@@ -618,15 +619,15 @@ public partial class ManageCommandsDialog : Window
 
         steps[index].Sequence = tempSeq;
         repo.SaveStep(steps[index]);
-        DebugLog.Write($"ManageCommandsDialog.MoveStepDown_Click: moved step id={steps[index].Id} to temp sequence {tempSeq}.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.MoveStepDown_Click: moved step id={steps[index].Id} to temp sequence {tempSeq}.");
 
         steps[index + 1].Sequence = seqA;
         repo.SaveStep(steps[index + 1]);
-        DebugLog.Write($"ManageCommandsDialog.MoveStepDown_Click: moved step id={steps[index + 1].Id} to sequence {seqA}.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.MoveStepDown_Click: moved step id={steps[index + 1].Id} to sequence {seqA}.");
 
         steps[index].Sequence = seqB;
         repo.SaveStep(steps[index]);
-        DebugLog.Write($"ManageCommandsDialog.MoveStepDown_Click: moved step id={steps[index].Id} to sequence {seqB}.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.MoveStepDown_Click: moved step id={steps[index].Id} to sequence {seqB}.");
 
         int selectedStepId = _selectedStep.Id;
 
@@ -645,12 +646,12 @@ public partial class ManageCommandsDialog : Window
     {
         if (StepListView.SelectedItem is not StepViewModel item)
         {
-            DebugLog.Write("ManageCommandsDialog.StepListView_SelectionChanged: no step selected.");
+            DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.StepListView_SelectionChanged: no step selected.");
             _selectedStep = null;
             return;
         }
 
-        DebugLog.Write($"ManageCommandsDialog.StepListView_SelectionChanged: step={item.Step.Sequence}.");
+        DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.StepListView_SelectionChanged: step={item.Step.Sequence}.");
 
         _selectedStep = item.Step;
         NewUpdateStepButton.Content = "Update";
@@ -664,7 +665,7 @@ public partial class ManageCommandsDialog : Window
         if (_selectedStep.Type == "pageload" && int.TryParse(_selectedStep.Value, out int pageId))
         {
             StepValueTextBox.Text = _selectedStep.Value;
-            DebugLog.Write($"ManageCommandsDialog.StepListView_SelectionChanged: resolved pageload id={pageId} to '{StepValueTextBox.Text}'.");
+            DebugLog.Write(LogChannel.Input, $"ManageCommandsDialog.StepListView_SelectionChanged: resolved pageload id={pageId} to '{StepValueTextBox.Text}'.");
         }
         else
         {
@@ -684,7 +685,7 @@ public partial class ManageCommandsDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Close_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ManageCommandsDialog.Close_Click: closing.");
+        DebugLog.Write(LogChannel.Input, "ManageCommandsDialog.Close_Click: closing.");
         Close();
     }
 

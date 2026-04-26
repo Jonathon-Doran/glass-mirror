@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using System.Windows;
 using System.Windows.Controls;
@@ -74,7 +75,7 @@ public class RelayGroupMatrix : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public override void OnApplyTemplate()
     {
-        DebugLog.Write("RelayGroupMatrix.OnApplyTemplate.");
+        DebugLog.Write(LogChannel.Input, "RelayGroupMatrix.OnApplyTemplate.");
 
         base.OnApplyTemplate();
 
@@ -91,7 +92,7 @@ public class RelayGroupMatrix : Control
         _labelGrid = GetTemplateChild(PartLabelGrid) as Grid;
         _grid = GetTemplateChild(PartGrid) as Grid;
 
-        DebugLog.Write($"RelayGroupMatrix.OnApplyTemplate: headerScrollViewer={_headerScrollViewer != null} labelScrollViewer={_labelScrollViewer != null} scrollViewer={_scrollViewer != null}.");
+        DebugLog.Write(LogChannel.Input, $"RelayGroupMatrix.OnApplyTemplate: headerScrollViewer={_headerScrollViewer != null} labelScrollViewer={_labelScrollViewer != null} scrollViewer={_scrollViewer != null}.");
 
         if (_scrollViewer != null)
         {
@@ -134,7 +135,7 @@ public class RelayGroupMatrix : Control
         List<Character> characters,
         HashSet<(int GroupId, int CharacterId)> membership)
     {
-        DebugLog.Write($"RelayGroupMatrix.Load: groups={groups.Count} characters={characters.Count} memberships={membership.Count}.");
+        DebugLog.Write(LogChannel.Input, $"RelayGroupMatrix.Load: groups={groups.Count} characters={characters.Count} memberships={membership.Count}.");
 
         _groups = groups;
         _characters = characters;
@@ -155,7 +156,7 @@ public class RelayGroupMatrix : Control
     {
         if ((_headerGrid == null) || (_labelGrid == null) || (_grid == null))
         {
-            DebugLog.Write("RelayGroupMatrix.BuildGrid: grids not ready, deferring.");
+            DebugLog.Write(LogChannel.Input, "RelayGroupMatrix.BuildGrid: grids not ready, deferring.");
             return;
         }
 
@@ -279,10 +280,10 @@ public class RelayGroupMatrix : Control
             _labelGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(5) });
             _grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(5) });
 
-            DebugLog.Write($"RelayGroupMatrix.BuildGrid: row={row} group='{group.Name}' built.");
+            DebugLog.Write(LogChannel.Input, $"RelayGroupMatrix.BuildGrid: row={row} group='{group.Name}' built.");
         }
 
-        DebugLog.Write("RelayGroupMatrix.BuildGrid: complete.");
+        DebugLog.Write(LogChannel.Input, "RelayGroupMatrix.BuildGrid: complete.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -360,7 +361,7 @@ public class RelayGroupMatrix : Control
 
         border.BorderBrush = MemberBorderBrush(nowMember);
 
-        DebugLog.Write($"RelayGroupMatrix.Cell_Click: groupId={groupId} characterId={characterId} nowMember={nowMember}.");
+        DebugLog.Write(LogChannel.Input, $"RelayGroupMatrix.Cell_Click: groupId={groupId} characterId={characterId} nowMember={nowMember}.");
 
         MembershipChanged?.Invoke(this, new MembershipChangedEventArgs
         {
@@ -380,7 +381,7 @@ public class RelayGroupMatrix : Control
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void SelectColumn(int characterId)
     {
-        DebugLog.Write($"RelayGroupMatrix.SelectColumn: characterId={characterId} previousSelection={_selectedCharacterId}.");
+        DebugLog.Write(LogChannel.Input, $"RelayGroupMatrix.SelectColumn: characterId={characterId} previousSelection={_selectedCharacterId}.");
 
         // Clear previous selection
         if ((_selectedCharacterId != -1) && _cellsByCharacter.TryGetValue(_selectedCharacterId, out List<Border>? previous))
@@ -389,13 +390,13 @@ public class RelayGroupMatrix : Control
             {
                 cell.BorderBrush = MemberBorderBrush(cell.Child is TextBlock t && t.Text == "✓");
             }
-            DebugLog.Write($"RelayGroupMatrix.SelectColumn: cleared previous selection for characterId={_selectedCharacterId}.");
+            DebugLog.Write(LogChannel.Input, $"RelayGroupMatrix.SelectColumn: cleared previous selection for characterId={_selectedCharacterId}.");
         }
 
         if (_selectedCharacterId == characterId)
         {
             _selectedCharacterId = -1;
-            DebugLog.Write("RelayGroupMatrix.SelectColumn: deselected.");
+            DebugLog.Write(LogChannel.Input, "RelayGroupMatrix.SelectColumn: deselected.");
             return;
         }
 
@@ -407,7 +408,7 @@ public class RelayGroupMatrix : Control
             {
                 cell.BorderBrush = new SolidColorBrush(Color.FromRgb(0x2A, 0xFF, 0xD7));
             }
-            DebugLog.Write($"RelayGroupMatrix.SelectColumn: highlighted {cells.Count} cells for characterId={characterId}.");
+            DebugLog.Write(LogChannel.Input, $"RelayGroupMatrix.SelectColumn: highlighted {cells.Count} cells for characterId={characterId}.");
         }
     }
 

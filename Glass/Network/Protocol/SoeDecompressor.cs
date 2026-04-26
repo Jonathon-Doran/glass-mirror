@@ -1,7 +1,8 @@
-﻿using System;
-using System.Buffers;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using LibDeflate;
+using System;
+using System.Buffers;
 
 namespace Glass.Network.Protocol;
 
@@ -38,7 +39,7 @@ public class SoeDecompressor : IDisposable
         _outputBuffer = new byte[DefaultOutputBufferSize];
         _disposed = false;
 
-        DebugLog.Write(DebugLog.Log_Network,
+        DebugLog.Write(LogChannel.LowNetwork,
             "SoeDecompressor: created with output buffer size " + DefaultOutputBufferSize);
     }
 
@@ -61,7 +62,7 @@ public class SoeDecompressor : IDisposable
 
         if (_disposed || _decompressor == null)
         {
-            DebugLog.Write("SoeDecompressor.Decompress: not available");
+            DebugLog.Write(LogChannel.LowNetwork, "SoeDecompressor.Decompress: not available");
             return false;
         }
 
@@ -73,7 +74,7 @@ public class SoeDecompressor : IDisposable
         if (status == OperationStatus.DestinationTooSmall)
         {
             int newSize = _outputBuffer.Length * 2;
-            DebugLog.Write("SoeDecompressor.Decompress: output buffer too small ("
+            DebugLog.Write(LogChannel.LowNetwork, "SoeDecompressor.Decompress: output buffer too small ("
                 + _outputBuffer.Length + " bytes), growing to " + newSize);
             _outputBuffer = new byte[newSize];
 
@@ -85,7 +86,7 @@ public class SoeDecompressor : IDisposable
 
         if (status != OperationStatus.Done)
         {
-            DebugLog.Write("SoeDecompressor.Decompress: failed, status="
+            DebugLog.Write(LogChannel.LowNetwork,"SoeDecompressor.Decompress: failed, status="
                 + status + " compressedLen=" + compressedData.Length);
             return false;
         }
@@ -110,7 +111,7 @@ public class SoeDecompressor : IDisposable
 
             _disposed = true;
 
-            DebugLog.Write(DebugLog.Log_Network,
+            DebugLog.Write(LogChannel.LowNetwork,
                 "SoeDecompressor: disposed");
         }
     }

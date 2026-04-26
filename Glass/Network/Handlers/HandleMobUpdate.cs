@@ -1,7 +1,8 @@
-﻿using System;
-using System.Buffers.Binary;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
+using System;
+using System.Buffers.Binary;
 
 namespace Glass.Network.Handlers;
 
@@ -91,7 +92,7 @@ public class HandleMobUpdate : IHandleOpcodes
 
 
 
-        DebugLog.Write("[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
-            + _opcodeName + " spawnid: " + spawnId.ToString("x4") + " at ({0:F2},{1:F2},{2:F2}", x, y, z);
+        DebugLog.Write(LogChannel.Opcodes, "[" + metadata.Timestamp.ToString("HH:mm:ss.fff") + "] "
+            + _opcodeName + " spawnid: " + spawnId.ToString("x4") + " at ({x:F2},{y:F2},{z:F2}");
     }
 }

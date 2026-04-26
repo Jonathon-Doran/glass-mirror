@@ -1,7 +1,8 @@
-﻿using System;
+﻿using Glass.Core;
+using Glass.Core.Logging;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Glass.Core;
 
 namespace Glass.Network.Protocol;
 
@@ -51,7 +52,7 @@ public class OpcodeDispatch
         _handlers = new Dictionary<ushort, IHandleOpcodes>();
         _names = new Dictionary<ushort, string>();
 
-        DebugLog.Write("OpcodeDispatch: scanning assembly for IHandleOpcodes implementations");
+        DebugLog.Write(LogChannel.Opcodes, "OpcodeDispatch: scanning assembly for IHandleOpcodes implementations");
 
         Assembly assembly = Assembly.GetExecutingAssembly();
         Type interfaceType = typeof(IHandleOpcodes);
@@ -72,7 +73,7 @@ public class OpcodeDispatch
 
             if (constructor == null)
             {
-                DebugLog.Write("OpcodeDispatch: skipping " + type.Name
+                DebugLog.Write(LogChannel.Opcodes, "OpcodeDispatch: skipping " + type.Name
                     + " — no default constructor");
                 continue;
             }
@@ -82,7 +83,7 @@ public class OpcodeDispatch
 
             if (_handlers.ContainsKey(opcode))
             {
-                DebugLog.Write("OpcodeDispatch: WARNING — duplicate handler for opcode 0x"
+                DebugLog.Write(LogChannel.Opcodes, "OpcodeDispatch: WARNING — duplicate handler for opcode 0x"
                     + opcode.ToString("x4") + ": " + type.Name
                     + " conflicts with " + _handlers[opcode].GetType().Name
                     + ", keeping first");
@@ -92,11 +93,11 @@ public class OpcodeDispatch
             _handlers[opcode] = handler;
             _names[opcode] = handler.OpcodeName;
 
-            DebugLog.Write("OpcodeDispatch: registered " + type.Name
+            DebugLog.Write(LogChannel.Opcodes, "OpcodeDispatch: registered " + type.Name
                 + " for opcode 0x" + opcode.ToString("x4"));
         }
 
-        DebugLog.Write("OpcodeDispatch: scan complete, "
+        DebugLog.Write(LogChannel.Opcodes, "OpcodeDispatch: scan complete, "
             + _handlers.Count + " handlers registered");
     }
 
@@ -137,7 +138,7 @@ public class OpcodeDispatch
     public void HandlePacket(ReadOnlySpan<byte> data, int length,
                               byte direction, ushort opcode, PacketMetadata metadata)
     {
-        DebugLog.Write($"[SEARCH] dir=0x{direction:X2} opCode=0x{opcode:X4} len={length} hex={BitConverter.ToString(data.Slice(0, length).ToArray()).Replace("-", " ").ToLowerInvariant()}");
+        DebugLog.Write(LogChannel.Opcodes, $"[SEARCH] dir=0x{direction:X2} opCode=0x{opcode:X4} len={length} hex={BitConverter.ToString(data.Slice(0, length).ToArray()).Replace("-", " ").ToLowerInvariant()}");
 
 
         if (_handlers.TryGetValue(opcode, out IHandleOpcodes? handler))

@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
 using Glass.UI.ViewModels;
@@ -38,7 +39,7 @@ public partial class EditLayoutDialog : Window
 
         _existingLayout = existingLayout;
 
-        DebugLog.Write($"EditLayoutDialog: opened. mode={(_existingLayout == null ? "new" : $"edit layoutId={_existingLayout.Id}")}");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog: opened. mode={(_existingLayout == null ? "new" : $"edit layoutId={_existingLayout.Id}")}");
 
         LoadMachineComboBox();
         LoadUISkinComboBox();
@@ -47,13 +48,13 @@ public partial class EditLayoutDialog : Window
 
         if (_existingLayout != null)
         {
-            DebugLog.Write($"EditLayoutDialog: pre-populating from layoutId={_existingLayout.Id} name='{_existingLayout.Name}'.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog: pre-populating from layoutId={_existingLayout.Id} name='{_existingLayout.Name}'.");
             LayoutNameTextBox.Text = _existingLayout.Name;
             LoadExistingLayout();
         }
         else
         {
-            DebugLog.Write("EditLayoutDialog: new layout, defaulting to current machine.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog: new layout, defaulting to current machine.");
             MachineComboBox_SelectionChanged(this, null!);
         }
 
@@ -68,7 +69,7 @@ public partial class EditLayoutDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadMachineComboBox()
     {
-        DebugLog.Write("EditLayoutDialog.LoadMachineComboBox: loading.");
+        DebugLog.Write(LogChannel.General, "EditLayoutDialog.LoadMachineComboBox: loading.");
 
         MachineRepository machineRepo = new MachineRepository();
         List<Machine> machines = machineRepo.GetAll();
@@ -88,17 +89,17 @@ public partial class EditLayoutDialog : Window
             if (GlassContext.CurrentMachine != null && machine.Id == GlassContext.CurrentMachine.Id)
             {
                 MachineComboBox.SelectedItem = item;
-                DebugLog.Write($"EditLayoutDialog.LoadMachineComboBox: defaulted to current machine id={machine.Id} name='{machine.Name}'.");
+                DebugLog.Write(LogChannel.General, $"EditLayoutDialog.LoadMachineComboBox: defaulted to current machine id={machine.Id} name='{machine.Name}'.");
             }
         }
 
         if (MachineComboBox.SelectedItem == null && MachineComboBox.Items.Count > 0)
         {
             MachineComboBox.SelectedIndex = 0;
-            DebugLog.Write("EditLayoutDialog.LoadMachineComboBox: no current machine match, defaulted to first.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.LoadMachineComboBox: no current machine match, defaulted to first.");
         }
 
-        DebugLog.Write($"EditLayoutDialog.LoadMachineComboBox: loaded {machines.Count} machines.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.LoadMachineComboBox: loaded {machines.Count} machines.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -110,7 +111,7 @@ public partial class EditLayoutDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadExistingLayout()
     {
-        DebugLog.Write($"EditLayoutDialog.LoadExistingLayout: layoutId={_existingLayout!.Id}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.LoadExistingLayout: layoutId={_existingLayout!.Id}.");
 
         if (_existingLayout.MachineId.HasValue)
         {
@@ -119,7 +120,7 @@ public partial class EditLayoutDialog : Window
                 if (item.Tag is int machineId && machineId == _existingLayout.MachineId.Value)
                 {
                     MachineComboBox.SelectedItem = item;
-                    DebugLog.Write($"EditLayoutDialog.LoadExistingLayout: selected machineId={machineId}.");
+                    DebugLog.Write(LogChannel.General, $"EditLayoutDialog.LoadExistingLayout: selected machineId={machineId}.");
                     break;
                 }
             }
@@ -137,7 +138,7 @@ public partial class EditLayoutDialog : Window
 
             if (monitor == null)
             {
-                DebugLog.Write($"EditLayoutDialog.LoadExistingLayout: monitorId={settings.MonitorId} not found, creating placeholder.");
+                DebugLog.Write(LogChannel.General, $"EditLayoutDialog.LoadExistingLayout: monitorId={settings.MonitorId} not found, creating placeholder.");
                 monitor = new Glass.Data.Models.Monitor
                 {
                     Id = settings.MonitorId,
@@ -155,7 +156,7 @@ public partial class EditLayoutDialog : Window
             };
 
             Monitors.Add(vm);
-            DebugLog.Write($"EditLayoutDialog.LoadExistingLayout: added layoutPosition={settings.LayoutPosition} monitorId={settings.MonitorId} slotWidth={settings.SlotWidth}.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.LoadExistingLayout: added layoutPosition={settings.LayoutPosition} monitorId={settings.MonitorId} slotWidth={settings.SlotWidth}.");
         }
 
         int monitorCount = Monitors.Count;
@@ -163,7 +164,7 @@ public partial class EditLayoutDialog : Window
             .OfType<ComboBoxItem>()
             .FirstOrDefault(i => i.Content.ToString() == monitorCount.ToString());
 
-        DebugLog.Write($"EditLayoutDialog.LoadExistingLayout: loaded {Monitors.Count} monitors.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.LoadExistingLayout: loaded {Monitors.Count} monitors.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -177,17 +178,17 @@ public partial class EditLayoutDialog : Window
     {
         if (!_initialized)
         {
-            DebugLog.Write("EditLayoutDialog.MachineComboBox_SelectionChanged: not initialized, skipping.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.MachineComboBox_SelectionChanged: not initialized, skipping.");
             return;
         }
 
         if (MachineComboBox.SelectedItem is not ComboBoxItem item || item.Tag is not int machineId)
         {
-            DebugLog.Write("EditLayoutDialog.MachineComboBox_SelectionChanged: no machine selected.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.MachineComboBox_SelectionChanged: no machine selected.");
             return;
         }
 
-        DebugLog.Write($"EditLayoutDialog.MachineComboBox_SelectionChanged: machineId={machineId}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.MachineComboBox_SelectionChanged: machineId={machineId}.");
 
         Monitors.Clear();
 
@@ -206,7 +207,7 @@ public partial class EditLayoutDialog : Window
             };
 
             Monitors.Add(vm);
-            DebugLog.Write($"EditLayoutDialog.MachineComboBox_SelectionChanged: added layoutPosition={position} adapter='{monitor.AdapterName}' {monitor.Width}x{monitor.Height}.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.MachineComboBox_SelectionChanged: added layoutPosition={position} adapter='{monitor.AdapterName}' {monitor.Width}x{monitor.Height}.");
             position++;
         }
 
@@ -214,7 +215,7 @@ public partial class EditLayoutDialog : Window
             .OfType<ComboBoxItem>()
             .FirstOrDefault(i => i.Content.ToString() == Monitors.Count.ToString());
 
-        DebugLog.Write($"EditLayoutDialog.MachineComboBox_SelectionChanged: loaded {Monitors.Count} monitors for machineId={machineId}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.MachineComboBox_SelectionChanged: loaded {Monitors.Count} monitors for machineId={machineId}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -228,18 +229,18 @@ public partial class EditLayoutDialog : Window
     {
         if (!_initialized)
         {
-            DebugLog.Write("EditLayoutDialog.MonitorCountChanged: not initialized, skipping.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.MonitorCountChanged: not initialized, skipping.");
             return;
         }
 
         if (MonitorCountComboBox.SelectedItem == null)
         {
-            DebugLog.Write("EditLayoutDialog.MonitorCountChanged: no item selected, skipping.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.MonitorCountChanged: no item selected, skipping.");
             return;
         }
 
         int selectedCount = int.Parse(((ComboBoxItem)MonitorCountComboBox.SelectedItem).Content.ToString()!);
-        DebugLog.Write($"EditLayoutDialog.MonitorCountChanged: selectedCount={selectedCount} current={Monitors.Count}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.MonitorCountChanged: selectedCount={selectedCount} current={Monitors.Count}.");
 
         int machineId = 0;
         if (MachineComboBox.SelectedItem is ComboBoxItem machineItem && machineItem.Tag is int mid)
@@ -270,17 +271,17 @@ public partial class EditLayoutDialog : Window
             };
 
             Monitors.Add(vm);
-            DebugLog.Write($"EditLayoutDialog.MonitorCountChanged: added layoutPosition={position} slotWidth={vm.SlotWidth}.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.MonitorCountChanged: added layoutPosition={position} slotWidth={vm.SlotWidth}.");
         }
 
         while (Monitors.Count > selectedCount)
         {
-            DebugLog.Write($"EditLayoutDialog.MonitorCountChanged: removing layoutPosition={Monitors.Count}.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.MonitorCountChanged: removing layoutPosition={Monitors.Count}.");
             Monitors.RemoveAt(Monitors.Count - 1);
         }
 
         UpdateTotalSlotCount();
-        DebugLog.Write($"EditLayoutDialog.MonitorCountChanged: Monitors.Count={Monitors.Count}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.MonitorCountChanged: Monitors.Count={Monitors.Count}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -293,13 +294,13 @@ public partial class EditLayoutDialog : Window
     {
         if (!_initialized)
         {
-            DebugLog.Write("EditLayoutDialog.MonitorSettingsChanged: not initialized, skipping.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.MonitorSettingsChanged: not initialized, skipping.");
             return;
         }
 
         if (sender is not ComboBox comboBox || comboBox.DataContext is not LayoutMonitorViewModel vm)
         {
-            DebugLog.Write("EditLayoutDialog.MonitorSettingsChanged: could not resolve monitor view model.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.MonitorSettingsChanged: could not resolve monitor view model.");
             return;
         }
 
@@ -307,13 +308,13 @@ public partial class EditLayoutDialog : Window
 
         if (comboBox.Name.Contains("Resolution"))
         {
-            DebugLog.Write($"EditLayoutDialog.MonitorSettingsChanged: layoutPosition={vm.LayoutPosition} resolution='{value}'.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.MonitorSettingsChanged: layoutPosition={vm.LayoutPosition} resolution='{value}'.");
             vm.SelectedResolution = value;
             vm.AdjustMonitorDimensions();
         }
         else if (comboBox.Name.Contains("Orientation"))
         {
-            DebugLog.Write($"EditLayoutDialog.MonitorSettingsChanged: layoutPosition={vm.LayoutPosition} orientation='{value}'.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.MonitorSettingsChanged: layoutPosition={vm.LayoutPosition} orientation='{value}'.");
             vm.Monitor.Orientation = value == "Portrait" ? MonitorOrientation.Portrait : MonitorOrientation.Landscape;
             vm.AdjustMonitorDimensions();
         }
@@ -331,7 +332,7 @@ public partial class EditLayoutDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void MonitorRectangle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        DebugLog.Write($"EditLayoutDialog.MonitorRectangle_MouseLeftButtonDown: fired, sender={sender?.GetType().Name}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.MonitorRectangle_MouseLeftButtonDown: fired, sender={sender?.GetType().Name}.");
 
         LayoutMonitorViewModel? vm = null;
 
@@ -342,7 +343,7 @@ public partial class EditLayoutDialog : Window
 
         if (vm == null)
         {
-            DebugLog.Write("EditLayoutDialog.MonitorRectangle_MouseLeftButtonDown: could not resolve monitor view model.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.MonitorRectangle_MouseLeftButtonDown: could not resolve monitor view model.");
             return;
         }
 
@@ -352,7 +353,7 @@ public partial class EditLayoutDialog : Window
         }
 
         _selectedMonitor = vm;
-        DebugLog.Write($"EditLayoutDialog.MonitorRectangle_MouseLeftButtonDown: selected layoutPosition={vm.LayoutPosition}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.MonitorRectangle_MouseLeftButtonDown: selected layoutPosition={vm.LayoutPosition}.");
 
         UpdateMonitorConfigurationUI(vm);
     }
@@ -367,7 +368,7 @@ public partial class EditLayoutDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void UpdateMonitorConfigurationUI(LayoutMonitorViewModel vm)
     {
-        DebugLog.Write($"EditLayoutDialog.UpdateMonitorConfigurationUI: layoutPosition={vm.LayoutPosition} strategy={LayoutStrategyComboBox.SelectedIndex}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.UpdateMonitorConfigurationUI: layoutPosition={vm.LayoutPosition} strategy={LayoutStrategyComboBox.SelectedIndex}.");
 
         LayoutStrategies strategy = LayoutStrategyComboBox.SelectedIndex switch
         {
@@ -424,7 +425,7 @@ public partial class EditLayoutDialog : Window
 
         GridSizeTextBlock.Text = $"{columns} x {rows}";
 
-        DebugLog.Write($"EditLayoutDialog.UpdateGridSizeText: layoutPosition={vm.LayoutPosition} columns={columns} rows={rows} slotWidth={slotWidth}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.UpdateGridSizeText: layoutPosition={vm.LayoutPosition} columns={columns} rows={rows} slotWidth={slotWidth}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -442,7 +443,7 @@ public partial class EditLayoutDialog : Window
         {
             if (vm.LayoutPosition == 1)
             {
-                DebugLog.Write($"EditLayoutDialog.UpdateTotalSlotCount: skipping primary monitor at layoutPosition=1.");
+                DebugLog.Write(LogChannel.General, $"EditLayoutDialog.UpdateTotalSlotCount: skipping primary monitor at layoutPosition=1.");
                 continue;
             }
 
@@ -455,11 +456,11 @@ public partial class EditLayoutDialog : Window
             int slots = rows * columns;
             totalSlots += slots;
 
-            DebugLog.Write($"EditLayoutDialog.UpdateTotalSlotCount: layoutPosition={vm.LayoutPosition} columns={columns} rows={rows} slots={slots}.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.UpdateTotalSlotCount: layoutPosition={vm.LayoutPosition} columns={columns} rows={rows} slots={slots}.");
         }
 
         TotalSlotsTextBlock.Text = totalSlots.ToString();
-        DebugLog.Write($"EditLayoutDialog.UpdateTotalSlotCount: totalSlots={totalSlots}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.UpdateTotalSlotCount: totalSlots={totalSlots}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -473,7 +474,7 @@ public partial class EditLayoutDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void RedrawWindowsForMonitor(LayoutMonitorViewModel vm)
     {
-        DebugLog.Write($"EditLayoutDialog.RedrawWindowsForMonitor: layoutPosition={vm.LayoutPosition}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.RedrawWindowsForMonitor: layoutPosition={vm.LayoutPosition}.");
 
         ContentPresenter? container = MonitorConfigItemsControl
             .ItemContainerGenerator
@@ -481,7 +482,7 @@ public partial class EditLayoutDialog : Window
 
         if (container == null)
         {
-            DebugLog.Write($"EditLayoutDialog.RedrawWindowsForMonitor: container not found for layoutPosition={vm.LayoutPosition}.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.RedrawWindowsForMonitor: container not found for layoutPosition={vm.LayoutPosition}.");
             return;
         }
 
@@ -489,7 +490,7 @@ public partial class EditLayoutDialog : Window
 
         if (canvas == null)
         {
-            DebugLog.Write($"EditLayoutDialog.RedrawWindowsForMonitor: OverlayCanvas not found for layoutPosition={vm.LayoutPosition}.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.RedrawWindowsForMonitor: OverlayCanvas not found for layoutPosition={vm.LayoutPosition}.");
             return;
         }
 
@@ -539,7 +540,7 @@ public partial class EditLayoutDialog : Window
     {
         if (vm.LayoutPosition == 1)
         {
-            DebugLog.Write($"EditLayoutDialog.DrawWindowsInMonitor: skipping primary monitor at layoutPosition=1.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.DrawWindowsInMonitor: skipping primary monitor at layoutPosition=1.");
             canvas.Children.Clear();
             vm.SlotRectangles.Clear();
             vm.NumSlots = 0;
@@ -566,7 +567,7 @@ public partial class EditLayoutDialog : Window
 
         vm.NumSlots = rows * columns;
 
-        DebugLog.Write($"EditLayoutDialog.DrawWindowsInMonitor: layoutPosition={vm.LayoutPosition} columns={columns} rows={rows} slotWidth={slotWidth} slotHeight={slotHeight}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.DrawWindowsInMonitor: layoutPosition={vm.LayoutPosition} columns={columns} rows={rows} slotWidth={slotWidth} slotHeight={slotHeight}.");
 
         for (int row = 0; row < rows; row++)
         {
@@ -593,7 +594,7 @@ public partial class EditLayoutDialog : Window
             }
         }
 
-        DebugLog.Write($"EditLayoutDialog.DrawWindowsInMonitor: drew {vm.NumSlots} slots for layoutPosition={vm.LayoutPosition}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.DrawWindowsInMonitor: drew {vm.NumSlots} slots for layoutPosition={vm.LayoutPosition}.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -609,19 +610,19 @@ public partial class EditLayoutDialog : Window
     {
         if (!_initialized)
         {
-            DebugLog.Write("EditLayoutDialog.SlotWidthChanged: not initialized, skipping.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.SlotWidthChanged: not initialized, skipping.");
             return;
         }
 
         if (sender is not TextBox textBox || textBox.DataContext is not LayoutMonitorViewModel vm)
         {
-            DebugLog.Write("EditLayoutDialog.SlotWidthChanged: could not resolve monitor view model.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.SlotWidthChanged: could not resolve monitor view model.");
             return;
         }
 
         if (!int.TryParse(textBox.Text, out int slotWidth) || slotWidth <= 0)
         {
-            DebugLog.Write($"EditLayoutDialog.SlotWidthChanged: invalid slot width '{textBox.Text}', skipping.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.SlotWidthChanged: invalid slot width '{textBox.Text}', skipping.");
             return;
         }
 
@@ -630,7 +631,7 @@ public partial class EditLayoutDialog : Window
             return;
         }
 
-        DebugLog.Write($"EditLayoutDialog.SlotWidthChanged: layoutPosition={vm.LayoutPosition} slotWidth={slotWidth}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.SlotWidthChanged: layoutPosition={vm.LayoutPosition} slotWidth={slotWidth}.");
 
         vm.SlotWidth = slotWidth;
 
@@ -649,7 +650,7 @@ public partial class EditLayoutDialog : Window
     {
         if (!_initialized)
         {
-            DebugLog.Write("EditLayoutDialog.PreferredWidthSlider_ValueChanged: not initialized, skipping.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.PreferredWidthSlider_ValueChanged: not initialized, skipping.");
             return;
         }
 
@@ -665,11 +666,11 @@ public partial class EditLayoutDialog : Window
 
         if (_selectedMonitor == null)
         {
-            DebugLog.Write("EditLayoutDialog.PreferredWidthSlider_ValueChanged: no monitor selected, skipping.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.PreferredWidthSlider_ValueChanged: no monitor selected, skipping.");
             return;
         }
 
-        DebugLog.Write($"EditLayoutDialog.PreferredWidthSlider_ValueChanged: slotWidth={slotWidth} layoutPosition={_selectedMonitor.LayoutPosition}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.PreferredWidthSlider_ValueChanged: slotWidth={slotWidth} layoutPosition={_selectedMonitor.LayoutPosition}.");
 
         _selectedMonitor.SlotWidth = slotWidth;
 
@@ -688,17 +689,17 @@ public partial class EditLayoutDialog : Window
     {
         if (!_initialized)
         {
-            DebugLog.Write("EditLayoutDialog.LayoutStrategyChanged: not initialized, skipping.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.LayoutStrategyChanged: not initialized, skipping.");
             return;
         }
 
         if (LayoutStrategyComboBox.SelectedItem == null)
         {
-            DebugLog.Write("EditLayoutDialog.LayoutStrategyChanged: no strategy selected, skipping.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.LayoutStrategyChanged: no strategy selected, skipping.");
             return;
         }
 
-        DebugLog.Write($"EditLayoutDialog.LayoutStrategyChanged: selectedIndex={LayoutStrategyComboBox.SelectedIndex}.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.LayoutStrategyChanged: selectedIndex={LayoutStrategyComboBox.SelectedIndex}.");
 
         if (_selectedMonitor != null)
         {
@@ -718,7 +719,7 @@ public partial class EditLayoutDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadUISkinComboBox()
     {
-        DebugLog.Write("EditLayoutDialog.LoadUISkinComboBox: loading.");
+        DebugLog.Write(LogChannel.General, "EditLayoutDialog.LoadUISkinComboBox: loading.");
 
         UISkinRepository skinRepo = new UISkinRepository();
         List<UISkin> skins = skinRepo.GetAll();
@@ -737,14 +738,14 @@ public partial class EditLayoutDialog : Window
                 if (item.Tag is int id && id == _existingLayout.UISkinId.Value)
                 {
                     UISkinComboBox.SelectedItem = item;
-                    DebugLog.Write($"EditLayoutDialog.LoadUISkinComboBox: pre-selected uiSkinId={id}.");
+                    DebugLog.Write(LogChannel.General, $"EditLayoutDialog.LoadUISkinComboBox: pre-selected uiSkinId={id}.");
                     return;
                 }
             }
         }
 
         UISkinComboBox.SelectedIndex = 0;
-        DebugLog.Write("EditLayoutDialog.LoadUISkinComboBox: loaded, no skin pre-selected.");
+        DebugLog.Write(LogChannel.General, "EditLayoutDialog.LoadUISkinComboBox: loaded, no skin pre-selected.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -756,13 +757,13 @@ public partial class EditLayoutDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("EditLayoutDialog.Save_Click: saving.");
+        DebugLog.Write(LogChannel.General, "EditLayoutDialog.Save_Click: saving.");
 
         string layoutName = LayoutNameTextBox.Text.Trim();
 
         if (string.IsNullOrWhiteSpace(layoutName))
         {
-            DebugLog.Write("EditLayoutDialog.Save_Click: layout name is empty, aborting.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.Save_Click: layout name is empty, aborting.");
             MessageBox.Show("Please enter a name for this layout.", "Name Required",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             LayoutNameTextBox.Focus();
@@ -771,7 +772,7 @@ public partial class EditLayoutDialog : Window
 
         if (MachineComboBox.SelectedItem is not ComboBoxItem machineItem || machineItem.Tag is not int machineId)
         {
-            DebugLog.Write("EditLayoutDialog.Save_Click: no machine selected, aborting.");
+            DebugLog.Write(LogChannel.General, "EditLayoutDialog.Save_Click: no machine selected, aborting.");
             MessageBox.Show("Please select a machine for this layout.", "Machine Required",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
@@ -779,7 +780,7 @@ public partial class EditLayoutDialog : Window
 
         if (Monitors.Count == 0)
         {
-            DebugLog.Write("EditLayoutDialog.Save_Click: no monitors configured, aborting.");
+            DebugLog.Write("LogChannel.General,EditLayoutDialog.Save_Click: no monitors configured, aborting.");
             MessageBox.Show("Please configure at least one monitor.", "Monitors Required",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
@@ -791,9 +792,9 @@ public partial class EditLayoutDialog : Window
 
         if (_existingLayout == null)
         {
-            DebugLog.Write($"EditLayoutDialog.Save_Click: creating new layout name='{layoutName}' machineId={machineId}.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.Save_Click: creating new layout name='{layoutName}' machineId={machineId}.");
             layoutId = layoutRepo.Create(layoutName, machineId);
-            DebugLog.Write($"EditLayoutDialog.Save_Click: created layoutId={layoutId}.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.Save_Click: created layoutId={layoutId}.");
         }
         else
         {
@@ -802,10 +803,10 @@ public partial class EditLayoutDialog : Window
             if (_existingLayout.Name != layoutName)
             {
                 layoutRepo.Rename(layoutId, layoutName);
-                DebugLog.Write($"EditLayoutDialog.Save_Click: renamed layoutId={layoutId} to '{layoutName}'.");
+                DebugLog.Write(LogChannel.General, $"EditLayoutDialog.Save_Click: renamed layoutId={layoutId} to '{layoutName}'.");
             }
 
-            DebugLog.Write($"EditLayoutDialog.Save_Click: updating layoutId={layoutId}.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.Save_Click: updating layoutId={layoutId}.");
         }
 
         // Convert view models to LayoutMonitorSettings models.
@@ -820,7 +821,7 @@ public partial class EditLayoutDialog : Window
                 SlotWidth = vm.SlotWidth
             };
             monitorSettings.Add(settings);
-            DebugLog.Write($"EditLayoutDialog.Save_Click: monitor layoutPosition={settings.LayoutPosition} monitorId={settings.MonitorId} slotWidth={settings.SlotWidth}.");
+            DebugLog.Write(LogChannel.General, $"EditLayoutDialog.Save_Click: monitor layoutPosition={settings.LayoutPosition} monitorId={settings.MonitorId} slotWidth={settings.SlotWidth}.");
         }
 
         layoutRepo.SaveLayoutMonitors(layoutId, monitorSettings);
@@ -833,7 +834,7 @@ public partial class EditLayoutDialog : Window
         {
             if (vm.LayoutPosition == 1)
             {
-                DebugLog.Write($"EditLayoutDialog.Save_Click: skipping primary monitor at layoutPosition=1.");
+                DebugLog.Write(LogChannel.General, $"EditLayoutDialog.Save_Click: skipping primary monitor at layoutPosition=1.");
                 continue;
             }
 
@@ -850,7 +851,7 @@ public partial class EditLayoutDialog : Window
                     Height = (int)rect.Height
                 };
                 placements.Add(placement);
-                DebugLog.Write($"EditLayoutDialog.Save_Click: slot={slotNumber} monitorId={vm.Monitor.Id} x={placement.X} y={placement.Y} w={placement.Width} h={placement.Height}.");
+                DebugLog.Write(LogChannel.General, $"EditLayoutDialog.Save_Click: slot={slotNumber} monitorId={vm.Monitor.Id} x={placement.X} y={placement.Y} w={placement.Width} h={placement.Height}.");
                 slotNumber++;
             }
         }
@@ -864,7 +865,7 @@ public partial class EditLayoutDialog : Window
             selectedUISkinId = skinId;
         }
         layoutRepo.SetUISkinId(layoutId, selectedUISkinId);
-        DebugLog.Write($"EditLayoutDialog.Save_Click: uiSkinId={selectedUISkinId?.ToString() ?? "null"} saved.");
+        DebugLog.Write(LogChannel.General, $"EditLayoutDialog.Save_Click: uiSkinId={selectedUISkinId?.ToString() ?? "null"} saved.");
 
         DialogResult = true;
     }
@@ -876,7 +877,7 @@ public partial class EditLayoutDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("EditLayoutDialog.Cancel_Click: cancelled.");
+        DebugLog.Write(LogChannel.General, "EditLayoutDialog.Cancel_Click: cancelled.");
         DialogResult = false;
     }
 }

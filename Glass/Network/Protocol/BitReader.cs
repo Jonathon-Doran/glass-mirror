@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using System;
 
 namespace Glass.Network.Protocol
@@ -80,12 +81,12 @@ namespace Glass.Network.Protocol
         {
             if (numBits < 1 || numBits > 32)
             {
-                DebugLog.Write("BitReader.ReadUInt: invalid numBits=" + numBits);
+                DebugLog.Write(LogChannel.LowNetwork, "BitReader.ReadUInt: invalid numBits=" + numBits);
                 throw new ArgumentOutOfRangeException(nameof(numBits));
             }
             if (_bitPosition + numBits > _totalBits)
             {
-                DebugLog.Write("BitReader.ReadUInt: underrun at bitPos="
+                DebugLog.Write(LogChannel.LowNetwork, "BitReader.ReadUInt: underrun at bitPos="
                     + _bitPosition + " numBits=" + numBits + " totalBits=" + _totalBits);
                 throw new InvalidOperationException("BitReader underrun");
             }
@@ -133,7 +134,7 @@ namespace Glass.Network.Protocol
         {
             if (numBits < 2 || numBits > 32)
             {
-                DebugLog.Write("BitReader.ReadInt: invalid numBits=" + numBits);
+                DebugLog.Write(LogChannel.LowNetwork, "BitReader.ReadInt: invalid numBits=" + numBits);
                 throw new ArgumentOutOfRangeException(nameof(numBits));
             }
 

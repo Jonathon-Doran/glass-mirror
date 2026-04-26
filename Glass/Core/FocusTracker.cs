@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using Glass.Core.Logging;
+using System.Runtime.InteropServices;
 
 namespace Glass.Core;
 
@@ -80,7 +81,7 @@ public class FocusTracker
         _thread.SetApartmentState(ApartmentState.STA);
         _thread.Start();
 
-        DebugLog.Write("FocusTracker.Start: thread started.");
+        DebugLog.Write(LogChannel.General, "FocusTracker.Start: thread started.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -91,14 +92,14 @@ public class FocusTracker
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Stop()
     {
-        DebugLog.Write("FocusTracker.Stop: stopping.");
+        DebugLog.Write(LogChannel.General, "FocusTracker.Stop: stopping.");
 
         if (_threadId != 0)
         {
             PostThreadMessage(_threadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
         }
 
-        DebugLog.Write("FocusTracker.Stop: quit posted.");
+        DebugLog.Write(LogChannel.General, "FocusTracker.Stop: quit posted.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,7 +110,7 @@ public class FocusTracker
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void MessagePumpThread()
     {
-        DebugLog.Write("FocusTracker.MessagePumpThread: started.");
+        DebugLog.Write(LogChannel.General, "FocusTracker.MessagePumpThread: started.");
 
         _threadId = GetCurrentThreadId();
 
@@ -125,11 +126,11 @@ public class FocusTracker
 
         if (hook == IntPtr.Zero)
         {
-            DebugLog.Write("FocusTracker.MessagePumpThread: SetWinEventHook failed.");
+            DebugLog.Write(LogChannel.General, "FocusTracker.MessagePumpThread: SetWinEventHook failed.");
             return;
         }
 
-        DebugLog.Write("FocusTracker.MessagePumpThread: hook installed. running message loop.");
+        DebugLog.Write(LogChannel.General, "FocusTracker.MessagePumpThread: hook installed. running message loop.");
 
         MSG msg;
         while (GetMessage(out msg, IntPtr.Zero, 0, 0))
@@ -140,7 +141,7 @@ public class FocusTracker
 
         UnhookWinEvent(hook);
 
-        DebugLog.Write("FocusTracker.MessagePumpThread: message loop exited, hook removed.");
+        DebugLog.Write(LogChannel.General, "FocusTracker.MessagePumpThread: message loop exited, hook removed.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +181,7 @@ public class FocusTracker
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void ClearActiveSession()
     {
-        DebugLog.Write("FocusTracker.ClearActiveSession: clearing active session.");
+        DebugLog.Write(LogChannel.General, "FocusTracker.ClearActiveSession: clearing active session.");
         ActiveSession = null;
     }
 }

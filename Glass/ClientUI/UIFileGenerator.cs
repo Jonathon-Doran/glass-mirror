@@ -1,6 +1,7 @@
-﻿using System.IO;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
+using System.IO;
 
 namespace Glass.ClientUI;
 
@@ -24,7 +25,7 @@ public class UiFileGenerator
     public UiFileGenerator(string outputDirectory)
     {
         _outputDirectory = outputDirectory;
-        DebugLog.Write(DebugLog.Log_Database, $"UiFileGenerator: outputDirectory='{outputDirectory}'.");
+        DebugLog.Write(LogChannel.Database, $"UiFileGenerator: outputDirectory='{outputDirectory}'.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -57,7 +58,7 @@ public class UiFileGenerator
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void Generate(Character character)
     {
-        DebugLog.Write(DebugLog.Log_Database, $"UiFileGenerator.Generate: character='{character.Name}' class={character.Class}.");
+        DebugLog.Write(LogChannel.Database, $"UiFileGenerator.Generate: character='{character.Name}' class={character.Class}.");
 
         string outputPath = Path.Combine(_outputDirectory, GetFileName(character));
 
@@ -4618,7 +4619,7 @@ public class UiFileGenerator
         writer.WriteLine("ClickThrough=0");
         writer.WriteLine("Escapable=1");
 
-        DebugLog.Write(DebugLog.Log_Database, $"UiFileGenerator.Generate: written to '{outputPath}'.");
+        DebugLog.Write(LogChannel.Database, $"UiFileGenerator.Generate: written to '{outputPath}'.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

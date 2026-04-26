@@ -1,7 +1,8 @@
-﻿using System;
-using System.Windows;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
+using System;
+using System.Windows;
 
 namespace Glass.ClientUI;
 
@@ -87,7 +88,7 @@ public partial class NewCharacterDialog : Window
             AccountId = int.Parse(AccountIdBox.Text.Trim())
         };
 
-        DebugLog.Write("NewCharacterDialog: created character="
+        DebugLog.Write(LogChannel.General, "NewCharacterDialog: created character="
             + CreatedCharacter.Name
             + " server=" + CreatedCharacter.Server
             + " class=" + CreatedCharacter.Class
@@ -107,7 +108,6 @@ public partial class NewCharacterDialog : Window
     ///////////////////////////////////////////////////////////////////////////////////////////
     private void Button_Cancel_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("NewCharacterDialog: cancelled");
         DialogResult = false;
         Close();
     }

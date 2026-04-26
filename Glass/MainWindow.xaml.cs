@@ -1,5 +1,6 @@
 ﻿using Glass.ClientUI;
 using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
@@ -38,16 +39,18 @@ public partial class MainWindow : Window
 
         GlassContext.ProfileManager = new ProfileManager();
 
-        DebugLog.Initialize(msg => Dispatcher.Invoke(() => Log(msg)));
+        InitializeLogging();
+
+        //DebugLog.Initialize(msg => Dispatcher.Invoke(() => Log(msg)));
 
         if (Database.IsInitialized)
         {
             MachineRepository machineRepo = new MachineRepository();
             GlassContext.CurrentMachine = machineRepo.GetOrCreate(Environment.MachineName);
-            DebugLog.Write($"MainWindow: current machine id={GlassContext.CurrentMachine.Id} name='{GlassContext.CurrentMachine.Name}'.");
+            DebugLog.Write(LogChannel.General, $"MainWindow: current machine id={GlassContext.CurrentMachine.Id} name='{GlassContext.CurrentMachine.Name}'.");
             if (GlassContext.CurrentMachine.Devices.Count == 0)
             {
-                DebugLog.Write("MainWindow: no devices configured for this machine.");
+                DebugLog.Write(LogChannel.General, "MainWindow: no devices configured for this machine.");
             }
         }
 
@@ -64,15 +67,14 @@ public partial class MainWindow : Window
         GlassContext.GlassVideoPipe.Disconnected += () => Dispatcher.Invoke(() =>
         {
             SetGlassVideoStatus(false);
-            DebugLog.Write(DebugLog.Log_Sessions, "GlassVideo disconnected.");
+            DebugLog.Write(LogChannel.Sessions, "GlassVideo disconnected.");
         });
-        GlassContext.GlassVideoPipe.MessageReceived += msg => Dispatcher.Invoke(() => Log($"GlassVideo: {msg}"));
+   //     GlassContext.GlassVideoPipe.MessageReceived += msg => Dispatcher.Invoke(() => Log($"GlassVideo: {msg}"));
         GlassContext.GlassVideoPipe.Start();
         GlassContext.FocusTracker = new FocusTracker();
         GlassContext.SessionRegistry = new SessionRegistry(OpcodeDispatch.Instance.HandlePacket);
         GlassContext.SessionRegistry.AllSessionsDisconnected += OnAllSessionsDisconnected;
     }
-
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Window_Loaded
@@ -90,7 +92,7 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
-        DebugLog.Write("MainWindow.Window_Closing: shutting down.");
+        DebugLog.Write(LogChannel.General, "MainWindow.Window_Closing: shutting down.");
         DebugLog.Shutdown();
         GlassContext.KeyboardManager.UnloadProfile();
         await GlassContext.ISXGlassPipe.StopAsync();
@@ -100,15 +102,31 @@ public partial class MainWindow : Window
         GlassContext.FocusTracker.Stop();
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Log
-    //
-    // Appends a timestamped message to the console output.
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public void Log(string message)
+    private void InitializeLogging()
     {
-        ConsoleOutput.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
-        ConsoleScroller.ScrollToBottom();
+        GlassDebugLogHandler glassDebugLogHandler = new GlassDebugLogHandler();
+        DebugLog.AddHandler(LogSink.GlassDebugLogfile, glassDebugLogHandler);
+
+        DebugLog.Route(LogChannel.General, LogSink.GlassDebugLogfile);
+        DebugLog.Route(LogChannel.ISXGlass, LogSink.GlassDebugLogfile);
+        DebugLog.Route(LogChannel.Pipes, LogSink.GlassDebugLogfile);
+        DebugLog.Route(LogChannel.Video, LogSink.GlassDebugLogfile);
+        DebugLog.Route(LogChannel.Sessions, LogSink.GlassDebugLogfile);
+        DebugLog.Route(LogChannel.Profiles, LogSink.GlassDebugLogfile);
+        DebugLog.Route(LogChannel.Input, LogSink.GlassDebugLogfile);
+        DebugLog.Route(LogChannel.Database, LogSink.GlassDebugLogfile);
+        DebugLog.Route(LogChannel.LowNetwork, LogSink.GlassDebugLogfile);
+        DebugLog.Route(LogChannel.Network, LogSink.GlassDebugLogfile);
+        DebugLog.Route(LogChannel.General, LogSink.GlassDebugLogfile);
+
+
+        GlassConsoleLogHandler glassConsoleLogHandler = new GlassConsoleLogHandler(ConsoleOutput, ConsoleScroller);
+        DebugLog.AddHandler(LogSink.GlassConsole, glassConsoleLogHandler);
+
+        DebugLog.Route(LogChannel.General, LogSink.GlassConsole);
+        DebugLog.Route(LogChannel.General, LogSink.GlassConsole);
+
+        DebugLog.Write(LogChannel.General, "MainWindow: logging initialized");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -231,7 +249,7 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ToggleG15Osd_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("MainWindow.ToggleG15Osd_Click: toggling G15 OSD.");
+        DebugLog.Write(LogChannel.Input, "MainWindow.ToggleG15Osd_Click: toggling G15 OSD.");
         GlassContext.KeyboardManager.ToggleOsd(new HidDeviceInstance(KeyboardType.G15, 1, string.Empty));
     }
 
@@ -251,7 +269,7 @@ public partial class MainWindow : Window
         if (string.IsNullOrEmpty(input))
             return;
 
-        Log($"> {input}");
+        DebugLog.Write(LogChannel.Input, $"> {input}");
 
         if (input.StartsWith("/"))
         {
@@ -317,13 +335,13 @@ public partial class MainWindow : Window
             Command? full = new CommandRepository().GetCommand(command.Id);
             if (full == null)
             {
-                DebugLog.Write($"MainWindow.PushCommandState: commandId={command.Id} not found, skipping.");
+                DebugLog.Write(LogChannel.ISXGlass, $"MainWindow.PushCommandState: commandId={command.Id} not found, skipping.");
                 continue;
             }
 
             if (full.Steps.Count == 0)
             {
-                DebugLog.Write($"MainWindow.PushCommandState: commandId={command.Id} name='{command.Name}' has no steps, skipping.");
+                DebugLog.Write(LogChannel.ISXGlass, $"MainWindow.PushCommandState: commandId={command.Id} name='{command.Name}' has no steps, skipping.");
                 continue;
             }
 
@@ -357,7 +375,7 @@ public partial class MainWindow : Window
             }
         }
 
-        DebugLog.Write("MainWindow.PushCommandState: done.");
+        DebugLog.Write(LogChannel.ISXGlass, "MainWindow.PushCommandState: done.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -377,6 +395,7 @@ public partial class MainWindow : Window
         {
             case "flags":
                 {
+                    /*
                     if (parts.Length == 1)
                     {
                         Log($"pipes:    {DebugLog.Log_Pipes}");
@@ -399,23 +418,24 @@ public partial class MainWindow : Window
                     {
                         Log($"Log_{parts[1]} set to {enabled}");
                     }
+                    */
                     break;
                 }
             case "screenshot":
                 {
                     if (parts.Length < 2)
                     {
-                        Log("Usage: /screenshot <slotId>");
+                        DebugLog.Write(LogChannel.Video, "Usage: /screenshot <slotId>");
                         break;
                     }
                     if (!int.TryParse(parts[1], out int slotId))
                     {
-                        Log("screenshot: invalid slot id.");
+                        DebugLog.Write(LogChannel.Video, "screenshot: invalid slot id.");
                         break;
                     }
-                    DebugLog.Write($"HandleLocalCommand: screenshot slotId={slotId}.");
+                    DebugLog.Write(LogChannel.Video, $"HandleLocalCommand: screenshot slotId={slotId}.");
                     GlassContext.GlassVideoPipe.Send($"screenshot {slotId}");
-                    Log($"Screenshot requested for slot {slotId}.");
+                    DebugLog.Write(LogChannel.Video, $"Screenshot requested for slot {slotId}.");
                     break;
                 }
 
@@ -436,10 +456,10 @@ public partial class MainWindow : Window
                 break;
 
             default:
-                Log($"Unknown command: {parts[0]}");
-                Log("flags:  show the debug log flags");
-                Log("screenshot <slot>:  save a screenshot from the designated slot next frame");
-                Log("debugnextframe:  generic debug action for GlassVideo to occur next frame only");
+                DebugLog.Write(LogChannel.Input, $"Unknown command: {parts[0]}");
+                DebugLog.Write(LogChannel.Input, "flags:  show the debug log flags");
+                DebugLog.Write(LogChannel.Input, "screenshot <slot>:  save a screenshot from the designated slot next frame");
+                DebugLog.Write(LogChannel.Input, "debugnextframe:  generic debug action for GlassVideo to occur next frame only");
                 break;
         }
     }
@@ -454,7 +474,7 @@ public partial class MainWindow : Window
 
     private void HandleISXGlassMessage(string msg)
     {
-        DebugLog.Write($"ISXGlass: message in {msg}");
+        DebugLog.Write(LogChannel.ISXGlass, $"ISXGlass: message in {msg}");
         var parts = msg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0)
         {
@@ -470,7 +490,7 @@ public partial class MainWindow : Window
                 {
                     if (parts.Length < 4)
                     {
-                        DebugLog.Write(DebugLog.Log_Input, $"ISXGlass: malformed session_connected: {msg}");
+                        DebugLog.Write(LogChannel.ISXGlass, $"ISXGlass: malformed session_connected: {msg}");
                         return;
                     }
 
@@ -485,12 +505,12 @@ public partial class MainWindow : Window
                         bool hasId = uint.TryParse(sessionName.Substring(2), out uint accountId);
                         if (! hasId)
                         {
-                            DebugLog.Write(DebugLog.Log_Input, $"ISXGlass: no integer account-id: {sessionName}");
+                            DebugLog.Write(LogChannel.ISXGlass, $"ISXGlass: no integer account-id: {sessionName}");
                             return;
                         }
 
                         characterName = GlassContext.ProfileManager.GetCharacterNameByAccountId(accountId);
-                        DebugLog.Write(DebugLog.Log_Sessions, $"session connected: {sessionName}, pid={pid}, character={characterName}");
+                        DebugLog.Write(LogChannel.Sessions, $"session connected: {sessionName}, pid={pid}, character={characterName}");
                         GlassContext.SessionRegistry.OnSessionConnected(sessionName, characterName, pid, hwnd);
                         int slot = GlassContext.ProfileManager.GetSlotForCharacter(characterName);
                         if (slot == -1)
@@ -499,12 +519,12 @@ public partial class MainWindow : Window
                         }
 
                         string cmd = $"slot_assign {slot} {sessionName} {hwnd:X}";
-                        DebugLog.Write(DebugLog.Log_Sessions, $"HandleISXGlassMessage: sending {cmd}");
+                        DebugLog.Write(LogChannel.Sessions, $"HandleISXGlassMessage: sending {cmd}");
                         GlassContext.GlassVideoPipe.Send(cmd);
                     }
                     else
                     {
-                        DebugLog.Write(DebugLog.Log_Sessions, $"session connected: {sessionName}, pid={pid}, no active profile.");
+                        DebugLog.Write(LogChannel.Sessions, $"session connected: {sessionName}, pid={pid}, no active profile.");
                         GlassContext.SessionRegistry.OnSessionConnected(sessionName, characterName, pid, hwnd);
                     }
 
@@ -515,19 +535,19 @@ public partial class MainWindow : Window
                 {
                     if (parts.Length < 2)
                     {
-                        DebugLog.Write(DebugLog.Log_Sessions, $"ISXGlass: malformed session_disconnected: {msg}");
+                        DebugLog.Write(LogChannel.Sessions, $"ISXGlass: malformed session_disconnected: {msg}");
                         return;
                     }
 
                     string sessionName = parts[1];
-                    DebugLog.Write(DebugLog.Log_Sessions, $"session_disconnected: {sessionName}");
+                    DebugLog.Write(LogChannel.Sessions, $"session_disconnected: {sessionName}");
                     GlassContext.GlassVideoPipe.Send($"unassign {sessionName}");
                     GlassContext.SessionRegistry.OnSessionDisconnected(sessionName);
                     break;
                 }
 
             default:
-                Log(msg);
+                DebugLog.Write(LogChannel.ISXGlass, msg);
                 break;
         }
     }
@@ -540,7 +560,7 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void OnAllSessionsDisconnected()
     {
-        DebugLog.Write(DebugLog.Log_Sessions, "MainWindow.OnAllSessionsDisconnected: all sessions disconnected, clearing active profile.");
+        DebugLog.Write(LogChannel.Sessions, "MainWindow.OnAllSessionsDisconnected: all sessions disconnected, clearing active profile.");
         GlassContext.ProfileManager.ClearActiveProfile();
         UpdateToolsMenuState();
         GlassContext.FocusTracker.Stop();
@@ -571,7 +591,7 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog() == true)
         {
             Database.Create(dialog.FileName);
-            Log($"Database created: {dialog.FileName}");
+            DebugLog.Write(LogChannel.Database, $"Database created: {dialog.FileName}");
         }
 
         SaveLastDatabasePath(dialog.FileName);
@@ -596,7 +616,7 @@ public partial class MainWindow : Window
         {
             Database.Open(dialog.FileName);
             SetDatabaseMenuState(true);
-            Log($"Database opened: {dialog.FileName}");
+            DebugLog.Write(LogChannel.Database, $"Database opened: {dialog.FileName}");
         }
 
         SaveLastDatabasePath(dialog.FileName);
@@ -655,7 +675,7 @@ public partial class MainWindow : Window
     private void MenuItem_Status_Click(object sender, RoutedEventArgs e)
     {
         GlassContext.ISXGlassPipe.Send("status");
-        DebugLog.Write(DebugLog.Log_Input, "Status requested.");
+        DebugLog.Write(LogChannel.ISXGlass, "Status requested.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -702,7 +722,7 @@ public partial class MainWindow : Window
         ManageVideoSourcesDialog dialog = new ManageVideoSourcesDialog() { Owner = this };
         dialog.ShowDialog();
 
-        DebugLog.Write("MainWindow.ManageVideoSources_Click: dialog closed.");
+        DebugLog.Write(LogChannel.Input, "MainWindow.ManageVideoSources_Click: dialog closed.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -716,7 +736,7 @@ public partial class MainWindow : Window
         int? layoutId = GlassContext.ProfileManager.ActiveProfile?.GetLayoutId();
         if (layoutId == null)
         {
-            DebugLog.Write("ManageVideoDestinations_Click: no layout assigned");
+            DebugLog.Write(LogChannel.Input, "ManageVideoDestinations_Click: no layout assigned");
             return;
         }
         ManageVideoDestinationsDialog dialog = new ManageVideoDestinationsDialog(layoutId.Value) { Owner = this };
@@ -755,14 +775,19 @@ public partial class MainWindow : Window
 
         string filePath = dialog.FileName;
 
-        string localIp = "10.146.79.19";
+        string localIp = PacketCapture.GetLocalIP()!;
+        if (localIp == null)
+        {
+            DebugLog.Write(LogChannel.Network, "No local IP.  Aborting Pcap read");
+            return;
+        }
 
         SessionDemux router = new SessionDemux(localIp, OpcodeDispatch.Instance.HandlePacket);
         PcapFileReader reader = new PcapFileReader(router);
 
         int routed = reader.ProcessFile(filePath);
 
-        DebugLog.Write(routed + " packets routed");
+        DebugLog.Write(LogChannel.Network, routed + " packets routed");
 
         foreach (KeyValuePair<int, Connection> kvp in GlassContext.SessionRegistry.GetAllConnections())
         {
@@ -771,7 +796,7 @@ public partial class MainWindow : Window
                 SoeStream stream = kvp.Value.GetStream(streamId);
                 if (stream.OpcodeCount.Count > 0)
                 {
-                    DebugLog.Write("Opcode summary for " + SoeConstants.StreamNames[streamId]
+                    DebugLog.Write(LogChannel.Network, "Opcode summary for " + SoeConstants.StreamNames[streamId]
                         + " port " + kvp.Key + ":");
 
                     List<KeyValuePair<ushort, int>> sorted =
@@ -787,7 +812,7 @@ public partial class MainWindow : Window
                         }
                         string handled = OpcodeDispatch.Instance.IsOpcodeHandled(op.Key)
                             ? "+" : " ";
-                        DebugLog.Write("  " + handled + " 0x" + op.Key.ToString("x4") + " (" + name + ")"
+                        DebugLog.Write(LogChannel.Network,"  " + handled + " 0x" + op.Key.ToString("x4") + " (" + name + ")"
                             + ": " + op.Value + " times");
                     }
                 }
@@ -803,13 +828,13 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void MenuItem_GenerateEQUI_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("MainWindow.MenuItem_GenerateEQUI_Click: generating EQ UI files.");
+        DebugLog.Write(LogChannel.Input, "MainWindow.MenuItem_GenerateEQUI_Click: generating EQ UI files.");
 
         string outputDirectory = Glass.Properties.Settings.Default.ClientFilesPath;
 
         if (string.IsNullOrWhiteSpace(outputDirectory))
         {
-            DebugLog.Write("MainWindow.MenuItem_GenerateEQUI_Click: ClientFilesDirectory not configured.");
+            DebugLog.Write(LogChannel.Input, "MainWindow.MenuItem_GenerateEQUI_Click: ClientFilesDirectory not configured.");
             MessageBox.Show("Please configure the Client Files Directory in settings before generating.", "Not Configured", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
@@ -817,13 +842,13 @@ public partial class MainWindow : Window
         if (!Directory.Exists(outputDirectory))
         {
             Directory.CreateDirectory(outputDirectory);
-            DebugLog.Write($"MainWindow.MenuItem_GenerateEQUI_Click: created output directory '{outputDirectory}'.");
+            DebugLog.Write(LogChannel.Input, $"MainWindow.MenuItem_GenerateEQUI_Click: created output directory '{outputDirectory}'.");
         }
 
         var characterRepo = new CharacterRepository();
         var characters = characterRepo.GetAll();
 
-        DebugLog.Write($"MainWindow.MenuItem_GenerateEQUI_Click: generating files for {characters.Count} characters.");
+        DebugLog.Write(LogChannel.Input, $"MainWindow.MenuItem_GenerateEQUI_Click: generating files for {characters.Count} characters.");
 
         var eqClientGenerator = new EqClientFileGenerator(outputDirectory);
         var hotbuttonGenerator = new HotbuttonFileGenerator(outputDirectory);
@@ -831,13 +856,13 @@ public partial class MainWindow : Window
 
         foreach (var character in characters)
         {
-            DebugLog.Write($"MainWindow.MenuItem_GenerateEQUI_Click: generating for '{character.Name}'.");
+            DebugLog.Write(LogChannel.Input, $"MainWindow.MenuItem_GenerateEQUI_Click: generating for '{character.Name}'.");
             eqClientGenerator.Generate(character);
             hotbuttonGenerator.Generate(character);
             uiGenerator.Generate(character);
         }
 
-        DebugLog.Write($"MainWindow.MenuItem_GenerateEQUI_Click: done. {characters.Count} characters processed.");
+        DebugLog.Write(LogChannel.Input, $"MainWindow.MenuItem_GenerateEQUI_Click: done. {characters.Count} characters processed.");
     }
 
     private void UpdateToolsMenuState()
@@ -895,7 +920,7 @@ public partial class MainWindow : Window
         {
             if (_movementExperimentThread != null)
             {
-                DebugLog.Write("Movement experiment already running, ignoring start request");
+                DebugLog.Write(LogChannel.General, "Movement experiment already running, ignoring start request");
                 return;
             }
 
@@ -907,7 +932,7 @@ public partial class MainWindow : Window
             _movementExperimentThread.IsBackground = true;
             _movementExperimentThread.Name = "MovementExperiment";
 
-            DebugLog.Write("Movement experiment starting");
+            DebugLog.Write(LogChannel.General, "Movement experiment starting");
 
             _movementExperimentThread.Start();
         }
@@ -930,7 +955,7 @@ public partial class MainWindow : Window
         {
             if (_movementExperimentThread == null)
             {
-                DebugLog.Write("Movement experiment not running, ignoring stop request");
+                DebugLog.Write(LogChannel.General, "Movement experiment not running, ignoring stop request");
                 return;
             }
 
@@ -941,7 +966,7 @@ public partial class MainWindow : Window
             _movementExperimentStopSignal = null;
         }
 
-        DebugLog.Write("Movement experiment stop requested");
+        DebugLog.Write(LogChannel.General, "Movement experiment stop requested");
 
         signalToSet?.Set();
 
@@ -949,7 +974,7 @@ public partial class MainWindow : Window
 
         if (!joined)
         {
-            DebugLog.Write("Movement experiment thread did not exit within 5 seconds");
+            DebugLog.Write(LogChannel.General, "Movement experiment thread did not exit within 5 seconds");
         }
 
         // Defensive release in case the thread didn't get a chance
@@ -957,7 +982,7 @@ public partial class MainWindow : Window
 
         signalToSet?.Dispose();
 
-        DebugLog.Write("Movement experiment stopped");
+        DebugLog.Write(LogChannel.General, "Movement experiment stopped");
     }
 
 
@@ -1081,7 +1106,7 @@ public partial class MainWindow : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void TestExtract()
     {
-        DebugLog.Write("TestExtract: begin");
+        DebugLog.Write(LogChannel.General, "TestExtract: begin");
 
         byte[] payload = new byte[]
         {
@@ -1093,26 +1118,26 @@ public partial class MainWindow : Window
             0x78, 0x44
         };
 
-        DebugLog.Write("TestExtract: payload length=" + payload.Length);
+        DebugLog.Write(LogChannel.General, "TestExtract: payload length=" + payload.Length);
 
         PacketFieldExtractor extractor = new PacketFieldExtractor();
         Dictionary<string, object> results = extractor.Extract("2026-04-15", "live",
             "OP_ClientUpdate", 1, payload);
 
-        DebugLog.Write("TestExtract: extracted " + results.Count + " fields");
+        DebugLog.Write(LogChannel.General, "TestExtract: extracted " + results.Count + " fields");
 
         foreach (KeyValuePair<string, object> kvp in results)
         {
-            DebugLog.Write("TestExtract: " + kvp.Key + " = " + kvp.Value);
+            DebugLog.Write(LogChannel.General, "TestExtract: " + kvp.Key + " = " + kvp.Value);
         }
 
-        DebugLog.Write("TestExtract: expected values from handler:");
-        DebugLog.Write("TestExtract:   player_id = 35156 (0x8954)");
-        DebugLog.Write("TestExtract:   x_pos = 994.75");
-        DebugLog.Write("TestExtract:   y_pos = -145.75");
-        DebugLog.Write("TestExtract:   z_pos = 12.12");
-        DebugLog.Write("TestExtract:   heading = 4528");
+        DebugLog.Write(LogChannel.General, "TestExtract: expected values from handler:");
+        DebugLog.Write(LogChannel.General, "TestExtract:   player_id = 35156 (0x8954)");
+        DebugLog.Write(LogChannel.General, "TestExtract:   x_pos = 994.75");
+        DebugLog.Write(LogChannel.General, "TestExtract:   y_pos = -145.75");
+        DebugLog.Write(LogChannel.General, "TestExtract:   z_pos = 12.12");
+        DebugLog.Write(LogChannel.General, "TestExtract:   heading = 4528");
 
-        DebugLog.Write("TestExtract: end");
+        DebugLog.Write(LogChannel.General, "TestExtract: end");
     }
 }

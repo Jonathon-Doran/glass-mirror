@@ -1,4 +1,5 @@
 ﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Data.Models;
 using Glass.Data.Repositories;
 using System.Windows;
@@ -29,14 +30,14 @@ public partial class ManagePagesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void LoadPageList()
     {
-        DebugLog.Write("ManagePagesDialog.LoadPageList: loading.");
+        DebugLog.Write(LogChannel.Database, "ManagePagesDialog.LoadPageList: loading.");
 
         var repo = new KeyPageRepository();
         var pages = repo.GetAllPages();
 
         PageListView.ItemsSource = pages;
 
-        DebugLog.Write($"ManagePagesDialog.LoadPageList: loaded {pages.Count} pages.");
+        DebugLog.Write(LogChannel.Database, $"ManagePagesDialog.LoadPageList: loaded {pages.Count} pages.");
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -46,7 +47,7 @@ public partial class ManagePagesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void ClearSelection()
     {
-        DebugLog.Write("ManagePagesDialog.ClearSelection: clearing selection.");
+        DebugLog.Write(LogChannel.General, "ManagePagesDialog.ClearSelection: clearing selection.");
 
         _selectedPage = null;
         _nameBeforeEdit = string.Empty;
@@ -72,14 +73,14 @@ public partial class ManagePagesDialog : Window
     {
         if (PageListView.SelectedItem is not KeyPage page)
         {
-            DebugLog.Write("ManagePagesDialog.PageListView_SelectionChanged: no page selected.");
+            DebugLog.Write(LogChannel.General, "ManagePagesDialog.PageListView_SelectionChanged: no page selected.");
             _selectedPage = null;
             PageNameTextBox.Text = string.Empty;
             DeviceComboBox.SelectedIndex = 0;
             return;
         }
 
-        DebugLog.Write($"ManagePagesDialog.PageListView_SelectionChanged: page='{page.Name}' device='{page.Device}'.");
+        DebugLog.Write(LogChannel.General, $"ManagePagesDialog.PageListView_SelectionChanged: page='{page.Name}' device='{page.Device}'.");
 
         _selectedPage = page;
         _nameBeforeEdit = page.Name;
@@ -105,7 +106,7 @@ public partial class ManagePagesDialog : Window
     {
         if (e.Key == Key.Escape)
         {
-            DebugLog.Write("ManagePagesDialog.PageListView_KeyDown: Escape pressed, clearing selection.");
+            DebugLog.Write(LogChannel.General, "ManagePagesDialog.PageListView_KeyDown: Escape pressed, clearing selection.");
             ClearSelection();
             e.Handled = true;
         }
@@ -131,7 +132,7 @@ public partial class ManagePagesDialog : Window
     {
         if (e.Key == Key.Enter)
         {
-            DebugLog.Write("ManagePagesDialog.PageNameTextBox_KeyDown: Enter pressed, committing.");
+            DebugLog.Write(LogChannel.General, "ManagePagesDialog.PageNameTextBox_KeyDown: Enter pressed, committing.");
             _suppressNameLostFocus = true;
             CommitRename();
             _suppressNameLostFocus = false;
@@ -140,7 +141,7 @@ public partial class ManagePagesDialog : Window
         }
         else if (e.Key == Key.Escape)
         {
-            DebugLog.Write("ManagePagesDialog.PageNameTextBox_KeyDown: Escape pressed, cancelling.");
+            DebugLog.Write(LogChannel.General, "ManagePagesDialog.PageNameTextBox_KeyDown: Escape pressed, cancelling.");
             _suppressNameLostFocus = true;
             PageNameTextBox.Text = _nameBeforeEdit;
             _suppressNameLostFocus = false;
@@ -158,11 +159,11 @@ public partial class ManagePagesDialog : Window
     {
         if (_suppressNameLostFocus)
         {
-            DebugLog.Write("ManagePagesDialog.PageNameTextBox_LostFocus: suppressed.");
+            DebugLog.Write(LogChannel.General, "ManagePagesDialog.PageNameTextBox_LostFocus: suppressed.");
             return;
         }
 
-        DebugLog.Write("ManagePagesDialog.PageNameTextBox_LostFocus: committing.");
+        DebugLog.Write(LogChannel.General, "ManagePagesDialog.PageNameTextBox_LostFocus: committing.");
         CommitRename();
     }
 
@@ -175,12 +176,12 @@ public partial class ManagePagesDialog : Window
     {
         if (_selectedPage == null)
         {
-            DebugLog.Write("ManagePagesDialog.BeginRename: no page selected.");
+            DebugLog.Write(LogChannel.General, "ManagePagesDialog.BeginRename: no page selected.");
             return;
         }
 
         _nameBeforeEdit = _selectedPage.Name;
-        DebugLog.Write($"ManagePagesDialog.BeginRename: captured original name='{_nameBeforeEdit}'.");
+        DebugLog.Write(LogChannel.General, $"ManagePagesDialog.BeginRename: captured original name='{_nameBeforeEdit}'.");
 
         PageNameTextBox.Focus();
         PageNameTextBox.SelectAll();
@@ -196,7 +197,7 @@ public partial class ManagePagesDialog : Window
     {
         if (_selectedPage == null)
         {
-            DebugLog.Write("ManagePagesDialog.CommitRename: no page selected, nothing to commit.");
+            DebugLog.Write(LogChannel.General, "ManagePagesDialog.CommitRename: no page selected, nothing to commit.");
             return;
         }
 
@@ -207,14 +208,14 @@ public partial class ManagePagesDialog : Window
 
         if (string.IsNullOrWhiteSpace(newName))
         {
-            DebugLog.Write("ManagePagesDialog.CommitRename: name is empty, restoring original.");
+            DebugLog.Write(LogChannel.General, "ManagePagesDialog.CommitRename: name is empty, restoring original.");
             PageNameTextBox.Text = _nameBeforeEdit;
             return;
         }
 
         if ((newName == _selectedPage.Name) && (newDevice == _selectedPage.Device))
         {
-            DebugLog.Write("ManagePagesDialog.CommitRename: no changes, skipping save.");
+            DebugLog.Write(LogChannel.General, "ManagePagesDialog.CommitRename: no changes, skipping save.");
             return;
         }
 
@@ -223,7 +224,7 @@ public partial class ManagePagesDialog : Window
 
         if (existing.Any(p => (p.Name == newName) && (p.Id != _selectedPage.Id)))
         {
-            DebugLog.Write($"ManagePagesDialog.CommitRename: name '{newName}' already exists, restoring original.");
+            DebugLog.Write(LogChannel.General, $"ManagePagesDialog.CommitRename: name '{newName}' already exists, restoring original.");
             MessageBox.Show($"A page named '{newName}' already exists.", "Duplicate Name", MessageBoxButton.OK, MessageBoxImage.Warning);
             PageNameTextBox.Text = _nameBeforeEdit;
             return;
@@ -233,7 +234,7 @@ public partial class ManagePagesDialog : Window
         _selectedPage.Device = newDevice;
         repo.Save(_selectedPage);
 
-        DebugLog.Write($"ManagePagesDialog.CommitRename: saved name='{newName}' device='{newDevice}'.");
+        DebugLog.Write(LogChannel.General, $"ManagePagesDialog.CommitRename: saved name='{newName}' device='{newDevice}'.");
 
         int savedId = _selectedPage.Id;
 
@@ -258,14 +259,14 @@ public partial class ManagePagesDialog : Window
 
         if (_selectedPage == null)
         {
-            DebugLog.Write($"ManagePagesDialog.NewRename_Click: creating page name='{name}' device='{device}'.");
+            DebugLog.Write(LogChannel.General, $"ManagePagesDialog.NewRename_Click: creating page name='{name}' device='{device}'.");
 
             var repo = new KeyPageRepository();
             var existing = repo.GetAllPages();
 
             if (existing.Any(p => p.Name == name))
             {
-                DebugLog.Write($"ManagePagesDialog.NewRename_Click: name '{name}' already exists.");
+                DebugLog.Write(LogChannel.General, $"ManagePagesDialog.NewRename_Click: name '{name}' already exists.");
                 MessageBox.Show($"A page named '{name}' already exists.", "Duplicate Name", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -273,7 +274,7 @@ public partial class ManagePagesDialog : Window
             var page = new KeyPage { Name = name, Device = device };
             repo.Save(page);
 
-            DebugLog.Write($"ManagePagesDialog.NewRename_Click: created. id={page.Id}.");
+            DebugLog.Write(LogChannel.General, $"ManagePagesDialog.NewRename_Click: created. id={page.Id}.");
 
             LoadPageList();
 
@@ -284,7 +285,7 @@ public partial class ManagePagesDialog : Window
         }
         else
         {
-            DebugLog.Write($"ManagePagesDialog.NewRename_Click: renaming '{_selectedPage.Name}' to '{name}'.");
+            DebugLog.Write(LogChannel.General, $"ManagePagesDialog.NewRename_Click: renaming '{_selectedPage.Name}' to '{name}'.");
             CommitRename();
         }
     }
@@ -298,25 +299,25 @@ public partial class ManagePagesDialog : Window
     {
         if (_selectedPage == null)
         {
-            DebugLog.Write("ManagePagesDialog.DeletePage_Click: no page selected.");
+            DebugLog.Write(LogChannel.General, "ManagePagesDialog.DeletePage_Click: no page selected.");
             return;
         }
 
-        DebugLog.Write($"ManagePagesDialog.DeletePage_Click: deleting page id={_selectedPage.Id} name='{_selectedPage.Name}'.");
+        DebugLog.Write(LogChannel.General, $"ManagePagesDialog.DeletePage_Click: deleting page id={_selectedPage.Id} name='{_selectedPage.Name}'.");
 
         var result = MessageBox.Show($"Delete page '{_selectedPage.Name}'?",
             "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
         if (result != MessageBoxResult.Yes)
         {
-            DebugLog.Write("ManagePagesDialog.DeletePage_Click: cancelled.");
+            DebugLog.Write(LogChannel.General, "ManagePagesDialog.DeletePage_Click: cancelled.");
             return;
         }
 
         var repo = new KeyPageRepository();
         repo.Delete(_selectedPage.Id);
 
-        DebugLog.Write($"ManagePagesDialog.DeletePage_Click: deleted.");
+        DebugLog.Write(LogChannel.General, $"ManagePagesDialog.DeletePage_Click: deleted.");
 
         ClearSelection();
         LoadPageList();
@@ -329,7 +330,7 @@ public partial class ManagePagesDialog : Window
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private void Close_Click(object sender, RoutedEventArgs e)
     {
-        DebugLog.Write("ManagePagesDialog.Close_Click: closing.");
+        DebugLog.Write(LogChannel.General, "ManagePagesDialog.Close_Click: closing.");
         Close();
     }
 }

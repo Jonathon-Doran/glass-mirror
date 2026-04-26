@@ -1,12 +1,13 @@
 ﻿namespace Glass.Network.Protocol;
 
+using Glass.Core;
+using Glass.Core.Logging;
+using Glass.Data;
+using Microsoft.Data.Sqlite;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.Data.Sqlite;
-using Glass.Core;
-using Glass.Data;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // PacketFieldExtractor
@@ -48,7 +49,7 @@ public class PacketFieldExtractor
     {
         Dictionary<string, object> results = new Dictionary<string, object>();
 
-        DebugLog.Write("PacketFieldExtractor.Extract: opcodeName=" + opcodeName
+        DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.Extract: opcodeName=" + opcodeName
             + " patchDate=" + patchDate + " serverType=" + serverType
             + " version=" + version + " payloadLength=" + payload.Length);
 
@@ -57,13 +58,13 @@ public class PacketFieldExtractor
 
         if (fields.Count == 0)
         {
-            DebugLog.Write("PacketFieldExtractor.Extract: no fields found");
+            DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.Extract: no fields found");
             return results;
         }
 
         foreach (FieldDefinition field in fields)
         {
-            DebugLog.Write("PacketFieldExtractor.Extract: field=" + field.FieldName
+            DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.Extract: field=" + field.FieldName
                 + " bitOffset=" + field.BitOffset + " bitLength=" + field.BitLength
                 + " encoding=" + field.Encoding);
 
@@ -72,22 +73,22 @@ public class PacketFieldExtractor
                 object? value = DecodeField(field, payload);
                 if (value == null)
                 {
-                    DebugLog.Write("PacketFieldExtractor.Extract: field=" + field.FieldName
+                    DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.Extract: field=" + field.FieldName
                         + " returned null, skipping");
                     continue;
                 }
                 results[field.FieldName] = value;
-                DebugLog.Write("PacketFieldExtractor.Extract: field=" + field.FieldName
+                DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.Extract: field=" + field.FieldName
                     + " value=" + value);
             }
             catch (Exception ex)
             {
-                DebugLog.Write("PacketFieldExtractor.Extract: field=" + field.FieldName
+                DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.Extract: field=" + field.FieldName
                     + " FAILED: " + ex.Message);
             }
         }
 
-        DebugLog.Write("PacketFieldExtractor.Extract: extracted " + results.Count
+        DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.Extract: extracted " + results.Count
             + " of " + fields.Count + " fields");
         return results;
     }
@@ -109,7 +110,7 @@ public class PacketFieldExtractor
         string opcodeName, int version)
     {
         List<FieldDefinition> fields = new List<FieldDefinition>();
-        DebugLog.Write("PacketFieldExtractor.LoadFieldDefinitions: opcodeName=" + opcodeName
+        DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.LoadFieldDefinitions: opcodeName=" + opcodeName
             + " patchDate=" + patchDate + " serverType=" + serverType
             + " version=" + version);
         using SqliteConnection conn = Database.Instance.Connect();
@@ -136,11 +137,11 @@ public class PacketFieldExtractor
             field.BitLength = reader.GetInt32(2);
             field.Encoding = reader.GetString(3);
             fields.Add(field);
-            DebugLog.Write("PacketFieldExtractor.LoadFieldDefinitions: loaded field="
+            DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.LoadFieldDefinitions: loaded field="
                 + field.FieldName + " bitOffset=" + field.BitOffset
                 + " bitLength=" + field.BitLength + " encoding=" + field.Encoding);
         }
-        DebugLog.Write("PacketFieldExtractor.LoadFieldDefinitions: total fields=" + fields.Count);
+        DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.LoadFieldDefinitions: total fields=" + fields.Count);
         return fields;
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -158,7 +159,7 @@ public class PacketFieldExtractor
     {
         int byteOffset = field.BitOffset / 8;
 
-        DebugLog.Write("PacketFieldExtractor.DecodeField: field=" + field.FieldName
+        DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.DecodeField: field=" + field.FieldName
             + " byteOffset=" + byteOffset + " encoding=" + field.Encoding);
 
         switch (field.Encoding)
@@ -203,7 +204,7 @@ public class PacketFieldExtractor
                 return ExtractLengthPrefixedString(payload, byteOffset);
 
             default:
-                DebugLog.Write("PacketFieldExtractor.DecodeField: unknown encoding="
+                DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.DecodeField: unknown encoding="
                     + field.Encoding + " for field=" + field.FieldName);
                 return null;
         }
@@ -227,7 +228,7 @@ public class PacketFieldExtractor
         uint mask = (1u << bitLength) - 1;
         uint result = raw & mask;
 
-        DebugLog.Write("PacketFieldExtractor.ExtractMaskedUintLE: byteOffset=" + byteOffset
+        DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.ExtractMaskedUintLE: byteOffset=" + byteOffset
             + " raw=0x" + raw.ToString("x4")
             + " mask=0x" + mask.ToString("x4")
             + " result=" + result);
@@ -270,7 +271,7 @@ public class PacketFieldExtractor
 
         double result = signedValue / 8.0;
 
-        DebugLog.Write("PacketFieldExtractor.ExtractSignExtendedDiv8: bitOffset=" + bitOffset
+        DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.ExtractSignExtendedDiv8: bitOffset=" + bitOffset
             + " bitShift=" + bitShift
             + " extracted=0x" + extracted.ToString("x")
             + " signedValue=" + signedValue
@@ -299,14 +300,14 @@ public class PacketFieldExtractor
         if (nullIndex < 0)
         {
             result = Encoding.ASCII.GetString(slice);
-            DebugLog.Write("PacketFieldExtractor.ExtractNullTerminatedString: byteOffset="
+            DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.ExtractNullTerminatedString: byteOffset="
                 + byteOffset + " no null terminator, used remaining "
                 + slice.Length + " bytes, value=\"" + result + "\"");
         }
         else
         {
             result = Encoding.ASCII.GetString(slice.Slice(0, nullIndex));
-            DebugLog.Write("PacketFieldExtractor.ExtractNullTerminatedString: byteOffset="
+            DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.ExtractNullTerminatedString: byteOffset="
                 + byteOffset + " nullIndex=" + nullIndex
                 + " value=\"" + result + "\"");
         }
@@ -329,12 +330,12 @@ public class PacketFieldExtractor
     {
         uint length = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(byteOffset));
 
-        DebugLog.Write("PacketFieldExtractor.ExtractLengthPrefixedString: byteOffset="
+        DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.ExtractLengthPrefixedString: byteOffset="
             + byteOffset + " length=" + length);
 
         if (length == 0)
         {
-            DebugLog.Write("PacketFieldExtractor.ExtractLengthPrefixedString: zero length string");
+            DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.ExtractLengthPrefixedString: zero length string");
             return "";
         }
 
@@ -342,14 +343,14 @@ public class PacketFieldExtractor
         int available = payload.Length - stringOffset;
         if (length > available)
         {
-            DebugLog.Write("PacketFieldExtractor.ExtractLengthPrefixedString: length=" + length
+            DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.ExtractLengthPrefixedString: length=" + length
                 + " exceeds available=" + available + ", clamping");
             length = (uint)available;
         }
 
         string result = Encoding.ASCII.GetString(payload.Slice(stringOffset, (int)length));
 
-        DebugLog.Write("PacketFieldExtractor.ExtractLengthPrefixedString: value=\"" + result + "\"");
+        DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.ExtractLengthPrefixedString: value=\"" + result + "\"");
 
         return result;
     }
@@ -379,7 +380,7 @@ public class PacketFieldExtractor
         string channel, int payloadLength)
     {
         List<(string name, int version)> matches = new List<(string name, int version)>();
-        DebugLog.Write("PacketFieldExtractor.GetCandidateOpcodes: patchDate=" + patchDate
+        DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.GetCandidateOpcodes: patchDate=" + patchDate
             + " serverType=" + serverType + " channel=" + channel
             + " payloadLength=" + payloadLength);
         using SqliteConnection conn = Database.Instance.Connect();
@@ -410,14 +411,14 @@ public class PacketFieldExtractor
                 if (payloadLength >= byteLength)
                 {
                     matches.Add((opcodeName, version));
-                    DebugLog.Write("PacketFieldExtractor.GetCandidateOpcodes: candidate="
+                    DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.GetCandidateOpcodes: candidate="
                         + opcodeName + " version=" + version
                         + " fixedLength=" + byteLength
                         + " payloadLength=" + payloadLength + " MATCH");
                 }
                 else
                 {
-                    DebugLog.Write("PacketFieldExtractor.GetCandidateOpcodes: candidate="
+                    DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.GetCandidateOpcodes: candidate="
                         + opcodeName + " version=" + version
                         + " fixedLength=" + byteLength
                         + " payloadLength=" + payloadLength
@@ -435,14 +436,14 @@ public class PacketFieldExtractor
                 if (payloadLength >= minBytes)
                 {
                     matches.Add((opcodeName, version));
-                    DebugLog.Write("PacketFieldExtractor.GetCandidateOpcodes: candidate="
+                    DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.GetCandidateOpcodes: candidate="
                         + opcodeName + " version=" + version
                         + " variable minBytes=" + minBytes
                         + " payloadLength=" + payloadLength + " MATCH");
                 }
                 else
                 {
-                    DebugLog.Write("PacketFieldExtractor.GetCandidateOpcodes: candidate="
+                    DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.GetCandidateOpcodes: candidate="
                         + opcodeName + " version=" + version
                         + " variable minBytes=" + minBytes
                         + " payloadLength=" + payloadLength
@@ -478,7 +479,7 @@ public class PacketFieldExtractor
             candidates.Add(displayName);
         }
 
-        DebugLog.Write("PacketFieldExtractor.GetCandidateOpcodes: total candidates="
+        DebugLog.Write(LogChannel.Opcodes, "PacketFieldExtractor.GetCandidateOpcodes: total candidates="
             + candidates.Count);
         return candidates;
     }

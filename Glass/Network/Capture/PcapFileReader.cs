@@ -1,9 +1,10 @@
-﻿using System;
-using Glass.Core;
+﻿using Glass.Core;
+using Glass.Core.Logging;
 using Glass.Network.Protocol;
 using PacketDotNet;
 using SharpPcap;
 using SharpPcap.LibPcap;
+using System;
 using SharpPcapCapture = SharpPcap.PacketCapture;
 
 namespace Glass.Network.Capture;
@@ -50,7 +51,7 @@ public class PcapFileReader
     ///////////////////////////////////////////////////////////////////////////////////////////////
     public int ProcessFile(string filePath, string? bpfFilter = null)
     {
-        DebugLog.Write("PcapFileReader.ProcessFile: opening '" + filePath + "'");
+        DebugLog.Write(LogChannel.LowNetwork, "PcapFileReader.ProcessFile: opening '" + filePath + "'");
 
         _frameCount = 0;
         _routedCount = 0;
@@ -63,28 +64,28 @@ public class PcapFileReader
             if (!string.IsNullOrEmpty(bpfFilter))
             {
                 reader.Filter = bpfFilter;
-                DebugLog.Write("PcapFileReader.ProcessFile: filter='" + bpfFilter + "'");
+                DebugLog.Write(LogChannel.LowNetwork, "PcapFileReader.ProcessFile: filter='" + bpfFilter + "'");
             }
 
             reader.OnPacketArrival += OnPacketArrival;
-            DebugLog.SuppressUI = true;
+            //DebugLog.SuppressUI = true;
             reader.Capture();
             reader.Close();
-            DebugLog.SuppressUI = false;
+            //DebugLog.SuppressUI = false;
         }
         catch (Exception ex)
         {
-            DebugLog.Write("PcapFileReader.ProcessFile: error reading '"
+            DebugLog.Write(LogChannel.LowNetwork, "PcapFileReader.ProcessFile: error reading '"
                 + filePath + "': " + ex.Message);
-            DebugLog.Write("PcapFileReader.ProcessFile: stack trace: "
+            DebugLog.Write(LogChannel.LowNetwork, "PcapFileReader.ProcessFile: stack trace: "
                  + ex.StackTrace);
         }
         finally
         {
-            DebugLog.SuppressUI = false;
+            //DebugLog.SuppressUI = false;
         }
 
-        DebugLog.Write("PcapFileReader.ProcessFile: finished, "
+        DebugLog.Write(LogChannel.LowNetwork, "PcapFileReader.ProcessFile: finished, "
             + _frameCount + " packets read, "
             + _routedCount + " UDP packets routed");
 
